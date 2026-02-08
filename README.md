@@ -36,7 +36,7 @@ Ensure you have **Docker** and **Docker Compose** installed on your machine.
 ### 2. Setup & Installation
 ```bash
 # Clone the repository
-git clone [https://github.com/YOUR_USERNAME/cleanflow.git](https://github.com/YOUR_USERNAME/cleanflow.git)
+git clone https://github.com/kairav-data/cleanflow-pro.git
 cd cleanflow
 
 # Prepare environment variables

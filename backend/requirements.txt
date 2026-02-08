@@ -1,0 +1,17 @@
+fastapi
+uvicorn
+pandas
+openpyxl
+sqlalchemy
+python-multipart
+# Database drivers
+psycopg2-binary
+pymssql
+pyodbc
+pymysql
+motor
+python-jose[cryptography]
+bcrypt==4.0.1
+passlib[bcrypt]
+python-multipart
+email-validator

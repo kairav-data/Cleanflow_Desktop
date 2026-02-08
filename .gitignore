@@ -1,0 +1,19 @@
+# Root .gitignore
+node_modules/
+__pycache__/
+*.pyc
+.env
+.DS_Store
+
+# Docker volumes & data
+postgres_data/
+uploads/
+results/
+
+# React build files
+frontend/dist/
+frontend/build/
+ 
+# Python Virtual Environments
+venv/
+.venv/

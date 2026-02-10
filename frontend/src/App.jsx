@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  LogOut, Search, Sparkles, Database, 
-  FileCheck, ArrowRight, Zap, ShieldCheck, BarChart3, 
-  Globe, ChevronRight, LayoutGrid, Shuffle // Added Shuffle
+import {
+  LogOut, Search, Sparkles, Database,
+  FileCheck, ArrowRight, Zap, ShieldCheck, BarChart3,
+  Globe, ChevronRight, LayoutGrid, Shuffle, GitMerge
 } from 'lucide-react';
 
 // Components
@@ -14,14 +14,20 @@ import ResultsDashboard from './components/ResultsDashboard';
 import AuthModal from './components/AuthModal';
 import UserSidebar from './components/UserSidebar';
 
+// Feature Components
+import EnrichmentBuilder from './features/EnrichmentBuilder';
+import ScraperBuilder from './features/ScraperBuilder';
+import SchemaMapper from './features/SchemaMapper';
+import DataMatchingBuilder from './features/DataMatchingBuilder';
+
 // Assets
-import Logo from './assets/logo.png'; 
+import Logo from './assets/logo.png';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
 
 function App() {
-  const [activeTab, setActiveTab] = useState('home'); 
-  const [step, setStep] = useState(1); 
+  const [activeTab, setActiveTab] = useState('home');
+  const [step, setStep] = useState(1);
   const [sessionId, setSessionId] = useState(null);
   const [columns, setColumns] = useState([]);
   const [validationResults, setValidationResults] = useState(null);
@@ -36,11 +42,11 @@ function App() {
       axios.get(`${API_BASE}/users/me`, {
         headers: { Authorization: `Bearer ${token}` }
       })
-      .then(res => setUser(res.data))
-      .catch(() => {
-        localStorage.removeItem('token');
-        setUser(null);
-      });
+        .then(res => setUser(res.data))
+        .catch(() => {
+          localStorage.removeItem('token');
+          setUser(null);
+        });
     }
   }, []);
 
@@ -72,11 +78,11 @@ function App() {
               className="flex items-center gap-2 cursor-pointer group"
               onClick={() => setActiveTab('home')}
             >
-              <img 
-                src={Logo} 
-                alt="CleanFlow" 
-                className="h-9 w-auto object-contain transition-transform group-hover:scale-110" 
-                style={{ filter: 'brightness(0) saturate(100%) invert(18%) sepia(15%) saturate(1235%) hue-rotate(182deg) brightness(92%) contrast(92%)' }} 
+              <img
+                src={Logo}
+                alt="CleanFlow"
+                className="h-9 w-auto object-contain transition-transform group-hover:scale-110"
+                style={{ filter: 'brightness(0) saturate(100%) invert(18%) sepia(15%) saturate(1235%) hue-rotate(182deg) brightness(92%) contrast(92%)' }}
               />
             </div>
 
@@ -141,7 +147,7 @@ function App() {
               </h1>
 
               <p className="text-slate-500 text-xl text-center max-w-2xl mb-12 leading-relaxed font-medium">
-                The fastest way to validate, clean, and transform your enterprise data. 
+                The fastest way to validate, clean, and transform your enterprise data.
                 Trusted by data teams to process millions of records daily.
               </p>
 
@@ -172,26 +178,30 @@ function App() {
                   {
                     title: "Schema Mapping",
                     desc: "Automatically map and transform messy source files into your target database schema with zero manual effort.",
-                    icon: <LayoutGrid className="text-purple-600" />,
-                    badge: "Beta"
-                  },
-                  {
-                    title: "Data Matching",
-                    desc: "Match your data with reference datasets using fuzzy matching, vector embeddings, and AI-powered resolution.",
                     icon: <Shuffle className="text-indigo-600" />,
-                    badge: "Advanced"
-                  },
-                  {
-                    title: "No-Code Scraping",
-                    desc: "Extract structured data from any website in just a few clicks—no code, no bots, no headaches.",
-                    icon: <Globe className="text-orange-600" />,
-                    badge: "New"
+                    badge: "New",
+                    action: () => { setActiveTab('mapper'); }
                   },
                   {
                     title: "Data Enrichment",
                     desc: "Enhance your datasets with verified emails, addresses, and AI-driven attributes.",
                     icon: <Sparkles className="text-emerald-600" />,
-                    badge: "Coming Soon"
+                    badge: "New",
+                    action: () => { setActiveTab('enrichment'); }
+                  },
+                  {
+                    title: "No-Code Scraping",
+                    desc: "Extract structured data from any website in just a few clicks—no code, no bots, no headaches.",
+                    icon: <Globe className="text-orange-600" />,
+                    badge: "New",
+                    action: () => { setActiveTab('scraper'); }
+                  },
+                  {
+                    title: "Data Matching",
+                    desc: "Match your data with reference datasets using fuzzy matching, vector embeddings, and AI-powered resolution.",
+                    icon: <GitMerge className="text-purple-600" />,
+                    badge: "New",
+                    action: () => { setActiveTab('matching'); }
                   }
                 ].map((card, i) => (
                   <motion.div
@@ -201,9 +211,9 @@ function App() {
                     className="bg-white p-10 rounded-[40px] shadow-sm border border-slate-100 cursor-pointer group relative overflow-hidden"
                   >
                     <div className="absolute top-0 right-0 p-4">
-                        <span className="text-[10px] font-black uppercase tracking-widest px-2 py-1 bg-slate-100 text-slate-500 rounded-lg group-hover:bg-blue-600 group-hover:text-white transition-colors">
-                            {card.badge}
-                        </span>
+                      <span className="text-[10px] font-black uppercase tracking-widest px-2 py-1 bg-slate-100 text-slate-500 rounded-lg group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                        {card.badge}
+                      </span>
                     </div>
                     <div className="w-14 h-14 bg-slate-50 rounded-2xl flex items-center justify-center mb-8 group-hover:scale-110 transition-transform duration-500">
                       {card.icon}
@@ -227,21 +237,21 @@ function App() {
             >
               <div className="flex items-center justify-between mb-12">
                 <button
-                    onClick={() => setActiveTab('home')}
-                    className="p-2 -ml-2 text-slate-400 hover:text-slate-900 transition-colors flex items-center gap-2 font-bold"
+                  onClick={() => setActiveTab('home')}
+                  className="p-2 -ml-2 text-slate-400 hover:text-slate-900 transition-colors flex items-center gap-2 font-bold"
                 >
-                    <ArrowRight className="rotate-180" size={20} /> Exit
+                  <ArrowRight className="rotate-180" size={20} /> Exit
                 </button>
-                
+
                 <div className="flex items-center gap-3">
-                    {[1, 2, 3].map((s) => (
-                        <div key={s} className="flex items-center gap-3">
-                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-black transition-all ${step === s ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30 scale-110' : step > s ? 'bg-emerald-500 text-white' : 'bg-slate-200 text-slate-500'}`}>
-                                {step > s ? '✓' : s}
-                            </div>
-                            {s < 3 && <div className={`w-8 h-1 rounded-full ${step > s ? 'bg-emerald-500' : 'bg-slate-200'}`} />}
-                        </div>
-                    ))}
+                  {[1, 2, 3].map((s) => (
+                    <div key={s} className="flex items-center gap-3">
+                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-black transition-all ${step === s ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30 scale-110' : step > s ? 'bg-emerald-500 text-white' : 'bg-slate-200 text-slate-500'}`}>
+                        {step > s ? '✓' : s}
+                      </div>
+                      {s < 3 && <div className={`w-8 h-1 rounded-full ${step > s ? 'bg-emerald-500' : 'bg-slate-200'}`} />}
+                    </div>
+                  ))}
                 </div>
                 <div className="w-20" />
               </div>
@@ -284,6 +294,90 @@ function App() {
                   <ResultsDashboard results={validationResults} onReset={() => setStep(1)} />
                 </motion.div>
               )}
+            </motion.div>
+          )}
+
+          {/* Enrichment Feature */}
+          {activeTab === 'enrichment' && (
+            <motion.div
+              key="enrichment-tab"
+              initial={{ opacity: 0, scale: 0.98 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 1.02 }}
+              className="w-full max-w-5xl mx-auto"
+            >
+              <div className="flex items-center justify-between mb-12">
+                <button
+                  onClick={() => setActiveTab('home')}
+                  className="p-2 -ml-2 text-slate-400 hover:text-slate-900 transition-colors flex items-center gap-2 font-bold"
+                >
+                  <ArrowRight className="rotate-180" size={20} /> Back to Home
+                </button>
+              </div>
+              <EnrichmentBuilder onComplete={() => setActiveTab('home')} />
+            </motion.div>
+          )}
+
+          {/* Scraper Feature */}
+          {activeTab === 'scraper' && (
+            <motion.div
+              key="scraper-tab"
+              initial={{ opacity: 0, scale: 0.98 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 1.02 }}
+              className="w-full max-w-5xl mx-auto"
+            >
+              <div className="flex items-center justify-between mb-12">
+                <button
+                  onClick={() => setActiveTab('home')}
+                  className="p-2 -ml-2 text-slate-400 hover:text-slate-900 transition-colors flex items-center gap-2 font-bold"
+                >
+                  <ArrowRight className="rotate-180" size={20} /> Back to Home
+                </button>
+              </div>
+              <ScraperBuilder onComplete={() => setActiveTab('home')} />
+            </motion.div>
+          )}
+
+          {/* Mapper Feature */}
+          {activeTab === 'mapper' && (
+            <motion.div
+              key="mapper-tab"
+              initial={{ opacity: 0, scale: 0.98 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 1.02 }}
+              className="w-full max-w-5xl mx-auto"
+            >
+              <div className="flex items-center justify-between mb-12">
+                <button
+                  onClick={() => setActiveTab('home')}
+                  className="p-2 -ml-2 text-slate-400 hover:text-slate-900 transition-colors flex items-center gap-2 font-bold"
+                >
+                  <ArrowRight className="rotate-180" size={20} /> Back to Home
+                </button>
+              </div>
+              <SchemaMapper onComplete={() => setActiveTab('home')} />
+            </motion.div>
+          )}
+
+          {/* Data Matching Feature */}
+          {activeTab === 'matching' && (
+            <motion.div
+              key="matching-tab"
+              initial={{ opacity: 0, scale: 0.98 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 1.02 }}
+              className="w-full max-w-5xl mx-auto"
+            >
+              <div className="flex items-center justify-between mb-12">
+                <button
+                  onClick={() => setActiveTab('home')}
+                  className="p-2 -ml-2 text-slate-400 hover:text-slate-900 transition-colors flex items-center gap-2 font-bold"
+                >
+                  <ArrowRight className="rotate-180" size={20} /> Back to Home
+                </button>
+              </div>
+              <DataMatchingBuilder onComplete={() => setActiveTab('home')} />
             </motion.div>
           )}
         </AnimatePresence>

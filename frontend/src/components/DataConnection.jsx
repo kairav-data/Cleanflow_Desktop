@@ -1,8 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import axios from 'axios';
-import { 
-    Upload, Database, FileSpreadsheet, Loader2, AlertCircle, 
-    HardDrive, Server, Play, RefreshCw, Plus, X, ChevronDown, 
+import {
+    Upload, Database, FileSpreadsheet, Loader2, AlertCircle,
+    HardDrive, Server, Play, RefreshCw, Plus, X, ChevronDown,
     Check, FileText, ShieldCheck, Zap
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -11,7 +11,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
 
 const DataConnection = ({ onUploadSuccess }) => {
-    const [mode, setMode] = useState('file'); 
+    const [mode, setMode] = useState('file');
     const [isDragging, setIsDragging] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState(null);
@@ -58,7 +58,7 @@ const DataConnection = ({ onUploadSuccess }) => {
 
         setIsLoading(true);
         setError(null);
-        
+
         // Dynamic progress simulation for UI feel
         const interval = setInterval(() => {
             setUploadProgress(prev => (prev < 90 ? prev + 10 : prev));
@@ -82,7 +82,7 @@ const DataConnection = ({ onUploadSuccess }) => {
     return (
         <div className="w-full max-w-5xl mx-auto py-12 px-6">
             {/* Header Section */}
-            <motion.div 
+            <motion.div
                 initial={{ opacity: 0, y: -20 }}
                 animate={{ opacity: 1, y: 0 }}
                 className="text-center mb-12"
@@ -104,12 +104,11 @@ const DataConnection = ({ onUploadSuccess }) => {
                     <button
                         key={m}
                         onClick={() => setMode(m)}
-                        className={`relative flex items-center gap-2 px-8 py-3.5 rounded-xl font-bold transition-all z-10 ${
-                            mode === m ? 'text-brand-blue' : 'text-slate-500 hover:text-slate-700'
-                        }`}
+                        className={`relative flex items-center gap-2 px-8 py-3.5 rounded-xl font-bold transition-all z-10 ${mode === m ? 'text-brand-blue' : 'text-slate-500 hover:text-slate-700'
+                            }`}
                     >
                         {mode === m && (
-                            <motion.div 
+                            <motion.div
                                 layoutId="activeTab"
                                 className="absolute inset-0 bg-white rounded-xl shadow-md -z-10"
                                 transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
@@ -123,10 +122,10 @@ const DataConnection = ({ onUploadSuccess }) => {
 
             <AnimatePresence mode="wait">
                 {mode === 'file' ? (
-                    <motion.div 
-                        key="file" 
-                        initial={{ opacity: 0, scale: 0.98 }} 
-                        animate={{ opacity: 1, scale: 1 }} 
+                    <motion.div
+                        key="file"
+                        initial={{ opacity: 0, scale: 0.98 }}
+                        animate={{ opacity: 1, scale: 1 }}
                         exit={{ opacity: 0, scale: 0.98 }}
                         className="space-y-6"
                     >
@@ -135,16 +134,24 @@ const DataConnection = ({ onUploadSuccess }) => {
                             <span className="text-sm font-bold text-slate-600">CSV Settings:</span>
                             <div className="flex gap-2">
                                 {[',', ';', '|'].map(d => (
-                                    <button 
+                                    <button
                                         key={d}
                                         onClick={() => setDelimiter(d)}
-                                        className={`w-10 h-10 rounded-lg flex items-center justify-center font-mono border transition-all ${
-                                            delimiter === d ? 'bg-brand-blue text-white border-brand-blue shadow-glow' : 'bg-white text-slate-400 border-slate-200 hover:border-brand-blue/30'
-                                        }`}
+                                        className={`w-10 h-10 rounded-lg flex items-center justify-center font-mono border transition-all ${delimiter === d ? 'bg-brand-blue text-white border-brand-blue shadow-glow' : 'bg-white text-slate-400 border-slate-200 hover:border-brand-blue/30'
+                                            }`}
                                     >
-                                        {d === ',' ? 'sep' : d}
+                                        {d === ',' ? ',' : d}
                                     </button>
                                 ))}
+                                <input
+                                    type="text"
+                                    placeholder="Other"
+                                    maxLength={1}
+                                    className={`w-16 h-10 rounded-lg text-center font-mono border transition-all outline-none focus:border-brand-blue ${![',', ';', '|'].includes(delimiter) ? 'border-brand-blue text-brand-blue font-bold shadow-glow' : 'border-slate-200 text-slate-500'
+                                        }`}
+                                    value={![',', ';', '|'].includes(delimiter) ? delimiter : ''}
+                                    onChange={(e) => setDelimiter(e.target.value)}
+                                />
                             </div>
                         </div>
 
@@ -156,12 +163,11 @@ const DataConnection = ({ onUploadSuccess }) => {
                             onDragLeave={() => setIsDragging(false)}
                             onDrop={(e) => { e.preventDefault(); setIsDragging(false); handleFileUpload(e.dataTransfer.files[0]); }}
                             onClick={() => !isLoading && fileInputRef.current.click()}
-                            className={`relative group cursor-pointer border-2 border-dashed rounded-[2.5rem] p-20 flex flex-col items-center justify-center transition-all overflow-hidden ${
-                                isDragging ? 'border-brand-blue bg-brand-blue/5' : 'border-slate-300 bg-white hover:border-brand-blue hover:shadow-glow'
-                            }`}
+                            className={`relative group cursor-pointer border-2 border-dashed rounded-[2.5rem] p-20 flex flex-col items-center justify-center transition-all overflow-hidden ${isDragging ? 'border-brand-blue bg-brand-blue/5' : 'border-slate-300 bg-white hover:border-brand-blue hover:shadow-glow'
+                                }`}
                         >
                             <input type="file" ref={fileInputRef} onChange={(e) => handleFileUpload(e.target.files[0])} className="hidden" accept=".csv,.xlsx,.xls" />
-                            
+
                             <div className="absolute inset-0 bg-gradient-to-b from-brand-blue/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
 
                             {isLoading ? (
@@ -173,8 +179,8 @@ const DataConnection = ({ onUploadSuccess }) => {
                                     <div className="text-center">
                                         <p className="text-xl font-black text-slate-800 tracking-tight">Uploading Assets...</p>
                                         <div className="w-48 h-1.5 bg-slate-100 rounded-full mt-3 overflow-hidden">
-                                            <motion.div 
-                                                className="h-full bg-brand-blue" 
+                                            <motion.div
+                                                className="h-full bg-brand-blue"
                                                 initial={{ width: 0 }}
                                                 animate={{ width: `${uploadProgress}%` }}
                                             />
@@ -197,11 +203,11 @@ const DataConnection = ({ onUploadSuccess }) => {
                     <motion.div key="db" className="bg-white border border-slate-200 rounded-[2.5rem] p-10 shadow-xl shadow-slate-200/50">
                         {/* ... Database logic remains same but uses updated spacing and rounded-3xl buttons ... */}
                         <div className="flex items-center gap-4 mb-8">
-                             <div className="p-4 bg-brand-dark/5 text-brand-dark rounded-2xl"><Server size={32}/></div>
-                             <div>
+                            <div className="p-4 bg-brand-dark/5 text-brand-dark rounded-2xl"><Server size={32} /></div>
+                            <div>
                                 <h3 className="text-2xl font-bold text-slate-800">Direct Ingestion</h3>
                                 <p className="text-slate-500">Select a secure connection to your warehouse</p>
-                             </div>
+                            </div>
                         </div>
                         {/* Render Saved Connections here with updated card styling */}
                     </motion.div>
@@ -210,9 +216,9 @@ const DataConnection = ({ onUploadSuccess }) => {
 
             {/* Trust Footer */}
             <div className="mt-16 flex flex-wrap justify-center gap-12 text-slate-400 grayscale opacity-70">
-                <div className="flex items-center gap-2 font-bold"><ShieldCheck size={20}/> SOC2 COMPLIANT</div>
-                <div className="flex items-center gap-2 font-bold"><HardDrive size={20}/> AES-256 ENCRYPTION</div>
-                <div className="flex items-center gap-2 font-bold"><RefreshCw size={20}/> REAL-TIME SYNC</div>
+                <div className="flex items-center gap-2 font-bold"><ShieldCheck size={20} /> SOC2 COMPLIANT</div>
+                <div className="flex items-center gap-2 font-bold"><HardDrive size={20} /> AES-256 ENCRYPTION</div>
+                <div className="flex items-center gap-2 font-bold"><RefreshCw size={20} /> REAL-TIME SYNC</div>
             </div>
         </div>
     );

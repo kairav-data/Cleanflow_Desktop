@@ -86,6 +86,25 @@ export default function SchemaMapper({ onComplete }) {
                 mappings,
                 transformations: columnTransforms
             });
+
+            try {
+                // Log history
+                const token = localStorage.getItem('token');
+                const headers = token ? { Authorization: `Bearer ${token}` } : {};
+
+                await axios.post(`${API_BASE}/history/jobs`, {
+                    session_id: sessionId,
+                    file_name: `Schema Mapping Job`,
+                    rules: [{ mappings, transformations: columnTransforms }],
+                    total_rows: 0,
+                    valid_rows: 0,
+                    invalid_rows: 0,
+                    module: 'mapper'
+                }, { headers });
+            } catch (histErr) {
+                console.error("Failed to save history:", histErr);
+            }
+
             setStep(3);
             if (onComplete) onComplete(res.data);
         } catch (e) {

@@ -98,10 +98,9 @@ const Footer = () => {
               <img
                 src={Logo}
                 alt="CleanFlow"
-                className="h-8 w-auto object-contain"
-                style={{ filter: 'brightness(0) saturate(100%) invert(18%) sepia(15%) saturate(1235%) hue-rotate(182deg) brightness(92%) contrast(92%)' }}
+                className="h-10 w-auto object-contain"
+                style={{ filter: 'brightness(0)' }}
               />
-              <span className="text-lg font-black text-slate-900">CleanFlow</span>
             </div>
             <p className="text-slate-500 text-sm leading-relaxed mb-8 font-medium">
               The modern data quality platform for enterprises. Clean, validate, and transform your data with confidence.

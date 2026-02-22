@@ -9,8 +9,8 @@ Advanced transformations including:
 - All previous transformations
 """
 
-from typing import Dict, List, Any, Optional, Tuple
-import pandas as pd
+from typing import Dict, List, Any, Optional
+import polars as pl
 import re
 from difflib import SequenceMatcher
 from .base import BaseFeature, FeatureResult
@@ -48,92 +48,40 @@ class ColumnMatcher:
 
 
 class AdvancedTransformation:
-    """Advanced data transformation functions"""
+    """Advanced data transformation functions mapping to Polars expressions"""
     
+    # Map transformation names to factory functions that return Polars Expressions
     @staticmethod
-    def uppercase(value: Any) -> Any:
-        if pd.isna(value): return value
-        return str(value).upper()
-    
+    def get_expression(transform_name: str, col_name: str) -> Optional[pl.Expr]:
+        c = pl.col(col_name)
+        
+        if transform_name == 'uppercase':
+            return c.cast(pl.Utf8).str.to_uppercase()
+        elif transform_name == 'lowercase':
+            return c.cast(pl.Utf8).str.to_lowercase()
+        elif transform_name == 'trim':
+            return c.cast(pl.Utf8).str.strip_chars()
+        elif transform_name == 'title_case':
+            return c.cast(pl.Utf8).str.to_titlecase()
+        elif transform_name == 'remove_special_chars':
+            return c.cast(pl.Utf8).str.replace_all(r'[^a-zA-Z0-9\s]', '')
+        elif transform_name == 'extract_numbers':
+            return c.cast(pl.Utf8).str.extract_all(r'\d+').list.join('')
+        elif transform_name == 'pad_zeros':
+            # Default length 5 for now as param wasn't passed in old architecture easily
+            return c.cast(pl.Utf8).str.zfill(5) 
+        
+        return None
+
     @staticmethod
-    def lowercase(value: Any) -> Any:
-        if pd.isna(value): return value
-        return str(value).lower()
-    
-    @staticmethod
-    def trim(value: Any) -> Any:
-        if pd.isna(value): return value
-        return str(value).strip()
-    
-    @staticmethod
-    def title_case(value: Any) -> Any:
-        if pd.isna(value): return value
-        return str(value).title()
-    
-    @staticmethod
-    def remove_special_chars(value: Any) -> Any:
-        if pd.isna(value): return value
-        return re.sub(r'[^a-zA-Z0-9\s]', '', str(value))
-    
-    @staticmethod
-    def extract_numbers(value: Any) -> Any:
-        if pd.isna(value): return value
-        numbers = re.findall(r'\d+', str(value))
-        return ''.join(numbers) if numbers else None
-    
-    @staticmethod
-    def pad_zeros(value: Any, length: int = 5) -> Any:
-        if pd.isna(value): return value
-        return str(value).zfill(length)
-    
-    @staticmethod
-    def concatenate(row: pd.Series, columns: List[str], separator: str = ' ') -> str:
-        """Concatenate multiple columns"""
-        values = [str(row[col]) if not pd.isna(row[col]) else '' for col in columns if col in row.index]
-        return separator.join(values)
-    
-    @staticmethod
-    def aggregate_sum(series: pd.Series) -> float:
-        """Sum aggregation"""
-        return series.sum()
-    
-    @staticmethod
-    def aggregate_avg(series: pd.Series) -> float:
-        """Average aggregation"""
-        return series.mean()
-    
-    @staticmethod
-    def aggregate_count(series: pd.Series) -> int:
-        """Count aggregation"""
-        return series.count()
-    
-    @staticmethod
-    def aggregate_min(series: pd.Series) -> Any:
-        """Min aggregation"""
-        return series.min()
-    
-    @staticmethod
-    def aggregate_max(series: pd.Series) -> Any:
-        """Max aggregation"""
-        return series.max()
-    
-    TRANSFORMATIONS = {
-        'uppercase': uppercase.__func__,
-        'lowercase': lowercase.__func__,
-        'trim': trim.__func__,
-        'title_case': title_case.__func__,
-        'remove_special_chars': remove_special_chars.__func__,
-        'extract_numbers': extract_numbers.__func__,
-        'pad_zeros': pad_zeros.__func__
-    }
-    
-    AGGREGATIONS = {
-        'sum': aggregate_sum.__func__,
-        'avg': aggregate_avg.__func__,
-        'count': aggregate_count.__func__,
-        'min': aggregate_min.__func__,
-        'max': aggregate_max.__func__
-    }
+    def get_aggregation(agg_type: str, col_name: str) -> Optional[pl.Expr]:
+        c = pl.col(col_name)
+        if agg_type == 'sum': return c.sum()
+        elif agg_type == 'avg': return c.mean()
+        elif agg_type == 'count': return c.count()
+        elif agg_type == 'min': return c.min()
+        elif agg_type == 'max': return c.max()
+        return None
 
 
 class SchemaMapper(BaseFeature):
@@ -149,12 +97,14 @@ class SchemaMapper(BaseFeature):
             if self.df is None:
                 return FeatureResult(success=False, error="No data loaded")
             
-            sample_df = self.df.head(limit).copy()
-            result_df = self._apply_mappings(sample_df, config)
+            # Use lazy evaluation
+            # limit before processing for speed
+            sample_lf = self.df.lazy().limit(limit)
+            result_df = self._apply_mappings(sample_lf, config).collect()
             
             return FeatureResult(
                 success=True,
-                data=result_df.to_dict('records'),
+                data=result_df.to_dicts(),
                 metadata={
                     'rows': len(result_df),
                     'columns': list(result_df.columns)
@@ -173,11 +123,11 @@ class SchemaMapper(BaseFeature):
             if self.df is None:
                 return FeatureResult(success=False, error="No data loaded")
             
-            result_df = self._apply_mappings(self.df.copy(), config)
+            result_df = self._apply_mappings(self.df.lazy(), config).collect()
             
             return FeatureResult(
                 success=True,
-                data=result_df.to_dict('records'),
+                data=result_df.to_dicts(),
                 metadata={
                     'total_rows': len(result_df),
                     'columns': list(result_df.columns)
@@ -186,49 +136,94 @@ class SchemaMapper(BaseFeature):
         except Exception as e:
             return FeatureResult(success=False, error=str(e))
     
-    def _apply_mappings(self, df: pd.DataFrame, config: Dict[str, Any]) -> pd.DataFrame:
-        """Apply all mappings and transformations"""
-        result_df = pd.DataFrame()
+    def _apply_mappings(self, lf: pl.LazyFrame, config: Dict[str, Any]) -> pl.LazyFrame:
+        """Apply all mappings and transformations using Polars Expressions"""
         
         mappings = config.get('mappings', {})
         transformations = config.get('transformations', {})
         concatenations = config.get('concatenations', {})
         aggregations = config.get('aggregations', {})
         
-        # Apply simple mappings
+        # We need to construct a SELECT statement essentially.
+        # Start with mappings
+        
+        exprs = []
+        
+        # 1. Simple Mappings & Transformations
         for source_col, target_col in mappings.items():
-            if source_col not in df.columns:
+            if source_col not in self.df.columns: # Check against original columns
                 continue
             
-            result_df[target_col] = df[source_col].copy()
+            # Base expression: alias source to target
+            col_expr = pl.col(source_col).alias(target_col)
             
-            # Apply transformations
+            # Apply transformations chain
             if target_col in transformations:
                 for transform_name in transformations[target_col]:
-                    if transform_name in AdvancedTransformation.TRANSFORMATIONS:
-                        transform_func = AdvancedTransformation.TRANSFORMATIONS[transform_name]
-                        result_df[target_col] = result_df[target_col].apply(transform_func)
+                    # We need to apply transformation to the expression built so far
+                    # But get_expression expects a col name.
+                    # We can chain it: pl.col(source).transform().alias(target)
+                    
+                    # Re-implement transformation logic to accept expr instead of col_name
+                    if transform_name == 'uppercase':
+                        col_expr = col_expr.cast(pl.Utf8).str.to_uppercase()
+                    elif transform_name == 'lowercase':
+                        col_expr = col_expr.cast(pl.Utf8).str.to_lowercase()
+                    elif transform_name == 'trim':
+                        col_expr = col_expr.cast(pl.Utf8).str.strip_chars()
+                    elif transform_name == 'title_case':
+                        col_expr = col_expr.cast(pl.Utf8).str.to_titlecase()
+                    elif transform_name == 'remove_special_chars':
+                        col_expr = col_expr.cast(pl.Utf8).str.replace_all(r'[^a-zA-Z0-9\s]', '')
+                    elif transform_name == 'extract_numbers':
+                         col_expr = col_expr.cast(pl.Utf8).str.extract_all(r'\d+').list.join('')
+                    elif transform_name == 'pad_zeros':
+                        col_expr = col_expr.cast(pl.Utf8).str.zfill(5)
+            
+            exprs.append(col_expr)
         
-        # Apply concatenations
+        # 2. Concatenations
         for new_col, concat_config in concatenations.items():
             columns = concat_config.get('columns', [])
             separator = concat_config.get('separator', ' ')
-            result_df[new_col] = df.apply(
-                lambda row: AdvancedTransformation.concatenate(row, columns, separator), 
-                axis=1
-            )
+            
+            # Filter valid columns
+            valid_cols = [c for c in columns if c in self.df.columns]
+            if not valid_cols:
+                continue
+                
+            # pl.concat_str([cols], separator)
+            concat_expr = pl.concat_str([pl.col(c).cast(pl.Utf8).fill_null('') for c in valid_cols], separator=separator).alias(new_col)
+            exprs.append(concat_expr)
+            
+        # 3. Aggregations 
+        # Aggregations return a single row usually, implying we should return a single row DF?
+        # Or attach the aggregation to every row (window function)?
+        # The original code did `result_df[new_col] = agg_value` which broadcasts the scalar to all rows.
+        # Polars: select(agg). But if we mix column maps and aggs, we might want broadcasting.
         
-        # Apply aggregations
+        # If aggregations are present, we probably want to return them as columns repeated?
+        # Or if ONLY aggregations are present, return 1 row?
+        # The UI probably expects the transformed dataset.
+        
+        # Let's support broadcasting for now to match pandas behavior
+        agg_exprs = []
         for new_col, agg_config in aggregations.items():
             column = agg_config.get('column')
             agg_type = agg_config.get('type')
             
-            if column in df.columns and agg_type in AdvancedTransformation.AGGREGATIONS:
-                agg_func = AdvancedTransformation.AGGREGATIONS[agg_type]
-                agg_value = agg_func(df[column])
-                result_df[new_col] = agg_value
+            if column in self.df.columns and agg_type:
+                expr = AdvancedTransformation.get_aggregation(agg_type, column)
+                if expr is not None:
+                    # Broadcast to all rows?
+                    # In Polars select context, a scalar is broadcasted.
+                    agg_exprs.append(expr.alias(new_col))
         
-        return result_df
+        # If we have aggregations, add them to the select list
+        exprs.extend(agg_exprs)
+        
+        # Return new dataframe with selected columns
+        return lf.select(exprs)
     
     def validate(self, config: Dict[str, Any]) -> tuple[bool, Optional[str]]:
         """Validate mapping configuration"""
@@ -242,7 +237,7 @@ class SchemaMapper(BaseFeature):
         if self.df is None:
             return {}
         
-        source_columns = list(self.df.columns)
+        source_columns = self.df.columns
         target_columns = list(target_schema.keys())
         
         suggested = ColumnMatcher.suggest_mappings(source_columns, target_columns)

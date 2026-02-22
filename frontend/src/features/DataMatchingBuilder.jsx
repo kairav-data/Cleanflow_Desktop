@@ -1,24 +1,38 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { motion } from 'framer-motion';
-import { GitMerge, Upload, Play, CheckCircle, TrendingUp } from 'lucide-react';
+import { GitMerge, Upload, Play, CheckCircle, TrendingUp, Plus, Trash2 } from 'lucide-react';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
 
 export default function DataMatchingBuilder({ onComplete }) {
     const [algorithms, setAlgorithms] = useState([]);
-    const [selectedAlgorithm, setSelectedAlgorithm] = useState(null);
+    const [matchRules, setMatchRules] = useState([{ id: 1, column1: '', column2: '', algorithm: 'fuzzy', threshold: 0.8 }]);
     const [datasets, setDatasets] = useState({ dataset1: null, dataset2: null });
     const [datasetColumns, setDatasetColumns] = useState({ dataset1: [], dataset2: [] });
-    const [matchColumns, setMatchColumns] = useState({ dataset1: '', dataset2: '' });
     const [outputColumns, setOutputColumns] = useState({ dataset1: [], dataset2: [] });
-    const [threshold, setThreshold] = useState(0.8);
     const [sessionId] = useState(`match_${Date.now()}`);
-    const [previewData, setPreviewData] = useState(null);
+    const [finalResults, setFinalResults] = useState(null);
+    const [totalMatches, setTotalMatches] = useState(0);
     const [loading, setLoading] = useState(false);
-    const [step, setStep] = useState(1); // 1: Upload, 2: Configure, 3: Preview, 4: Complete
+    const [progress, setProgress] = useState({ percent: 0, message: '', status: 'idle' });
+    const [step, setStep] = useState(1); // 1: Upload, 2: Configure, 3: Complete
     const [separators, setSeparators] = useState({ dataset1: ',', dataset2: ',' });
     const [showSeparatorInput, setShowSeparatorInput] = useState({ dataset1: false, dataset2: false });
+    const [elapsedTime, setElapsedTime] = useState(0);
+
+    useEffect(() => {
+        let interval;
+        if (loading) {
+            const start = Date.now();
+            interval = setInterval(() => {
+                setElapsedTime(Math.floor((Date.now() - start) / 1000));
+            }, 1000);
+        } else {
+            setElapsedTime(0);
+        }
+        return () => clearInterval(interval);
+    }, [loading]);
 
     useEffect(() => {
         fetchAlgorithms();
@@ -28,112 +42,103 @@ export default function DataMatchingBuilder({ onComplete }) {
         try {
             const res = await axios.get(`${API_BASE}/features/matching/algorithms`);
             setAlgorithms(res.data.algorithms || []);
-            if (res.data.algorithms?.length > 0) {
-                setSelectedAlgorithm(res.data.algorithms[0]);
-            }
         } catch (e) {
             console.error('Error fetching algorithms:', e);
         }
     };
 
-    const parseFile = async (file, separator) => {
-        return new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            const fileExtension = file.name.split('.').pop().toLowerCase();
-
-            reader.onload = async (e) => {
-                try {
-                    let data = [];
-                    const content = e.target.result;
-
-                    if (fileExtension === 'xlsx' || fileExtension === 'xls') {
-                        // For Excel files, we'd need a library like xlsx
-                        // For now, show error message
-                        alert('Excel support requires additional setup. Please use CSV or TXT for now.');
-                        reject('Excel not supported yet');
-                        return;
-                    } else {
-                        // Parse CSV/TXT
-                        const rows = content.split('\n').filter(r => r.trim());
-                        const headers = rows[0].split(separator).map(h => h.trim());
-                        data = rows.slice(1).map(row => {
-                            const values = row.split(separator);
-                            const obj = {};
-                            headers.forEach((h, i) => obj[h] = values[i]?.trim());
-                            return obj;
-                        });
-                    }
-
-                    resolve({ data, headers: Object.keys(data[0] || {}) });
-                } catch (err) {
-                    reject(err);
-                }
-            };
-
-            reader.onerror = reject;
-            reader.readAsText(file);
-        });
-    };
-
     const handleFileUpload = async (datasetId, file) => {
         try {
-            const separator = separators[datasetId];
-            const { data, headers } = await parseFile(file, separator);
+            const formData = new FormData();
+            formData.append('session_id', sessionId);
+            formData.append('dataset_id', datasetId);
+            formData.append('delimiter', separators[datasetId] || ',');
+            formData.append('file', file);
 
-            // Load dataset to backend
-            await axios.post(`${API_BASE}/features/matching/load-dataset`, {
-                session_id: sessionId,
-                dataset_id: datasetId,
-                data
+            const res = await axios.post(`${API_BASE}/features/matching/upload-dataset`, formData, {
+                headers: { 'Content-Type': 'multipart/form-data' }
             });
 
-            setDatasets(prev => ({ ...prev, [datasetId]: data }));
-            setDatasetColumns(prev => ({ ...prev, [datasetId]: headers }));
+            setDatasets(prev => ({ ...prev, [datasetId]: true }));
+            setDatasetColumns(prev => ({ ...prev, [datasetId]: res.data.columns }));
         } catch (e) {
             alert('Upload failed: ' + (e.response?.data?.detail || e.message || e));
         }
     };
 
-    const handlePreview = async () => {
-        if (!matchColumns.dataset1 || !matchColumns.dataset2) return;
+    const addRule = () => {
+        setMatchRules(prev => [...prev, { id: Date.now(), column1: '', column2: '', algorithm: algorithms[0]?.id || 'fuzzy', threshold: 0.8 }]);
+    };
 
-        setLoading(true);
-        try {
-            const res = await axios.post(`${API_BASE}/features/matching/preview/${sessionId}`, {
-                dataset1: 'dataset1',
-                dataset2: 'dataset2',
-                match_column1: matchColumns.dataset1,
-                match_column2: matchColumns.dataset2,
-                algorithm: selectedAlgorithm.id,
-                threshold,
-                output_columns: outputColumns
-            });
-            setPreviewData(res.data.data);
-            setStep(3);
-        } catch (e) {
-            alert('Preview failed: ' + (e.response?.data?.detail || e.message));
-        }
-        setLoading(false);
+    const removeRule = (id) => {
+        setMatchRules(prev => prev.filter(r => r.id !== id));
+    };
+
+    const updateRule = (id, field, value) => {
+        setMatchRules(prev => prev.map(r => r.id === id ? { ...r, [field]: value } : r));
     };
 
     const handleExecute = async () => {
         setLoading(true);
+        // setStep(3); // Removed: Don't change step yet, let loading screen show
+
         try {
-            const res = await axios.post(`${API_BASE}/features/matching/execute/${sessionId}`, {
+            // Start background execution
+            const validRules = matchRules.filter(r => r.column1 && r.column2);
+            await axios.post(`${API_BASE}/features/matching/start/${sessionId}`, {
                 dataset1: 'dataset1',
                 dataset2: 'dataset2',
-                match_column1: matchColumns.dataset1,
-                match_column2: matchColumns.dataset2,
-                algorithm: selectedAlgorithm.id,
-                threshold,
+                rules: validRules,
                 output_columns: outputColumns
             });
-            setStep(4);
-            if (onComplete) onComplete(res.data);
+
+            const interval = setInterval(async () => {
+                try {
+                    const res = await axios.get(`${API_BASE}/features/matching/status/${sessionId}`);
+                    setProgress(res.data);
+
+                    if (res.data.status === 'completed') {
+                        clearInterval(interval);
+                        setLoading(false);
+                        const resultRes = await axios.get(`${API_BASE}/features/matching/results/${sessionId}`);
+                        setFinalResults(resultRes.data.results);
+                        setTotalMatches(resultRes.data.total_matches || resultRes.data.results.length);
+
+                        try {
+                            // Log history
+                            const token = localStorage.getItem('token');
+                            const headers = token ? { Authorization: `Bearer ${token}` } : {};
+
+                            await axios.post(`${API_BASE}/history/jobs`, {
+                                session_id: sessionId,
+                                file_name: `Data Matching Job`,
+                                rules: validRules,
+                                total_rows: resultRes.data.total_matches || resultRes.data.results.length,
+                                valid_rows: resultRes.data.total_matches || resultRes.data.results.length,
+                                invalid_rows: 0,
+                                module: 'matching'
+                            }, { headers });
+                        } catch (histErr) {
+                            console.error("Failed to save history:", histErr);
+                        }
+
+                        setStep(3); // Move to completion step ONLY after success
+                        if (onComplete) onComplete(resultRes.data);
+                    } else if (res.data.status === 'error') {
+                        clearInterval(interval);
+                        setLoading(false);
+                        alert('Matching error: ' + res.data.message);
+                        // Stay on step 2
+                    }
+                } catch (e) {
+                    console.error("Polling error", e);
+                }
+            }, 1000);
+
         } catch (e) {
-            alert('Matching failed: ' + (e.response?.data?.detail || e.message));
+            setLoading(false);
+            alert('Matching start failed: ' + (e.response?.data?.detail || e.message));
         }
-        setLoading(false);
     };
 
     const toggleOutputColumn = (datasetId, column) => {
@@ -144,6 +149,27 @@ export default function DataMatchingBuilder({ onComplete }) {
                 : [...prev[datasetId], column]
         }));
     };
+
+    if (loading) {
+        return (
+            <div className="bg-white p-12 rounded-[48px] shadow-2xl text-center">
+                <div className="w-full bg-slate-100 rounded-full h-4 mb-4 overflow-hidden">
+                    <motion.div
+                        className="bg-purple-600 h-full"
+                        initial={{ width: 0 }}
+                        animate={{ width: `${progress.percent}%` }}
+                        transition={{ duration: 0.5 }}
+                    />
+                </div>
+                <h2 className="text-3xl font-black text-slate-900 mb-2">{progress.percent}%</h2>
+                <p className="text-slate-500 text-lg mb-8">{progress.message || "Initializing..."}</p>
+                <div className="text-4xl font-mono font-bold text-purple-600">
+                    {Math.floor(elapsedTime / 60)}:{String(elapsedTime % 60).padStart(2, '0')}
+                </div>
+                <p className="text-xs text-slate-400 mt-4">Time Elapsed</p>
+            </div>
+        );
+    }
 
     return (
         <div className="bg-white p-12 rounded-[48px] shadow-2xl">
@@ -163,44 +189,32 @@ export default function DataMatchingBuilder({ onComplete }) {
                                 <Upload className="mx-auto text-slate-400 mb-4" size={48} />
                                 <h3 className="font-black text-lg mb-2 text-center">Dataset {idx + 1}</h3>
 
-                                {/* Separator Input */}
-                                <div className="mb-4">
-                                    <label className="block text-xs font-bold text-slate-600 mb-2">
-                                        Separator Character
-                                    </label>
+                                {/* Delimiter Selection */}
+                                <div className="flex flex-col items-center gap-2 mb-4">
+                                    <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Separator</span>
                                     <div className="flex gap-2">
-                                        <select
-                                            value={separators[dsId]}
-                                            onChange={(e) => {
-                                                if (e.target.value === 'custom') {
-                                                    setShowSeparatorInput(prev => ({ ...prev, [dsId]: true }));
-                                                } else {
-                                                    setSeparators(prev => ({ ...prev, [dsId]: e.target.value }));
-                                                    setShowSeparatorInput(prev => ({ ...prev, [dsId]: false }));
-                                                }
-                                            }}
-                                            className="flex-1 p-2 border-2 border-slate-200 rounded-xl text-sm focus:border-purple-500 focus:outline-none"
-                                        >
-                                            <option value=",">Comma (,)</option>
-                                            <option value=";">Semicolon (;)</option>
-                                            <option value="\t">Tab (\t)</option>
-                                            <option value="|">Pipe (|)</option>
-                                            <option value=" ">Space</option>
-                                            <option value="custom">Custom...</option>
-                                        </select>
-                                    </div>
-                                    {showSeparatorInput[dsId] && (
+                                        {[',', ';', '|'].map(d => (
+                                            <button
+                                                key={d}
+                                                onClick={() => setSeparators(prev => ({ ...prev, [dsId]: d }))}
+                                                className={`w-8 h-8 rounded-lg flex items-center justify-center font-mono border transition-all text-sm ${separators[dsId] === d ? 'bg-purple-600 text-white border-purple-600' : 'bg-white text-slate-400 border-slate-200 hover:border-purple-600/30'
+                                                    }`}
+                                            >
+                                                {d}
+                                            </button>
+                                        ))}
                                         <input
                                             type="text"
-                                            maxLength="3"
-                                            placeholder="Enter separator"
+                                            placeholder="..."
+                                            maxLength={1}
+                                            className={`w-12 h-8 rounded-lg text-center font-mono border transition-all outline-none focus:border-purple-600 text-sm ${![',', ';', '|'].includes(separators[dsId]) ? 'border-purple-600 text-purple-600 font-bold' : 'border-slate-200 text-slate-500'
+                                                }`}
+                                            value={![',', ';', '|'].includes(separators[dsId]) ? separators[dsId] : ''}
                                             onChange={(e) => setSeparators(prev => ({ ...prev, [dsId]: e.target.value }))}
-                                            className="w-full mt-2 p-2 border-2 border-slate-200 rounded-xl text-sm focus:border-purple-500 focus:outline-none"
                                         />
-                                    )}
+                                    </div>
                                 </div>
 
-                                {/* File Upload */}
                                 <input
                                     type="file"
                                     accept=".csv,.txt,.xlsx,.xls"
@@ -216,12 +230,12 @@ export default function DataMatchingBuilder({ onComplete }) {
                                 </label>
                                 {datasets[dsId] && (
                                     <div className="mt-3 text-center">
-                                        <p className="text-sm text-slate-600">{datasets[dsId].length} rows</p>
-                                        <p className="text-xs text-slate-500">{datasetColumns[dsId].length} columns</p>
+                                        <p className="text-sm text-slate-600">File uploaded</p>
+                                        <p className="text-xs text-slate-500">{datasetColumns[dsId].length} columns found</p>
                                     </div>
                                 )}
                                 <p className="text-xs text-slate-400 mt-2 text-center">
-                                    Supports: CSV, TXT, Excel
+                                    Supports: CSV, Excel (.xlsx)
                                 </p>
                             </div>
                         ))}
@@ -239,76 +253,76 @@ export default function DataMatchingBuilder({ onComplete }) {
 
             {step === 2 && (
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                    {/* Algorithm Selection */}
+                    {/* Match Rules */}
                     <div className="mb-8">
-                        <label className="block text-sm font-bold text-slate-700 mb-3">Choose Matching Algorithm</label>
-                        <div className="grid grid-cols-2 gap-4">
-                            {algorithms.map(algo => (
-                                <motion.div
-                                    key={algo.id}
-                                    whileHover={{ scale: 1.02 }}
-                                    onClick={() => setSelectedAlgorithm(algo)}
-                                    className={`p-6 rounded-2xl border-2 cursor-pointer ${selectedAlgorithm?.id === algo.id
-                                        ? 'border-purple-500 bg-purple-50'
-                                        : 'border-slate-200 hover:border-purple-300'
-                                        }`}
-                                >
-                                    <div className="flex items-start justify-between mb-2">
-                                        <h3 className="font-black text-lg">{algo.name}</h3>
-                                        <span className="text-xs px-2 py-1 bg-slate-100 rounded-lg">{algo.speed}</span>
+                        <div className="flex justify-between items-center mb-4">
+                            <label className="block text-lg font-bold text-slate-700">Match Rules</label>
+                            <button onClick={addRule} className="flex items-center gap-1 text-sm text-purple-600 font-bold hover:bg-purple-50 px-3 py-1 rounded-lg">
+                                <Plus size={16} /> Add Rule
+                            </button>
+                        </div>
+
+                        {matchRules.map((rule, idx) => (
+                            <motion.div
+                                key={rule.id}
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                className="bg-slate-50 p-6 rounded-2xl border border-slate-200 mb-4 relative"
+                            >
+                                {matchRules.length > 1 && (
+                                    <button onClick={() => removeRule(rule.id)} className="absolute top-4 right-4 text-slate-400 hover:text-red-500">
+                                        <Trash2 size={18} />
+                                    </button>
+                                )}
+                                <h4 className="text-xs font-black text-slate-400 uppercase mb-4 tracking-wider">Rule {idx + 1}</h4>
+                                <div className="grid grid-cols-2 gap-4 mb-4">
+                                    <div>
+                                        <label className="block text-xs font-bold text-slate-500 mb-1">Column (Dataset 1)</label>
+                                        <select
+                                            value={rule.column1}
+                                            onChange={(e) => updateRule(rule.id, 'column1', e.target.value)}
+                                            className="w-full p-3 bg-white border border-slate-200 rounded-xl text-sm focus:border-purple-500 focus:outline-none"
+                                        >
+                                            <option value="">Select column...</option>
+                                            {datasetColumns.dataset1.map(c => <option key={c} value={c}>{c}</option>)}
+                                        </select>
                                     </div>
-                                    <p className="text-sm text-slate-600 mb-2">{algo.description}</p>
-                                    <p className="text-xs text-slate-500 italic">{algo.use_case}</p>
-                                </motion.div>
-                            ))}
-                        </div>
-                    </div>
+                                    <div>
+                                        <label className="block text-xs font-bold text-slate-500 mb-1">Column (Dataset 2)</label>
+                                        <select
+                                            value={rule.column2}
+                                            onChange={(e) => updateRule(rule.id, 'column2', e.target.value)}
+                                            className="w-full p-3 bg-white border border-slate-200 rounded-xl text-sm focus:border-purple-500 focus:outline-none"
+                                        >
+                                            <option value="">Select column...</option>
+                                            {datasetColumns.dataset2.map(c => <option key={c} value={c}>{c}</option>)}
+                                        </select>
+                                    </div>
+                                </div>
 
-                    {/* Match Columns */}
-                    <div className="grid grid-cols-2 gap-6 mb-8">
-                        <div>
-                            <label className="block text-sm font-bold text-slate-700 mb-3">Match Column (Dataset 1)</label>
-                            <select
-                                value={matchColumns.dataset1}
-                                onChange={(e) => setMatchColumns(prev => ({ ...prev, dataset1: e.target.value }))}
-                                className="w-full p-4 border-2 border-slate-200 rounded-2xl focus:border-purple-500 focus:outline-none"
-                            >
-                                <option value="">Select column...</option>
-                                {datasetColumns.dataset1.map(col => (
-                                    <option key={col} value={col}>{col}</option>
-                                ))}
-                            </select>
-                        </div>
-                        <div>
-                            <label className="block text-sm font-bold text-slate-700 mb-3">Match Column (Dataset 2)</label>
-                            <select
-                                value={matchColumns.dataset2}
-                                onChange={(e) => setMatchColumns(prev => ({ ...prev, dataset2: e.target.value }))}
-                                className="w-full p-4 border-2 border-slate-200 rounded-2xl focus:border-purple-500 focus:outline-none"
-                            >
-                                <option value="">Select column...</option>
-                                {datasetColumns.dataset2.map(col => (
-                                    <option key={col} value={col}>{col}</option>
-                                ))}
-                            </select>
-                        </div>
-                    </div>
-
-                    {/* Threshold */}
-                    <div className="mb-8">
-                        <label className="block text-sm font-bold text-slate-700 mb-3">
-                            Similarity Threshold: {(threshold * 100).toFixed(0)}%
-                        </label>
-                        <input
-                            type="range"
-                            min="0"
-                            max="1"
-                            step="0.05"
-                            value={threshold}
-                            onChange={(e) => setThreshold(parseFloat(e.target.value))}
-                            className="w-full"
-                        />
-                        <p className="text-xs text-slate-500 mt-2">Only matches above this threshold will be included</p>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-xs font-bold text-slate-500 mb-1">Algorithm</label>
+                                        <select
+                                            value={rule.algorithm}
+                                            onChange={(e) => updateRule(rule.id, 'algorithm', e.target.value)}
+                                            className="w-full p-3 bg-white border border-slate-200 rounded-xl text-sm focus:border-purple-500 focus:outline-none"
+                                        >
+                                            {algorithms.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-bold text-slate-500 mb-1">Threshold ({(rule.threshold * 100).toFixed(0)}%)</label>
+                                        <input
+                                            type="range" min="0" max="1" step="0.05"
+                                            value={rule.threshold}
+                                            onChange={(e) => updateRule(rule.id, 'threshold', parseFloat(e.target.value))}
+                                            className="w-full mt-2 accent-purple-600"
+                                        />
+                                    </div>
+                                </div>
+                            </motion.div>
+                        ))}
                     </div>
 
                     {/* Output Columns */}
@@ -318,14 +332,14 @@ export default function DataMatchingBuilder({ onComplete }) {
                                 <label className="block text-sm font-bold text-slate-700 mb-3">
                                     Output Columns (Dataset {idx + 1})
                                 </label>
-                                <div className="space-y-2 max-h-40 overflow-y-auto">
+                                <div className="space-y-2 max-h-40 overflow-y-auto bg-slate-50 p-4 rounded-xl border border-slate-200">
                                     {datasetColumns[dsId].map(col => (
                                         <label key={col} className="flex items-center gap-2 cursor-pointer">
                                             <input
                                                 type="checkbox"
                                                 checked={outputColumns[dsId].includes(col)}
                                                 onChange={() => toggleOutputColumn(dsId, col)}
-                                                className="w-4 h-4"
+                                                className="w-4 h-4 accent-purple-600"
                                             />
                                             <span className="text-sm">{col}</span>
                                         </label>
@@ -340,73 +354,61 @@ export default function DataMatchingBuilder({ onComplete }) {
                             Back
                         </button>
                         <button
-                            onClick={handlePreview}
-                            disabled={!matchColumns.dataset1 || !matchColumns.dataset2 || loading}
-                            className="flex-1 py-4 bg-purple-600 hover:bg-purple-700 disabled:bg-slate-300 text-white rounded-2xl font-black flex items-center justify-center gap-2"
-                        >
-                            <TrendingUp size={20} /> {loading ? 'Loading...' : 'Preview Matches'}
-                        </button>
-                    </div>
-                </motion.div>
-            )}
-
-            {step === 3 && previewData && (
-                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                    <div className="mb-6">
-                        <h3 className="text-xl font-black mb-4">Preview Results (Top 10 Matches)</h3>
-                        <div className="overflow-x-auto max-h-96 overflow-y-auto">
-                            <table className="w-full border-collapse">
-                                <thead className="sticky top-0 bg-slate-100">
-                                    <tr>
-                                        {previewData[0] && Object.keys(previewData[0]).map(key => (
-                                            <th key={key} className="p-3 text-left text-sm font-black">{key}</th>
-                                        ))}
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {previewData.map((row, idx) => (
-                                        <tr key={idx} className="border-b border-slate-100">
-                                            {Object.values(row).map((val, i) => (
-                                                <td key={i} className="p-3 text-sm">{String(val)}</td>
-                                            ))}
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                        <p className="text-sm text-slate-600 mt-4">
-                            Found {previewData.length} matches in preview. Click "Match All Data" to process full datasets.
-                        </p>
-                    </div>
-
-                    <div className="flex gap-4">
-                        <button onClick={() => setStep(2)} className="flex-1 py-4 bg-slate-200 hover:bg-slate-300 rounded-2xl font-black">
-                            Back
-                        </button>
-                        <button
                             onClick={handleExecute}
-                            disabled={loading}
-                            className="flex-1 py-4 bg-purple-600 hover:bg-purple-700 text-white rounded-2xl font-black flex items-center justify-center gap-2"
+                            disabled={matchRules.some(r => !r.column1 || !r.column2) || loading}
+                            className="flex-1 py-4 bg-slate-900 hover:bg-slate-800 disabled:bg-slate-300 text-white rounded-2xl font-black flex items-center justify-center gap-2"
                         >
-                            <Play size={20} /> {loading ? 'Processing...' : 'Match All Data'}
+                            <Play size={20} /> Match All
                         </button>
                     </div>
                 </motion.div>
             )}
 
-            {step === 4 && (
+            {step === 3 && finalResults && (
                 <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} className="text-center py-12">
-                    <CheckCircle className="mx-auto text-purple-600 mb-4" size={64} />
+                    <CheckCircle className="mx-auto text-green-500 mb-4" size={64} />
                     <h3 className="text-3xl font-black mb-4">Matching Complete!</h3>
                     <p className="text-slate-600 mb-8">
-                        Successfully matched records using {selectedAlgorithm?.name}
+                        Process completed successfully. Found {totalMatches} matches.
                     </p>
-                    <button
-                        onClick={() => onComplete && onComplete()}
-                        className="px-8 py-4 bg-purple-600 hover:bg-purple-700 text-white rounded-2xl font-black"
-                    >
-                        Continue
-                    </button>
+                    <div className="flex gap-4 justify-center">
+                        <button
+                            onClick={async () => {
+                                try {
+                                    const response = await axios.get(
+                                        `${API_BASE}/features/matching/download/${sessionId}`,
+                                        { responseType: 'blob' }
+                                    );
+                                    const url = window.URL.createObjectURL(new Blob([response.data]));
+                                    const link = document.createElement('a');
+                                    link.href = url;
+                                    link.setAttribute('download', `matching_results_${sessionId}.csv`);
+                                    document.body.appendChild(link);
+                                    link.click();
+                                    link.parentNode.removeChild(link);
+                                } catch (e) {
+                                    console.error("Download failed:", e);
+                                    alert("Download failed: " + (e.response?.data?.detail || e.message));
+                                }
+                            }}
+                            className="px-8 py-4 bg-green-600 hover:bg-green-700 text-white rounded-2xl font-black flex items-center gap-2"
+                        >
+                            <TrendingUp size={20} /> Download Results
+                        </button>
+                        <button
+                            onClick={() => {
+                                // Reset for new matching
+                                setStep(1);
+                                setDatasets({ dataset1: null, dataset2: null });
+                                setMatchRules([{ id: 1, column1: '', column2: '', algorithm: 'fuzzy', threshold: 0.8 }]);
+                                setFinalResults(null);
+                                setProgress({ percent: 0, message: '', status: 'idle' });
+                            }}
+                            className="px-8 py-4 bg-purple-600 hover:bg-purple-700 text-white rounded-2xl font-black"
+                        >
+                            Start New Matching
+                        </button>
+                    </div>
                 </motion.div>
             )}
         </div>

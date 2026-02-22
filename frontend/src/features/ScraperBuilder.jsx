@@ -54,6 +54,25 @@ export default function ScraperBuilder({ onComplete }) {
                 urls: urlList,
                 template: selectedTemplate.id
             });
+
+            try {
+                // Log history
+                const token = localStorage.getItem('token');
+                const headers = token ? { Authorization: `Bearer ${token}` } : {};
+
+                await axios.post(`${API_BASE}/history/jobs`, {
+                    session_id: `scrape_${Date.now()}`,
+                    file_name: `${urlList.length} URLs (Template: ${selectedTemplate.name})`,
+                    rules: [{ template: selectedTemplate.name, count: urlList.length }],
+                    total_rows: urlList.length,
+                    valid_rows: urlList.length,
+                    invalid_rows: 0,
+                    module: 'scraper'
+                }, { headers });
+            } catch (histErr) {
+                console.error("Failed to save history:", histErr);
+            }
+
             setStep(3);
             if (onComplete) onComplete(res.data);
         } catch (e) {
@@ -83,8 +102,8 @@ export default function ScraperBuilder({ onComplete }) {
                                     whileHover={{ scale: 1.01 }}
                                     onClick={() => setSelectedTemplate(template)}
                                     className={`p-6 rounded-2xl border-2 cursor-pointer ${selectedTemplate?.id === template.id
-                                            ? 'border-orange-500 bg-orange-50'
-                                            : 'border-slate-200 hover:border-orange-300'
+                                        ? 'border-orange-500 bg-orange-50'
+                                        : 'border-slate-200 hover:border-orange-300'
                                         }`}
                                 >
                                     <h3 className="font-black text-lg mb-2">{template.name}</h3>

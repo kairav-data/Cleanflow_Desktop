@@ -4,8 +4,10 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from jose import JWTError, jwt
 from passlib.context import CryptContext
-from models import UserCreate, UserInDB, Token, TokenData
-from database import get_user, create_user
+import random
+from models import UserCreate, UserInDB, Token, TokenData, VerifyOTPRequest, ResendOTPRequest
+from database import get_user, create_user, update_user_otp, verify_user
+from email_utils import send_otp_email
 
 # Configuration
 SECRET_KEY = "supersecretkey" # In production, use os.getenv("SECRET_KEY")
@@ -84,11 +86,61 @@ async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(
             headers={"WWW-Authenticate": "Bearer"},
         )
         
+    if not user.get('is_verified', False):
+        otp = str(random.randint(100000, 999999))
+        await update_user_otp(user['email'], otp, datetime.utcnow())
+        send_otp_email(user['email'], otp)
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="OTP_REQUIRED"
+        )
+        
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
         data={"sub": user['email']}, expires_delta=access_token_expires
     )
     return {"access_token": access_token, "token_type": "bearer"}
+
+@router.post("/verify-otp", response_model=Token)
+async def verify_otp(request: VerifyOTPRequest):
+    user = await get_user(request.email)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+        
+    if user.get('is_verified', False):
+        raise HTTPException(status_code=400, detail="User already verified")
+        
+    if not user.get('otp') or user['otp'] != request.otp:
+        raise HTTPException(status_code=400, detail="Invalid or expired OTP")
+        
+    # Check expiration (e.g. 10 minutes)
+    if user.get('otp_created_at'):
+        time_diff = datetime.utcnow() - user['otp_created_at']
+        if time_diff.total_seconds() > 600:
+            raise HTTPException(status_code=400, detail="OTP expired")
+            
+    await verify_user(request.email)
+    
+    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token = create_access_token(
+        data={"sub": user['email']}, expires_delta=access_token_expires
+    )
+    return {"access_token": access_token, "token_type": "bearer"}
+
+@router.post("/resend-otp")
+async def resend_otp(request: ResendOTPRequest):
+    user = await get_user(request.email)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+        
+    if user.get('is_verified', False):
+        raise HTTPException(status_code=400, detail="User already verified")
+        
+    otp = str(random.randint(100000, 999999))
+    await update_user_otp(user['email'], otp, datetime.utcnow())
+    send_otp_email(user['email'], otp)
+    
+    return {"status": "success", "message": "OTP sent successfully"}
 
 @router.get("/users/me", response_model=UserInDB)
 async def read_users_me(current_user: UserInDB = Depends(get_current_user)):

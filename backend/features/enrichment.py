@@ -9,7 +9,7 @@ Enriches datasets with additional information:
 """
 
 from typing import Dict, List, Any, Optional
-import pandas as pd
+import polars as pl
 import re
 from .base import BaseFeature, FeatureResult
 
@@ -18,8 +18,8 @@ class EnrichmentProvider:
     """Base class for enrichment providers"""
     
     @staticmethod
-    def enrich_value(value: Any, params: Dict[str, Any]) -> Dict[str, Any]:
-        """Enrich a single value"""
+    def enrich_struct(value: Any, params: Dict[str, Any]) -> Dict[str, Any]:
+        """Enrich a single value, returning a dictionary for struct creation"""
         raise NotImplementedError
 
 
@@ -27,9 +27,9 @@ class EmailEnrichmentProvider(EnrichmentProvider):
     """Email validation and company extraction"""
     
     @staticmethod
-    def enrich_value(value: Any, params: Dict[str, Any]) -> Dict[str, Any]:
-        if pd.isna(value) or not isinstance(value, str):
-            return {"valid": False, "company": None, "domain": None}
+    def enrich_struct(value: Any, params: Dict[str, Any]) -> Dict[str, Any]:
+        if value is None or not isinstance(value, str):
+            return {"valid": False, "company": None, "domain": None, "is_business": False}
         
         email = str(value).strip().lower()
         email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
@@ -50,9 +50,9 @@ class PhoneEnrichmentProvider(EnrichmentProvider):
     """Phone number formatting and validation"""
     
     @staticmethod
-    def enrich_value(value: Any, params: Dict[str, Any]) -> Dict[str, Any]:
-        if pd.isna(value):
-            return {"valid": False, "formatted": None, "type": None}
+    def enrich_struct(value: Any, params: Dict[str, Any]) -> Dict[str, Any]:
+        if value is None:
+            return {"valid": False, "formatted": None, "digits": None, "length": 0}
         
         # Remove all non-digit characters
         phone = re.sub(r'\D', '', str(value))
@@ -80,9 +80,9 @@ class AddressEnrichmentProvider(EnrichmentProvider):
     """Address standardization and basic parsing"""
     
     @staticmethod
-    def enrich_value(value: Any, params: Dict[str, Any]) -> Dict[str, Any]:
-        if pd.isna(value) or not isinstance(value, str):
-            return {"standardized": None, "has_zip": False, "has_state": False}
+    def enrich_struct(value: Any, params: Dict[str, Any]) -> Dict[str, Any]:
+        if value is None or not isinstance(value, str):
+            return {"standardized": None, "zip_code": None, "state": None, "has_zip": False, "has_state": False}
         
         address = str(value).strip()
         
@@ -114,17 +114,17 @@ class NameEnrichmentProvider(EnrichmentProvider):
     """Name parsing and basic analysis"""
     
     @staticmethod
-    def enrich_value(value: Any, params: Dict[str, Any]) -> Dict[str, Any]:
-        if pd.isna(value) or not isinstance(value, str):
-            return {"first_name": None, "last_name": None, "parts": 0}
+    def enrich_struct(value: Any, params: Dict[str, Any]) -> Dict[str, Any]:
+        if value is None or not isinstance(value, str):
+            return {"first_name": None, "last_name": None, "middle_name": None, "parts": 0}
         
         name = str(value).strip()
         parts = name.split()
         
         if len(parts) == 0:
-            return {"first_name": None, "last_name": None, "parts": 0}
+            return {"first_name": None, "last_name": None, "middle_name": None, "parts": 0}
         elif len(parts) == 1:
-            return {"first_name": parts[0], "last_name": None, "parts": 1}
+            return {"first_name": parts[0], "last_name": None, "middle_name": None, "parts": 1}
         else:
             return {
                 "first_name": parts[0],
@@ -151,40 +151,8 @@ class DataEnrichment(BaseFeature):
             if not is_valid:
                 return FeatureResult(success=False, error=error)
             
-            column = config.get('column')
-            provider_type = config.get('provider')
-            params = config.get('params', {})
-            
-            if self.df is None or column not in self.df.columns:
-                return FeatureResult(success=False, error=f"Column '{column}' not found")
-            
-            # Get sample data
-            sample_df = self.df.head(limit).copy()
-            
-            # Apply enrichment
-            provider = self.PROVIDERS[provider_type]
-            enriched_data = sample_df[column].apply(
-                lambda x: provider.enrich_value(x, params)
-            )
-            
-            # Convert to DataFrame
-            enriched_df = pd.DataFrame(enriched_data.tolist())
-            
-            # Combine original and enriched
-            result_df = pd.concat([
-                sample_df[[column]].reset_index(drop=True),
-                enriched_df
-            ], axis=1)
-            
-            return FeatureResult(
-                success=True,
-                data=result_df.to_dict('records'),
-                metadata={
-                    'rows': len(result_df),
-                    'columns': list(result_df.columns),
-                    'provider': provider_type
-                }
-            )
+            return await self._run_enrichment(config, limit=limit)
+
         except Exception as e:
             return FeatureResult(success=False, error=str(e))
     
@@ -195,41 +163,89 @@ class DataEnrichment(BaseFeature):
             if not is_valid:
                 return FeatureResult(success=False, error=error)
             
-            column = config.get('column')
-            provider_type = config.get('provider')
-            params = config.get('params', {})
-            output_prefix = config.get('output_prefix', f'{column}_enriched')
-            
-            if self.df is None or column not in self.df.columns:
-                return FeatureResult(success=False, error=f"Column '{column}' not found")
-            
-            # Apply enrichment to all rows
-            provider = self.PROVIDERS[provider_type]
-            enriched_data = self.df[column].apply(
-                lambda x: provider.enrich_value(x, params)
-            )
-            
-            # Convert to DataFrame
-            enriched_df = pd.DataFrame(enriched_data.tolist())
-            
-            # Rename columns with prefix
-            enriched_df.columns = [f"{output_prefix}_{col}" for col in enriched_df.columns]
-            
-            # Combine with original
-            result_df = pd.concat([self.df, enriched_df], axis=1)
-            
-            return FeatureResult(
-                success=True,
-                data=result_df.to_dict('records'),
-                metadata={
-                    'total_rows': len(result_df),
-                    'new_columns': list(enriched_df.columns),
-                    'provider': provider_type
-                }
-            )
+            return await self._run_enrichment(config, limit=None)
+
         except Exception as e:
             return FeatureResult(success=False, error=str(e))
     
+    async def _run_enrichment(self, config: Dict[str, Any], limit: Optional[int] = None) -> FeatureResult:
+        column = config.get('column')
+        provider_type = config.get('provider')
+        params = config.get('params', {})
+        output_prefix = config.get('output_prefix', f'{column}_enriched')
+        
+        if self.df is None or column not in self.df.columns:
+            return FeatureResult(success=False, error=f"Column '{column}' not found")
+        
+        # Prepare Data
+        df_to_process = self.df
+        if limit and limit > 0:
+            df_to_process = df_to_process.head(limit)
+        
+        provider = self.PROVIDERS[provider_type]
+        
+        # Determine output schema for struct
+        # We need a sample to infer valid types or hardcode them based on provider
+        # For simplicity in Polars map_elements, we let it infer or assume Dict[str, Any]
+        # But map_elements is slow. Ideally, we write Polars expressions.
+        # Given the regex complexity in providers, map_elements is acceptable for now.
+        
+        # Define return type for safety if possible, or leave as infer (slower but easier migration)
+        
+        def enrich_wrapper(val):
+            return provider.enrich_struct(val, params)
+        
+        # Apply
+        # We create a struct column
+        
+        # Polars 1.0+ recommends map_elements with return_dtype for performance/safety
+        # Let's try to infer from the first provider
+        # Actually, let's just let Polars handle the object/struct conversion
+        
+        enriched_col_name = f"{output_prefix}_struct"
+        
+        result_df = df_to_process.with_columns(
+            pl.col(column).map_elements(enrich_wrapper, return_dtype=pl.Struct).alias(enriched_col_name)
+        )
+        
+        # Unnest the struct to get individual columns
+        result_df = result_df.unnest(enriched_col_name)
+        
+        # Rename unnested columns to have prefix
+        # The unnested columns will have keys from the dict (valid, company, etc.)
+        # We need to rename them
+        
+        # Get keys from provider info or inspect?
+        # Let's inspect available keys from the provider definition if possible
+        # Or easier: rename after unnesting.
+        
+        # Issues: if map_elements returns nulls or inconsistent keys, unnest might fail or create nulls.
+        # Our providers return consistent keys.
+        
+        # Get the keys provided by this provider
+        sample_keys = list(provider.enrich_struct("sample", params).keys())
+        
+        rename_map = {key: f"{output_prefix}_{key}" for key in sample_keys}
+        
+        # Only rename columns that exist (in case unnest failed/collision)
+        existing_cols = [c for c in sample_keys if c in result_df.columns]
+        final_rename_map = {k: rename_map[k] for k in existing_cols}
+        
+        result_df = result_df.rename(final_rename_map)
+        
+        # Limit result metadata columns to the new ones
+        new_cols = list(final_rename_map.values())
+
+        return FeatureResult(
+            success=True,
+            data=result_df.to_dicts(), # Convert to list of dicts for JSON serialization
+            metadata={
+                'total_rows': len(result_df),
+                'new_columns': new_cols,
+                'provider': provider_type
+            }
+        )
+
     def validate(self, config: Dict[str, Any]) -> tuple[bool, Optional[str]]:
         """Validate enrichment configuration"""
         if 'column' not in config:

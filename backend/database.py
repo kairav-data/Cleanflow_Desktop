@@ -3,6 +3,7 @@ import time
 from sqlalchemy import create_engine, Column, Integer, String, Boolean, Text, DateTime, text, ForeignKey
 from sqlalchemy.orm import sessionmaker, declarative_base, relationship
 from datetime import datetime
+import json
 
 # --- Docker Connection Config ---
 PG_URL = os.getenv("DATABASE_URL", "postgresql://user:password@postgres:5432/cleanflow_db")
@@ -18,6 +19,9 @@ class UserPG(Base):
     full_name = Column(String, nullable=True)
     hashed_password = Column(String)
     is_premium = Column(Boolean, default=False)
+    is_verified = Column(Boolean, default=False)
+    otp = Column(String, nullable=True)
+    otp_created_at = Column(DateTime, nullable=True)
     # Relationships
     jobs = relationship("ValidationJob", back_populates="owner")
     connections = relationship("DbConnection", back_populates="owner")
@@ -28,6 +32,8 @@ class ValidationJob(Base):
     user_email = Column(String, ForeignKey("users.email"))
     filename = Column(String)
     status = Column(String)
+    rules = Column(Text, nullable=True)
+    module = Column(String, default="validation")
     created_at = Column(DateTime, default=datetime.utcnow)
     # Relationship back to user
     owner = relationship("UserPG", back_populates="jobs")
@@ -60,7 +66,32 @@ class DatabaseManager:
                 with self.pg_engine.connect() as conn:
                     conn.execute(text("SELECT 1"))
                 Base.metadata.create_all(bind=self.pg_engine)
-                print("✅ PostgreSQL initialized and tables created.")
+                
+                # --- Quick migrations for missing columns in dev ---
+                with self.pg_engine.connect() as conn:
+                    with conn.begin():
+                        # Users table modifications
+                        try:
+                            conn.execute(text("ALTER TABLE users ADD COLUMN is_verified BOOLEAN DEFAULT FALSE;"))
+                        except Exception: pass
+                        try:
+                            conn.execute(text("ALTER TABLE users ADD COLUMN otp VARCHAR;"))
+                        except Exception: pass
+                        try:
+                            conn.execute(text("ALTER TABLE users ADD COLUMN otp_created_at TIMESTAMP;"))
+                        except Exception: pass
+                        
+                        # Jobs table modifications
+                        try:
+                            # Add rules column
+                            conn.execute(text("ALTER TABLE validation_jobs ADD COLUMN IF NOT EXISTS rules TEXT;"))
+                        except Exception: pass
+                        try:
+                            # Add module column to track difference between tool usage
+                            conn.execute(text("ALTER TABLE validation_jobs ADD COLUMN IF NOT EXISTS module VARCHAR DEFAULT 'validation';"))
+                        except Exception: pass
+                
+                print("✅ PostgreSQL initialized and tables verified.")
                 return
             except Exception as e:
                 print(f"🔄 Postgres not ready ({retries} retries left): {e}")
@@ -75,7 +106,8 @@ class DatabaseManager:
                 email=user_data['email'],
                 full_name=user_data.get('full_name'),
                 hashed_password=user_data['hashed_password'],
-                is_premium=user_data.get('is_premium', False)
+                is_premium=user_data.get('is_premium', False),
+                is_verified=False
             )
             db.add(db_user)
             db.commit()
@@ -91,7 +123,10 @@ class DatabaseManager:
                 "email": user.email,
                 "full_name": user.full_name,
                 "hashed_password": user.hashed_password,
-                "is_premium": user.is_premium
+                "is_premium": user.is_premium,
+                "is_verified": user.is_verified,
+                "otp": user.otp,
+                "otp_created_at": user.otp_created_at
             }
         return None
 
@@ -102,6 +137,24 @@ class DatabaseManager:
             user.is_premium = True
             db.commit()
         db.close()
+        
+    async def update_user_otp(self, email: str, otp: str, created_at: datetime):
+        db = self.SessionLocal()
+        user = db.query(UserPG).filter(UserPG.email == email).first()
+        if user:
+            user.otp = otp
+            user.otp_created_at = created_at
+            db.commit()
+        db.close()
+        
+    async def verify_user(self, email: str):
+        db = self.SessionLocal()
+        user = db.query(UserPG).filter(UserPG.email == email).first()
+        if user:
+            user.is_verified = True
+            user.otp = None
+            db.commit()
+        db.close()
 
     # --- Job History ---
     async def save_job(self, job_data: dict):
@@ -110,8 +163,10 @@ class DatabaseManager:
             job = ValidationJob(
                 id=job_data['id'],
                 user_email=job_data['user_email'],
-                filename=job_data.get('filename', 'unknown'),
-                status=job_data.get('status', 'completed')
+                filename=job_data.get('filename') or job_data.get('file_name', 'unknown'),
+                status=job_data.get('status', 'completed'),
+                rules=json.dumps(job_data.get('rules')) if job_data.get('rules') else None,
+                module=job_data.get('module', 'validation')
             )
             db.add(job)
             db.commit()
@@ -120,8 +175,17 @@ class DatabaseManager:
 
     async def get_user_jobs(self, email: str):
         db = self.SessionLocal()
-        jobs = db.query(ValidationJob).filter(ValidationJob.user_email == email).all()
-        result = [{"id": j.id, "filename": j.filename, "created_at": j.created_at} for j in jobs]
+        jobs = db.query(ValidationJob).filter(ValidationJob.user_email == email).order_by(ValidationJob.created_at.desc()).all()
+        result = [
+            {
+                "id": j.id, 
+                "filename": j.filename, 
+                "created_at": j.created_at, 
+                "rules": json.loads(j.rules) if j.rules else [],
+                "module": getattr(j, "module", "validation") or "validation"
+            } 
+            for j in jobs
+        ]
         db.close()
         return result
 
@@ -154,3 +218,5 @@ class DatabaseManager:
 db = DatabaseManager()
 async def get_user(email: str): return await db.get_user(email)
 async def create_user(user_data: dict): return await db.create_user(user_data)
+async def update_user_otp(email: str, otp: str, created_at: datetime): return await db.update_user_otp(email, otp, created_at)
+async def verify_user(email: str): return await db.verify_user(email)

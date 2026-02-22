@@ -1,16 +1,27 @@
-from fastapi import FastAPI, UploadFile, File, HTTPException, Depends
+from fastapi import FastAPI, UploadFile, File, HTTPException, Depends, Form, BackgroundTasks, Body
+import fastapi
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
 from contextlib import asynccontextmanager
 import os
+try:
+    from dotenv import load_dotenv
+    load_dotenv(os.path.join(os.path.dirname(__file__), "..", ".env"))
+except ImportError:
+    pass
+
 import shutil
-import pandas as pd
+import polars as pl
+import pandas as pd # Keep for legacy database reading if needed, or migration
 from sqlalchemy import create_engine
 from typing import List
 
+from logger import setup_logger
+logger = setup_logger(__name__)
+
 # Internal imports
 from models import ValidationConfig, UserInDB
-from engine import ValidationEngine, UPLOAD_DIR, RESULTS_DIR
+from engine_polars import PolarsValidationEngine as ValidationEngine, UPLOAD_DIR, RESULTS_DIR
 from database import db
 from auth import router as auth_router, get_current_user
 from history import (
@@ -23,16 +34,16 @@ from payment import router as payment_router
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # This runs when the backend starts
-    print("🚀 Backend starting up...")
+    logger.info("🚀 Backend starting up...")
     try:
         # This triggers the _init_postgres() method in your database.py
         # which creates the tables if they don't exist.
         db._init_postgres() 
     except Exception as e:
-        print(f"❌ Database initialization failed: {e}")
+        logger.error(f"❌ Database initialization failed: {e}")
     yield
     # This runs when the backend shuts down
-    print("👋 Backend shutting down...")
+    logger.info("👋 Backend shutting down...")
 
 # Initialize FastAPI with the lifespan handler
 app = FastAPI(
@@ -73,9 +84,10 @@ def read_root():
 # --- File Upload Endpoints ---
 
 @app.post("/upload")
-async def upload_file(file: UploadFile = File(...), delimiter: str = ","):
+async def upload_file(file: UploadFile = File(...), delimiter: str = Form(",")):
     try:
         # Ensure upload directory exists
+        logger.debug(f"Upload received. Filename: {file.filename}, Delimiter: '{delimiter}'")
         os.makedirs(UPLOAD_DIR, exist_ok=True)
         
         file_path = os.path.join(UPLOAD_DIR, file.filename)
@@ -83,7 +95,7 @@ async def upload_file(file: UploadFile = File(...), delimiter: str = ","):
             shutil.copyfileobj(file.file, buffer)
         
         engine = ValidationEngine()
-        columns = engine.load_data(file_path=file_path) 
+        columns = engine.load_data(file_path=file_path, sep=delimiter) 
         
         sessions[engine.session_id] = engine
         
@@ -93,7 +105,7 @@ async def upload_file(file: UploadFile = File(...), delimiter: str = ","):
             "columns": columns
         }
     except Exception as e:
-        print(f"Upload Error: {e}")
+        logger.error(f"Upload Error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
     
 
@@ -108,7 +120,8 @@ async def upload_data_from_query(payload: dict):
             raise HTTPException(status_code=400, detail="No data provided")
         
         # Convert to DataFrame
-        df = pd.DataFrame(data)
+        # Polars from list of dicts
+        df = pl.from_dicts(data)
         
         # Initialize engine with DataFrame
         engine = ValidationEngine()
@@ -145,8 +158,15 @@ async def ingest_database(request: dict, current_user: UserInDB = Depends(get_cu
         conn_str = _build_connection_string_from_dict(conn_data)
         
         # 3. Create engine and execute query using Pandas
-        engine_db = create_engine(conn_str)
-        df = pd.read_sql(query, engine_db)
+        # Polars read_database is better but requires connectorx or adbc
+        # Fallback to pandas then polars for compatibility if needed, or try polars read_database
+        try:
+             df = pl.read_database(query, conn_str)
+        except:
+             # Fallback to pandas if polars connectors missing
+             engine_db = create_engine(conn_str)
+             pdf = pd.read_sql(query, engine_db)
+             df = pl.from_pandas(pdf)
         
         # 4. Initialize the ValidationEngine with the resulting dataframe
         engine = ValidationEngine()
@@ -229,7 +249,7 @@ async def execute_enrichment(session_id: str, config: dict):
     
     # Update session with enriched data
     if result.data:
-        engine.df = pd.DataFrame(result.data)
+        engine.df = pl.DataFrame(result.data) # Result is list of dicts, convert back
     
     return result.dict()
 
@@ -267,14 +287,14 @@ async def execute_scraping(config: dict):
     # Create a new session with scraped data
     if result.data:
         engine = ValidationEngine()
-        df = pd.DataFrame(result.data)
+        df = pl.DataFrame(result.data)
         engine.load_data(dataframe=df)
         sessions[engine.session_id] = engine
         
         return {
             **result.dict(),
             "session_id": engine.session_id,
-            "columns": list(df.columns)
+            "columns": df.columns
         }
     
     return result.dict()
@@ -343,7 +363,7 @@ async def execute_mapping(session_id: str, config: dict):
     
     # Update session with mapped data
     if result.data:
-        engine.df = pd.DataFrame(result.data)
+        engine.df = pl.DataFrame(result.data)
     
     return result.dict()
 
@@ -374,15 +394,50 @@ async def load_matching_dataset(payload: dict):
         matcher = sessions[session_id]
     
     # Load dataset
-    df = pd.DataFrame(data)
+    df = pl.from_dicts(data) # Polars
     matcher.load_dataset(dataset_id, df)
     
     return {
         "session_id": session_id,
         "dataset_id": dataset_id,
-        "columns": list(df.columns),
+        "columns": df.columns,
         "rows": len(df)
     }
+
+@app.post("/features/matching/upload-dataset")
+async def load_matching_dataset_file(
+    session_id: str = Form(...),
+    dataset_id: str = Form(...),
+    delimiter: str = Form(","),
+    file: UploadFile = File(...)
+):
+    """Load a dataset from file (CSV/Excel)"""
+    from features.matching import DataMatcher
+    try:
+        # Create or get matcher session
+        if session_id not in sessions:
+            matcher = DataMatcher(session_id)
+            sessions[session_id] = matcher
+        else:
+            matcher = sessions[session_id]
+        
+        # Save to temp
+        os.makedirs(UPLOAD_DIR, exist_ok=True)
+        file_path = os.path.join(UPLOAD_DIR, f"{session_id}_{dataset_id}_{file.filename}")
+        with open(file_path, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+            
+        columns, rows = matcher.load_dataset_from_file(dataset_id, file_path, sep=delimiter)
+        
+        return {
+            "session_id": session_id,
+            "dataset_id": dataset_id,
+            "columns": columns,
+            "rows": rows
+        }
+    except Exception as e:
+        logger.exception(f"Matching upload error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/features/matching/preview/{session_id}")
 async def preview_matching(session_id: str, config: dict):
@@ -400,21 +455,73 @@ async def preview_matching(session_id: str, config: dict):
     
     return result.dict()
 
-@app.post("/features/matching/execute/{session_id}")
-async def execute_matching(session_id: str, config: dict):
-    """Execute matching on full datasets"""
+@app.post("/features/matching/start/{session_id}")
+async def start_matching_execution(session_id: str, config: dict, background_tasks: fastapi.BackgroundTasks):
+    """Start matching execution in background"""
     from features.matching import DataMatcher
     
     if session_id not in sessions:
         raise HTTPException(status_code=404, detail="Session not found")
     
     matcher = sessions[session_id]
-    result = await matcher.execute(config)
     
-    if not result.success:
-        raise HTTPException(status_code=400, detail=result.error)
+    # Define wrapper for async execution
+    async def run_in_bg():
+        await matcher.execute(config)
+        
+    background_tasks.add_task(run_in_bg)
     
-    return result.dict()
+    return {"status": "started", "session_id": session_id}
+
+@app.get("/features/matching/status/{session_id}")
+async def get_matching_status(session_id: str):
+    """Get matching progress"""
+    if session_id not in sessions:
+        raise HTTPException(status_code=404, detail="Session not found")
+    
+    matcher = sessions[session_id]
+    return matcher.get_progress()
+
+@app.get("/features/matching/results/{session_id}")
+async def get_matching_results(session_id: str):
+    """Get final matching results"""
+    if session_id not in sessions:
+        raise HTTPException(status_code=404, detail="Session not found")
+        
+    matcher = sessions[session_id]
+    results = matcher.get_results()
+    
+    if results is None:
+        # Check if error
+        progress = matcher.get_progress()
+        if progress['status'] == 'error':
+            raise HTTPException(status_code=500, detail=progress['message'])
+        return {"ready": False}
+        
+    return {"ready": True, "results": results[:100], "total_matches": len(results)}
+
+@app.get("/features/matching/download/{session_id}")
+async def download_matching_results(session_id: str):
+    """"Download matching results as CSV"""
+    try:
+        from features.matching import DataMatcher
+        if session_id not in sessions:
+            raise HTTPException(status_code=404, detail="Session not found")
+            
+        matcher = sessions[session_id]
+        file_path = matcher.export_to_csv()
+        
+        if not file_path or not os.path.exists(file_path):
+            raise HTTPException(status_code=404, detail="Results not ready or export failed")
+            
+        return FileResponse(
+            path=file_path, 
+            filename=f"matching_results_{session_id}.csv",
+            media_type='text/csv'
+        )
+    except Exception as e:
+        logger.exception("Error executing download_matching_results")
+        raise HTTPException(status_code=500, detail=str(e))
 
 if __name__ == "__main__":
     import uvicorn

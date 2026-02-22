@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { ChevronDown, FileCheck, Shuffle, Sparkles, Globe, GitMerge } from 'lucide-react';
 
-const PlatformDropdown = ({ setActiveTab }) => {
+const PlatformDropdown = ({ onFeatureSelect }) => {
   const [isOpen, setIsOpen] = useState(false);
 
   const features = [
@@ -38,12 +38,12 @@ const PlatformDropdown = ({ setActiveTab }) => {
   ];
 
   const handleFeatureClick = (tabName) => {
-    setActiveTab(tabName);
+    onFeatureSelect(tabName);
     setIsOpen(false);
   };
 
   return (
-    <div 
+    <div
       className="relative"
       onMouseEnter={() => setIsOpen(true)}
       onMouseLeave={() => {
@@ -62,7 +62,7 @@ const PlatformDropdown = ({ setActiveTab }) => {
       </button>
 
       {isOpen && (
-        <div 
+        <div
           className="absolute top-full left-0 mt-2 w-96 bg-white rounded-lg shadow-soft border border-slate-200 z-50 overflow-hidden"
         >
           {/* Header */}

@@ -1,6 +1,9 @@
-import React, { useState } from 'react';
-import { Plus, Trash2, Play, AlertCircle, CheckCircle2 } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Plus, Trash2, Play, AlertCircle, CheckCircle2, History, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import axios from 'axios';
+
+const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
 
 const RULE_CATEGORIES = {
     "Data Type & Format": [
@@ -61,6 +64,45 @@ const DATE_FORMATS = [
 const RuleBuilder = ({ columns, onRunValidation }) => {
     const [rules, setRules] = useState([]);
     const [loading, setLoading] = useState(false);
+    const [pastJobs, setPastJobs] = useState([]);
+    const [showHistoryModal, setShowHistoryModal] = useState(false);
+
+    useEffect(() => {
+        const fetchHistory = async () => {
+            try {
+                const token = localStorage.getItem('token');
+                if (!token) return;
+                const res = await axios.get(`${API_BASE}/history/jobs`, {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                // Filter to jobs that actually have rules
+                const withRules = (res.data || []).filter(j => j.rules && j.rules.length > 0);
+                setPastJobs(withRules);
+            } catch (err) {
+                console.error("Failed to fetch history:", err);
+            }
+        };
+        fetchHistory();
+    }, []);
+
+    const loadRulesFromJob = (job) => {
+        if (!job.rules) return;
+        const mappedRules = job.rules.map(r => {
+            const cat = Object.keys(RULE_CATEGORIES).find(c =>
+                RULE_CATEGORIES[c].some(rc => rc.value === r.rule_type)
+            ) || "Data Type & Format";
+
+            return {
+                ...r,
+                id: Math.random().toString(36).substring(7),
+                category: cat
+            };
+        });
+
+        // Append rules
+        setRules(prev => [...prev, ...mappedRules]);
+        setShowHistoryModal(false);
+    };
 
     const addRule = () => {
         setRules([...rules, {
@@ -113,13 +155,73 @@ const RuleBuilder = ({ columns, onRunValidation }) => {
                     <h3 className="text-xl font-bold text-slate-900">Validation Rules</h3>
                     <p className="text-slate-400 text-sm">{rules.length} rules defined</p>
                 </div>
-                <button
-                    onClick={addRule}
-                    className="flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold transition-colors"
-                >
-                    <Plus size={18} /> Add Rule
-                </button>
+                <div className="flex gap-2">
+                    {pastJobs.length > 0 && (
+                        <button
+                            onClick={() => setShowHistoryModal(true)}
+                            className="flex items-center gap-2 px-4 py-2 bg-slate-50 border border-slate-200 hover:bg-slate-100 text-slate-700 rounded-xl font-bold transition-colors"
+                        >
+                            <History size={18} /> Load Previous
+                        </button>
+                    )}
+                    <button
+                        onClick={addRule}
+                        className="flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold transition-colors"
+                    >
+                        <Plus size={18} /> Add Rule
+                    </button>
+                </div>
             </div>
+
+            {/* History Modal */}
+            <AnimatePresence>
+                {showHistoryModal && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
+                            onClick={() => setShowHistoryModal(false)}
+                        />
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                            className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg p-6 max-h-[80vh] overflow-y-auto"
+                        >
+                            <div className="flex justify-between items-center mb-6">
+                                <h3 className="text-xl font-bold text-slate-900">Past Validations</h3>
+                                <button onClick={() => setShowHistoryModal(false)} className="text-slate-400 hover:text-slate-600">
+                                    <X size={20} />
+                                </button>
+                            </div>
+
+                            <div className="space-y-3">
+                                {pastJobs.map((job) => (
+                                    <div key={job.id} className="p-4 border border-slate-200 rounded-xl hover:border-brand-blue/50 transition-colors group">
+                                        <div className="flex justify-between items-start mb-2">
+                                            <div>
+                                                <h4 className="font-bold text-slate-800">{job.filename}</h4>
+                                                <p className="text-xs text-slate-500">{new Date(job.created_at).toLocaleString()}</p>
+                                            </div>
+                                            <span className="bg-slate-100 text-slate-600 text-xs font-bold px-2 py-1 rounded-lg">
+                                                {job.rules.length} rules
+                                            </span>
+                                        </div>
+                                        <button
+                                            onClick={() => loadRulesFromJob(job)}
+                                            className="w-full mt-3 py-2 bg-slate-50 group-hover:bg-blue-600 group-hover:text-white text-slate-600 rounded-lg font-medium text-sm transition-colors"
+                                        >
+                                            Apply Rules
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
 
             <div className="space-y-4 mb-8">
                 <AnimatePresence>
@@ -206,6 +308,7 @@ const RuleBuilder = ({ columns, onRunValidation }) => {
                                             type="number"
                                             placeholder="Value"
                                             className="w-full p-3 bg-white border border-slate-200 rounded-xl font-medium outline-none"
+                                            value={rule.params[rule.rule_type === 'length_exact' ? 'len' : rule.rule_type.split('_')[1]] || ''}
                                             onChange={(e) => updateParams(rule.id, rule.rule_type === 'length_exact' ? 'len' : (rule.rule_type.split('_')[1]), e.target.value)}
                                         />
                                     )}
@@ -215,6 +318,7 @@ const RuleBuilder = ({ columns, onRunValidation }) => {
                                             type="number"
                                             placeholder="Threshold"
                                             className="w-full p-3 bg-white border border-slate-200 rounded-xl font-medium outline-none"
+                                            value={rule.params.value || ''}
                                             onChange={(e) => updateParams(rule.id, 'value', e.target.value)}
                                         />
                                     )}
@@ -224,11 +328,13 @@ const RuleBuilder = ({ columns, onRunValidation }) => {
                                             <input
                                                 type="number" placeholder="Min"
                                                 className="w-1/2 p-3 bg-white border border-slate-200 rounded-xl font-medium outline-none"
+                                                value={rule.params.min || ''}
                                                 onChange={(e) => updateParams(rule.id, 'min', e.target.value)}
                                             />
                                             <input
                                                 type="number" placeholder="Max"
                                                 className="w-1/2 p-3 bg-white border border-slate-200 rounded-xl font-medium outline-none"
+                                                value={rule.params.max || ''}
                                                 onChange={(e) => updateParams(rule.id, 'max', e.target.value)}
                                             />
                                         </div>
@@ -245,6 +351,7 @@ const RuleBuilder = ({ columns, onRunValidation }) => {
                                             type="text"
                                             placeholder="Regex Pattern (e.g. ^[0-9]{3}$)"
                                             className="w-full p-3 bg-white border border-slate-200 rounded-xl font-medium outline-none"
+                                            value={rule.params.regex || ''}
                                             onChange={(e) => updateParams(rule.id, 'regex', e.target.value)}
                                         />
                                     )}
@@ -254,6 +361,7 @@ const RuleBuilder = ({ columns, onRunValidation }) => {
                                             type="text"
                                             placeholder="Comma separated (e.g. A,B,C)"
                                             className="w-full p-3 bg-white border border-slate-200 rounded-xl font-medium outline-none"
+                                            value={rule.params.values ? (Array.isArray(rule.params.values) ? rule.params.values.join(',') : rule.params.values) : ''}
                                             onChange={(e) => updateParams(rule.id, 'values', e.target.value.split(','))}
                                         />
                                     )}
@@ -263,6 +371,7 @@ const RuleBuilder = ({ columns, onRunValidation }) => {
                                             type="text"
                                             placeholder="Value..."
                                             className="w-full p-3 bg-white border border-slate-200 rounded-xl font-medium outline-none"
+                                            value={rule.params[rule.rule_type === 'starts_with' ? 'prefix' : 'suffix'] || ''}
                                             onChange={(e) => updateParams(rule.id, rule.rule_type === 'starts_with' ? 'prefix' : 'suffix', e.target.value)}
                                         />
                                     )}
@@ -273,6 +382,7 @@ const RuleBuilder = ({ columns, onRunValidation }) => {
                                                 type="text"
                                                 placeholder="Expression (e.g. value > 100 and value < 500)"
                                                 className="w-full p-3 bg-white border border-slate-200 rounded-xl font-medium outline-none text-sm"
+                                                value={rule.params.expression || ''}
                                                 onChange={(e) => updateParams(rule.id, 'expression', e.target.value)}
                                             />
                                             <p className="text-xs text-slate-400">Use 'value' to reference the column value. Supports: &gt;, &lt;, ==, !=, and, or, len()</p>
@@ -283,6 +393,7 @@ const RuleBuilder = ({ columns, onRunValidation }) => {
                                         <div className="flex gap-2 items-center">
                                             <select
                                                 className="w-1/3 p-3 bg-white border border-slate-200 rounded-xl font-medium outline-none"
+                                                value={rule.params.operator || '=='}
                                                 onChange={(e) => updateParams(rule.id, 'operator', e.target.value)}
                                             >
                                                 <option value="==">Equals (==)</option>
@@ -294,6 +405,7 @@ const RuleBuilder = ({ columns, onRunValidation }) => {
                                             </select>
                                             <select
                                                 className="w-2/3 p-3 bg-white border border-slate-200 rounded-xl font-medium outline-none"
+                                                value={rule.params.compare_column || ''}
                                                 onChange={(e) => updateParams(rule.id, 'compare_column', e.target.value)}
                                             >
                                                 <option value="">Select column...</option>
@@ -307,6 +419,7 @@ const RuleBuilder = ({ columns, onRunValidation }) => {
                                             <div className="flex gap-2">
                                                 <select
                                                     className="w-1/2 p-3 bg-white border border-slate-200 rounded-xl font-medium outline-none text-sm"
+                                                    value={rule.params.condition_column || ''}
                                                     onChange={(e) => updateParams(rule.id, 'condition_column', e.target.value)}
                                                 >
                                                     <option value="">If column...</option>
@@ -316,6 +429,7 @@ const RuleBuilder = ({ columns, onRunValidation }) => {
                                                     type="text"
                                                     placeholder="equals value..."
                                                     className="w-1/2 p-3 bg-white border border-slate-200 rounded-xl font-medium outline-none text-sm"
+                                                    value={rule.params.condition_value || ''}
                                                     onChange={(e) => updateParams(rule.id, 'condition_value', e.target.value)}
                                                 />
                                             </div>
@@ -323,6 +437,7 @@ const RuleBuilder = ({ columns, onRunValidation }) => {
                                                 type="text"
                                                 placeholder="Then this column must match (regex or value)"
                                                 className="w-full p-3 bg-white border border-slate-200 rounded-xl font-medium outline-none text-sm"
+                                                value={rule.params.expected_value || ''}
                                                 onChange={(e) => updateParams(rule.id, 'expected_value', e.target.value)}
                                             />
                                         </div>
@@ -349,16 +464,30 @@ const RuleBuilder = ({ columns, onRunValidation }) => {
                 )}
             </div>
 
-            <div className={`mt-8 flex justify-end transition-opacity duration-300 ${rules.length === 0 ? 'opacity-50 pointer-events-none' : 'opacity-100'}`}>
+            {/* Submit Button Area - always visible, just disabled if empty */}
+            <div className="mt-8 flex justify-end">
                 <button
                     onClick={handleRun}
                     disabled={loading || rules.length === 0}
-                    className="bg-brand-blue hover:bg-brand-dark text-white px-8 py-4 rounded-xl font-bold shadow-lg shadow-brand-blue/30 flex items-center gap-2 transition-all hover:scale-105"
+                    className={`
+                        px-8 py-4 rounded-xl font-bold flex items-center gap-2 transition-all 
+                        ${rules.length === 0
+                            ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                            : 'bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-600/30 hover:scale-105'
+                        }
+                    `}
                 >
                     {loading ? "Running Checks..." : "Run Validation Check"}
                     {!loading && <Play size={20} fill="currentColor" />}
                 </button>
             </div>
+
+            {columns.length === 0 && (
+                <div className="mt-4 p-4 bg-amber-50 text-amber-600 rounded-xl flex items-center gap-2 text-sm border border-amber-200">
+                    <AlertCircle size={16} />
+                    <span>Warning: No columns detected. Please check your file upload.</span>
+                </div>
+            )}
         </div>
     );
 };

@@ -12,6 +12,14 @@ class UserCreate(UserBase):
 class UserInDB(UserBase):
     hashed_password: str
     is_premium: bool = False
+    is_verified: bool = False
+    
+class VerifyOTPRequest(BaseModel):
+    email: EmailStr
+    otp: str
+
+class ResendOTPRequest(BaseModel):
+    email: EmailStr
     
 class Token(BaseModel):
     access_token: str
@@ -107,12 +115,14 @@ class ValidationJobCreate(BaseModel):
     valid_rows: int
     invalid_rows: int
     column_stats: Optional[dict] = None
+    module: str = "validation"
 
 class ValidationJob(ValidationJobCreate):
     id: Optional[str] = None
     user_email: str
     created_at: str
     status: str = "completed"  # pending, running, completed, failed
+    module: str = "validation"
 
 # --- Database Connection Models ---
 class DatabaseType(str, Enum):

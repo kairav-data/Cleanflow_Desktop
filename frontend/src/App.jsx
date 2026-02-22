@@ -3,8 +3,8 @@ import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   LogOut, Search, Sparkles, Database,
-  FileCheck, ArrowRight, Zap, ShieldCheck, BarChart3,
-  Globe, ChevronRight, LayoutGrid, Shuffle, GitMerge
+  FileCheck, ArrowRight, Zap,
+  Globe, ChevronRight, Shuffle, GitMerge
 } from 'lucide-react';
 
 // Components
@@ -26,11 +26,13 @@ function App() {
   const [step, setStep] = useState(1);
   const [sessionId, setSessionId] = useState(null);
   const [columns, setColumns] = useState([]);
+  const [filename, setFilename] = useState('');
   const [validationResults, setValidationResults] = useState(null);
 
   const [user, setUser] = useState(null);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [intendedTab, setIntendedTab] = useState(null);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -53,9 +55,18 @@ function App() {
     setActiveTab('home');
   };
 
+  const handleFeatureAccess = (tabName) => {
+    if (!user) {
+      setIntendedTab(tabName);
+      setIsAuthOpen(true);
+      return;
+    }
+    setActiveTab(tabName);
+    if (tabName === 'validate') setStep(1);
+  };
+
   const startValidation = () => {
-    setActiveTab('validate');
-    setStep(1);
+    handleFeatureAccess('validate');
   };
 
   return (
@@ -65,11 +76,10 @@ function App() {
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-8">
             <div className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity" onClick={() => setActiveTab('home')}>
-              <img src={Logo} alt="CleanFlow" className="h-8 w-auto" />
-              <span className="text-lg font-bold text-slate-900">CleanFlow</span>
+              <img src={Logo} alt="CleanFlow" className="h-10 w-auto" style={{ filter: 'brightness(0)' }} />
             </div>
             <div className="hidden md:flex items-center gap-6">
-              <PlatformDropdown setActiveTab={setActiveTab} />
+              <PlatformDropdown onFeatureSelect={handleFeatureAccess} />
               {['Solutions', 'Resources', 'Pricing'].map((item) => (
                 <button
                   key={item}
@@ -108,7 +118,7 @@ function App() {
 
       <main className="pt-24 pb-20 px-6 max-w-7xl mx-auto relative">
         <AnimatePresence mode='wait'>
-          
+
           {/* 1. HOME VIEW */}
           {activeTab === 'home' && (
             <motion.div
@@ -181,7 +191,7 @@ function App() {
               <div className="w-full mb-20 bg-slate-50 p-12 rounded-xl">
                 <h2 className="text-3xl font-bold text-slate-900 mb-4">CleanFlow Platform</h2>
                 <p className="text-lg text-slate-600 mb-8 max-w-3xl">
-                  Everything you need to maintain data quality at scale. Our unified platform combines validation, enrichment, 
+                  Everything you need to maintain data quality at scale. Our unified platform combines validation, enrichment,
                   mapping, and extraction tools designed for modern data teams.
                 </p>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -196,19 +206,19 @@ function App() {
                       title: "Schema Mapping",
                       desc: "Auto-map fields between datasets. Transform messy sources into clean, structured data.",
                       icon: <Shuffle size={24} className="text-slate-900" />,
-                      action: () => setActiveTab('mapper')
+                      action: () => handleFeatureAccess('mapper')
                     },
                     {
                       title: "Data Enrichment",
                       desc: "Enhance datasets with verified information. Append emails, demographics, and verified attributes.",
                       icon: <Sparkles size={24} className="text-slate-900" />,
-                      action: () => setActiveTab('enrichment')
+                      action: () => handleFeatureAccess('enrichment')
                     },
                     {
                       title: "Web Scraping",
                       desc: "Extract structured data from any website. No coding required, instantly ready to use.",
                       icon: <Globe size={24} className="text-slate-900" />,
-                      action: () => setActiveTab('scraper')
+                      action: () => handleFeatureAccess('scraper')
                     }
                   ].map((card, i) => (
                     <div
@@ -262,7 +272,7 @@ function App() {
                 <div className="bg-white p-8 rounded-lg border border-slate-200">
                   <h2 className="text-2xl font-bold text-slate-900 mb-2">Upload Your Data</h2>
                   <p className="text-slate-600 mb-6">CSV, Excel, or database connection.</p>
-                  <DataConnection onUploadSuccess={(data) => { setSessionId(data.session_id); setColumns(data.columns); setStep(2); }} />
+                  <DataConnection onUploadSuccess={(data) => { setSessionId(data.session_id); setFilename(data.filename || `Dataset_${new Date().getTime()}`); setColumns(data.columns); setStep(2); }} />
                 </div>
               )}
 
@@ -276,6 +286,23 @@ function App() {
                         const headers = token ? { Authorization: `Bearer ${token}` } : {};
                         const res = await axios.post(`${API_BASE}/validate/${sessionId}`, { rules }, { headers });
                         setValidationResults(res.data);
+
+                        if (token) {
+                          try {
+                            await axios.post(`${API_BASE}/history/jobs`, {
+                              session_id: sessionId,
+                              file_name: filename,
+                              rules: rules,
+                              total_rows: res.data.total_rows || 0,
+                              valid_rows: res.data.valid_rows || 0,
+                              invalid_rows: res.data.invalid_rows || 0,
+                              column_stats: res.data.column_stats || null
+                            }, { headers });
+                          } catch (histErr) {
+                            console.error("Failed to save history:", histErr);
+                          }
+                        }
+
                         setStep(3);
                       } catch (e) { alert("Validation Failed: " + (e.response?.data?.detail || e.message)); }
                     }}
@@ -341,8 +368,8 @@ function App() {
           {/* USER PROFILE VIEW */}
           {activeTab === 'profile' && user && (
             <motion.div key="profile-tab" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="w-full">
-              <UserProfilePage 
-                user={user} 
+              <UserProfilePage
+                user={user}
                 onClose={() => setActiveTab('home')}
                 onLogout={handleLogout}
               />
@@ -352,7 +379,21 @@ function App() {
         </AnimatePresence>
       </main>
 
-      <AuthModal isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} onLoginSuccess={(u) => setUser(u)} />
+      <AuthModal
+        isOpen={isAuthOpen}
+        onClose={() => {
+          setIsAuthOpen(false);
+          setIntendedTab(null);
+        }}
+        onLoginSuccess={(u) => {
+          setUser(u);
+          if (intendedTab) {
+            setActiveTab(intendedTab);
+            if (intendedTab === 'validate') setStep(1);
+            setIntendedTab(null);
+          }
+        }}
+      />
       <UserSidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} user={user} />
       <Footer />
     </div>

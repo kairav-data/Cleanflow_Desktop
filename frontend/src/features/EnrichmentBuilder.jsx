@@ -51,6 +51,25 @@ export default function EnrichmentBuilder({ sessionId, columns, onComplete }) {
                 provider: selectedProvider.id,
                 output_prefix: `${selectedColumn}_enriched`
             });
+
+            try {
+                // Log history
+                const token = localStorage.getItem('token');
+                const headers = token ? { Authorization: `Bearer ${token}` } : {};
+
+                await axios.post(`${API_BASE}/history/jobs`, {
+                    session_id: sessionId,
+                    file_name: `Enrichment Job (${selectedColumn})`,
+                    rules: [{ column: selectedColumn, provider: selectedProvider.name }],
+                    total_rows: 0,
+                    valid_rows: 0,
+                    invalid_rows: 0,
+                    module: 'enrichment'
+                }, { headers });
+            } catch (histErr) {
+                console.error("Failed to save history:", histErr);
+            }
+
             setStep(3);
             if (onComplete) onComplete(res.data);
         } catch (e) {
@@ -96,8 +115,8 @@ export default function EnrichmentBuilder({ sessionId, columns, onComplete }) {
                                     whileHover={{ scale: 1.02 }}
                                     onClick={() => setSelectedProvider(provider)}
                                     className={`p-6 rounded-2xl border-2 cursor-pointer transition-all ${selectedProvider?.id === provider.id
-                                            ? 'border-emerald-500 bg-emerald-50'
-                                            : 'border-slate-200 hover:border-emerald-300'
+                                        ? 'border-emerald-500 bg-emerald-50'
+                                        : 'border-slate-200 hover:border-emerald-300'
                                         }`}
                                 >
                                     <h3 className="font-black text-lg mb-2">{provider.name}</h3>

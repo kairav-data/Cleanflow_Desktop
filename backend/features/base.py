@@ -8,7 +8,7 @@ to ensure consistent interface and behavior.
 from abc import ABC, abstractmethod
 from typing import Dict, List, Any, Optional
 from pydantic import BaseModel
-import pandas as pd
+import polars as pl
 
 
 class FeatureConfig(BaseModel):
@@ -37,7 +37,7 @@ class BaseFeature(ABC):
     
     def __init__(self, session_id: str):
         self.session_id = session_id
-        self.df: Optional[pd.DataFrame] = None
+        self.df: Optional[pl.DataFrame] = None
     
     @abstractmethod
     async def preview(self, config: Dict[str, Any], limit: int = 5) -> FeatureResult:
@@ -79,12 +79,12 @@ class BaseFeature(ABC):
         """
         pass
     
-    def load_data(self, dataframe: pd.DataFrame):
+    def load_data(self, dataframe: pl.DataFrame):
         """Load data into the feature"""
         self.df = dataframe
     
     def get_columns(self) -> List[str]:
         """Get available columns from loaded data"""
         if self.df is not None:
-            return list(self.df.columns)
+            return self.df.columns
         return []

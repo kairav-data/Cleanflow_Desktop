@@ -7,38 +7,41 @@ export default {
   theme: {
     extend: {
       colors: {
-        // Defining the custom brand colors used in your JSX
-        brand: {
-          blue: "#3B82F6", // Standard bright blue
-          dark: "#1E40AF", // Deeper blue for hover states/gradients
+        // Supabase-inspired minimal palette
+        primary: {
+          50: "#f9fafb",
+          100: "#f3f4f6",
+          200: "#e5e7eb",
+          300: "#d1d5db",
+          400: "#9ca3af",
+          500: "#6b7280",
+          600: "#4b5563",
+          700: "#374151",
+          800: "#1f2937",
+          900: "#111827",
+        },
+        accent: {
+          50: "#eff6ff",
+          100: "#dbeafe",
+          500: "#3b82f6",
+          600: "#2563eb",
+          700: "#1d4ed8",
         },
       },
       fontFamily: {
-        // Ensuring the "font-sans" utility uses a clean modern stack
         sans: [
-          'Inter', 
-          'ui-sans-serif', 
-          'system-ui', 
-          '-apple-system', 
-          'BlinkMacSystemFont', 
-          '"Segoe UI"', 
-          'Roboto', 
+          'Inter',
+          '-apple-system',
+          'BlinkMacSystemFont',
+          '"Segoe UI"',
+          'Roboto',
           'sans-serif'
         ],
       },
-      animation: {
-        // Custom gradient animation for the "built for scale" text
-        'gradient': 'gradient 8s linear infinite',
-      },
-      keyframes: {
-        gradient: {
-          '0%, 100%': { 'background-position': '0% 50%' },
-          '50%': { 'background-position': '100% 50%' },
-        },
-      },
-      backgroundImage: {
-        // Useful for the dynamic background ornaments
-        'radial-gradient': 'radial-gradient(var(--tw-gradient-stops))',
+      boxShadow: {
+        subtle: '0 1px 2px rgba(0, 0, 0, 0.05)',
+        soft: '0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06)',
+        md: '0 4px 6px rgba(0, 0, 0, 0.1), 0 2px 4px rgba(0, 0, 0, 0.06)',
       },
     },
   },

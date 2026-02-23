@@ -189,6 +189,30 @@ class DatabaseManager:
         db.close()
         return result
 
+    async def delete_job(self, email: str, job_id: str):
+        db = self.SessionLocal()
+        try:
+            deleted = db.query(ValidationJob).filter(
+                ValidationJob.user_email == email,
+                ValidationJob.id == job_id
+            ).delete()
+            db.commit()
+            return deleted
+        finally:
+            db.close()
+
+    async def clear_user_jobs(self, email: str, module: str = None):
+        db = self.SessionLocal()
+        try:
+            query = db.query(ValidationJob).filter(ValidationJob.user_email == email)
+            if module:
+                query = query.filter(ValidationJob.module == module)
+            deleted = query.delete()
+            db.commit()
+            return deleted
+        finally:
+            db.close()
+
     # --- Connections ---
     async def save_connection(self, conn_data: dict):
         db = self.SessionLocal()

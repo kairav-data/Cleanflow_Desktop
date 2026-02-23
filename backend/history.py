@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from datetime import datetime
 from typing import List
 import uuid
@@ -48,6 +48,31 @@ async def get_job(job_id: str, current_user: UserInDB = Depends(get_current_user
         return job
     except HTTPException:
         raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.delete("/jobs/{job_id}")
+async def delete_job(job_id: str, current_user: UserInDB = Depends(get_current_user)) -> dict:
+    """Delete a specific history job for the current user"""
+    try:
+        deleted = await db.delete_job(current_user.email, job_id)
+        if not deleted:
+            raise HTTPException(status_code=404, detail="Job not found")
+        return {"status": "deleted", "count": deleted}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.delete("/jobs")
+async def clear_jobs(
+    module: str = Query(default=None),
+    current_user: UserInDB = Depends(get_current_user)
+) -> dict:
+    """Clear all history jobs for the user, optionally filtered by module"""
+    try:
+        deleted = await db.clear_user_jobs(current_user.email, module)
+        return {"status": "cleared", "count": deleted, "module": module}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

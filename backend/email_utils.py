@@ -10,7 +10,7 @@ except ImportError:
 def get_smtp_config():
     return {
         "host": os.getenv("SMTP_HOST", "smtp.gmail.com"),
-        "port": int(os.getenv("SMTP_PORT", 587)),
+        "port": int(os.getenv("SMTP_PORT") or 587),
         "user": os.getenv("SMTP_USER"),
         "password": os.getenv("SMTP_PASSWORD")
     }

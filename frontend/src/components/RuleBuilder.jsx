@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Trash2, Play, AlertCircle, CheckCircle2, History, X } from 'lucide-react';
+import { Plus, Trash2, Play, AlertCircle, CheckCircle2, History, X, Save, FolderOpen } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+const SAVED_RULESETS_KEY = 'cleanflow_saved_rulesets_v1';
 
 const RULE_CATEGORIES = {
     "Data Type & Format": [
@@ -66,6 +67,29 @@ const RuleBuilder = ({ columns, onRunValidation }) => {
     const [loading, setLoading] = useState(false);
     const [pastJobs, setPastJobs] = useState([]);
     const [showHistoryModal, setShowHistoryModal] = useState(false);
+    const [savedRuleSets, setSavedRuleSets] = useState([]);
+    const [showSavedRulesModal, setShowSavedRulesModal] = useState(false);
+
+    const mapRawRulesToUiRules = (rawRules = []) =>
+        rawRules.map(r => {
+            const cat = Object.keys(RULE_CATEGORIES).find(c =>
+                RULE_CATEGORIES[c].some(rc => rc.value === r.rule_type)
+            ) || "Data Type & Format";
+            return {
+                ...r,
+                id: Math.random().toString(36).substring(7),
+                category: cat
+            };
+        });
+
+    useEffect(() => {
+        try {
+            const saved = JSON.parse(localStorage.getItem(SAVED_RULESETS_KEY) || '[]');
+            setSavedRuleSets(Array.isArray(saved) ? saved : []);
+        } catch {
+            setSavedRuleSets([]);
+        }
+    }, []);
 
     useEffect(() => {
         const fetchHistory = async () => {
@@ -87,21 +111,54 @@ const RuleBuilder = ({ columns, onRunValidation }) => {
 
     const loadRulesFromJob = (job) => {
         if (!job.rules) return;
-        const mappedRules = job.rules.map(r => {
-            const cat = Object.keys(RULE_CATEGORIES).find(c =>
-                RULE_CATEGORIES[c].some(rc => rc.value === r.rule_type)
-            ) || "Data Type & Format";
-
-            return {
-                ...r,
-                id: Math.random().toString(36).substring(7),
-                category: cat
-            };
-        });
+        const mappedRules = mapRawRulesToUiRules(job.rules);
 
         // Append rules
         setRules(prev => [...prev, ...mappedRules]);
         setShowHistoryModal(false);
+    };
+
+    const saveCurrentRules = () => {
+        if (rules.length === 0) {
+            alert('Add at least one rule before saving.');
+            return;
+        }
+
+        const name = window.prompt('Enter a name for this rule set:');
+        if (!name || !name.trim()) return;
+
+        const payloadRules = rules.map(({ column, rule_type, params }) => ({ column, rule_type, params }));
+        const next = [
+            {
+                id: `ruleset_${Date.now()}`,
+                name: name.trim(),
+                rules: payloadRules,
+                created_at: new Date().toISOString()
+            },
+            ...savedRuleSets
+        ];
+
+        setSavedRuleSets(next);
+        localStorage.setItem(SAVED_RULESETS_KEY, JSON.stringify(next));
+    };
+
+    const applySavedRuleSet = (ruleSet) => {
+        const mappedRules = mapRawRulesToUiRules(ruleSet.rules || []);
+        if (mappedRules.length === 0) return;
+
+        const shouldReplace = window.confirm('Replace current rules with this saved rule set?');
+        if (shouldReplace) {
+            setRules(mappedRules);
+        } else {
+            setRules(prev => [...prev, ...mappedRules]);
+        }
+        setShowSavedRulesModal(false);
+    };
+
+    const deleteSavedRuleSet = (ruleSetId) => {
+        const next = savedRuleSets.filter(s => s.id !== ruleSetId);
+        setSavedRuleSets(next);
+        localStorage.setItem(SAVED_RULESETS_KEY, JSON.stringify(next));
     };
 
     const addRule = () => {
@@ -156,6 +213,20 @@ const RuleBuilder = ({ columns, onRunValidation }) => {
                     <p className="text-slate-400 text-sm">{rules.length} rules defined</p>
                 </div>
                 <div className="flex gap-2">
+                    <button
+                        onClick={saveCurrentRules}
+                        className="flex items-center gap-2 px-4 py-2 bg-emerald-50 border border-emerald-200 hover:bg-emerald-100 text-emerald-700 rounded-xl font-bold transition-colors"
+                    >
+                        <Save size={18} /> Save Rule Set
+                    </button>
+                    {savedRuleSets.length > 0 && (
+                        <button
+                            onClick={() => setShowSavedRulesModal(true)}
+                            className="flex items-center gap-2 px-4 py-2 bg-indigo-50 border border-indigo-200 hover:bg-indigo-100 text-indigo-700 rounded-xl font-bold transition-colors"
+                        >
+                            <FolderOpen size={18} /> Use Saved Rules
+                        </button>
+                    )}
                     {pastJobs.length > 0 && (
                         <button
                             onClick={() => setShowHistoryModal(true)}
@@ -175,6 +246,57 @@ const RuleBuilder = ({ columns, onRunValidation }) => {
 
             {/* History Modal */}
             <AnimatePresence>
+                {showSavedRulesModal && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
+                            onClick={() => setShowSavedRulesModal(false)}
+                        />
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                            className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg p-6 max-h-[80vh] overflow-y-auto"
+                        >
+                            <div className="flex justify-between items-center mb-6">
+                                <h3 className="text-xl font-bold text-slate-900">Saved Rule Sets</h3>
+                                <button onClick={() => setShowSavedRulesModal(false)} className="text-slate-400 hover:text-slate-600">
+                                    <X size={20} />
+                                </button>
+                            </div>
+
+                            <div className="space-y-3">
+                                {savedRuleSets.map((set) => (
+                                    <div key={set.id} className="p-4 border border-slate-200 rounded-xl">
+                                        <div className="flex items-start justify-between gap-3">
+                                            <div>
+                                                <h4 className="font-bold text-slate-800">{set.name}</h4>
+                                                <p className="text-xs text-slate-500 mt-1">
+                                                    {new Date(set.created_at).toLocaleString()} • {set.rules?.length || 0} rules
+                                                </p>
+                                            </div>
+                                            <button
+                                                onClick={() => deleteSavedRuleSet(set.id)}
+                                                className="text-xs px-2 py-1 rounded-lg bg-red-50 text-red-600 hover:bg-red-100"
+                                            >
+                                                Delete
+                                            </button>
+                                        </div>
+                                        <button
+                                            onClick={() => applySavedRuleSet(set)}
+                                            className="w-full mt-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium text-sm transition-colors"
+                                        >
+                                            Use This Rule Set
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
                 {showHistoryModal && (
                     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
                         <motion.div
@@ -202,7 +324,7 @@ const RuleBuilder = ({ columns, onRunValidation }) => {
                                     <div key={job.id} className="p-4 border border-slate-200 rounded-xl hover:border-brand-blue/50 transition-colors group">
                                         <div className="flex justify-between items-start mb-2">
                                             <div>
-                                                <h4 className="font-bold text-slate-800">{job.filename}</h4>
+                                                <h4 className="font-bold text-slate-800">{job.file_name || job.filename}</h4>
                                                 <p className="text-xs text-slate-500">{new Date(job.created_at).toLocaleString()}</p>
                                             </div>
                                             <span className="bg-slate-100 text-slate-600 text-xs font-bold px-2 py-1 rounded-lg">

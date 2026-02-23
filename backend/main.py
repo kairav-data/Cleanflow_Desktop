@@ -525,4 +525,5 @@ async def download_matching_results(session_id: str):
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8080)
+    backend_port = int(os.getenv("BACKEND_PORT", "8000"))
+    uvicorn.run(app, host="0.0.0.0", port=backend_port)

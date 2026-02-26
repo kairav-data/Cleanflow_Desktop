@@ -1,165 +1,187 @@
-import React from 'react';
-import { Download, CheckCircle, XCircle, RotateCcw, FileText, BarChart3, AlertTriangle } from 'lucide-react';
+import React, { useRef } from 'react';
+import { Download, CheckCircle, XCircle, RotateCcw, FileText, AlertTriangle, BarChart3, ShieldCheck, Image as ImageIcon } from 'lucide-react';
 import { motion } from 'framer-motion';
+import html2canvas from 'html2canvas';
 
 // Pulling the URL from the .env file
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
 
 const ResultsDashboard = ({ results, onReset }) => {
+    const reportRef = useRef(null);
+
     if (!results) return null;
 
-    const validPercent = ((results.valid_rows / results.total_rows) * 100).toFixed(1);
-    const errorPercent = ((results.invalid_rows / results.total_rows) * 100).toFixed(1);
+    const validPercent = results.total_rows > 0 ? Math.round((results.valid_rows / results.total_rows) * 100) : 0;
+
+    // Sort columns by number of errors, descending, to show top rule failures
+    const columnFailures = Object.entries(results.column_stats || {})
+        .filter(([_, stats]) => !stats.passed)
+        .map(([colName, stats]) => ({
+            label: colName,
+            errors: stats.errors ? stats.errors.reduce((acc, err) => acc + (err.count || 1), 0) : 1 // Fallback to 1 if no count
+        }))
+        .sort((a, b) => b.errors - a.errors);
+
+    // If we only have some errors, let's normalize their width against the worst column
+    const maxErrors = columnFailures.length > 0 ? columnFailures[0].errors : 1;
 
     const getFilename = (path) => {
         return path.split(/[\\/]/).pop();
     };
 
     const handleDownload = (path) => {
+        if (!path) return;
         const filename = getFilename(path);
         window.open(`${API_BASE}/download/${filename}`, '_blank');
     };
 
-    const columnStats = results.column_stats || {};
+    const handleImageDownload = async () => {
+        if (!reportRef.current) return;
+        try {
+            const canvas = await html2canvas(reportRef.current, {
+                scale: 2, // higher resolution
+                backgroundColor: '#ffffff',
+                logging: false,
+                useCORS: true
+            });
+            const image = canvas.toDataURL('image/png', 1.0);
+            const link = document.createElement('a');
+            link.download = `validation-report-${new Date().getTime()}.png`;
+            link.href = image;
+            link.click();
+        } catch (err) {
+            console.error("Failed to generate image:", err);
+            alert("Could not download the report as an image.");
+        }
+    };
+
+    // Calculate DashArray for SVG doughnut chart
+    const dashArray = `${validPercent} ${100 - validPercent}`;
 
     return (
         <div className="flex flex-col items-center w-full">
-            <div className="text-center mb-12">
+            <div className="text-center mb-8">
                 <h2 className="text-4xl font-black text-slate-900 mb-4">Validation Complete</h2>
                 <p className="text-slate-500 text-lg max-w-2xl mx-auto">
-                    Your data has been processed. Download the clean dataset below or review the error logs for items that failed validation.
+                    Your data has been processed. Download the dataset or review the validation summary below.
                 </p>
+                <div className="mt-6 flex justify-center gap-4">
+                    <button
+                        onClick={handleImageDownload}
+                        className="px-5 py-2.5 bg-slate-900 text-white font-medium rounded-lg hover:bg-slate-800 transition-colors flex items-center gap-2 shadow-sm"
+                    >
+                        <ImageIcon size={18} /> Download as Image
+                    </button>
+                    {(results.valid_file || results.error_file) && (
+                        <div className="flex gap-2">
+                            {results.valid_file && (
+                                <button
+                                    onClick={() => handleDownload(results.valid_file)}
+                                    className="px-5 py-2.5 bg-white border border-slate-200 text-slate-700 font-medium rounded-lg hover:bg-slate-50 transition-colors flex items-center gap-2"
+                                >
+                                    <FileText size={18} className="text-emerald-600" /> Download Valid CSV
+                                </button>
+                            )}
+                            {results.error_file && (
+                                <button
+                                    onClick={() => handleDownload(results.error_file)}
+                                    className="px-5 py-2.5 bg-white border border-slate-200 text-slate-700 font-medium rounded-lg hover:bg-slate-50 transition-colors flex items-center gap-2"
+                                >
+                                    <FileText size={18} className="text-red-500" /> Download Error CSV
+                                </button>
+                            )}
+                        </div>
+                    )}
+                </div>
             </div>
 
-            {/* Summary Cards */}
-            <div className="grid grid-cols-3 gap-8 w-full mb-12 max-w-5xl">
-                <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.1 }}
-                    className="bg-white rounded-3xl p-8 shadow-soft border border-slate-100 flex flex-col items-center"
-                >
-                    <div className="p-3 bg-blue-50 text-brand-blue rounded-xl mb-4">
-                        <BarChart3 size={32} />
-                    </div>
-                    <div className="text-5xl font-black text-slate-900 mb-2">{results.total_rows}</div>
-                    <div className="text-slate-400 text-sm font-bold uppercase tracking-widest">Total Rows</div>
-                </motion.div>
+            {/* The Report Container to capture via html2canvas */}
+            <motion.div
+                ref={reportRef}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="w-full max-w-3xl bg-white border border-slate-200 rounded-2xl p-8 shadow-sm"
+                style={{ fontFamily: 'Inter, system-ui, sans-serif' }}
+            >
+                <div className="flex items-center justify-between mb-8">
+                    <h3 className="text-xl font-bold text-slate-900">Validation Report Preview</h3>
+                    <span className={`text-sm px-3 py-1.5 rounded-full font-semibold flex items-center gap-1 ${validPercent > 80 ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
+                        {validPercent}% Healthy
+                    </span>
+                </div>
 
-                <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.2 }}
-                    className="bg-white rounded-3xl p-8 shadow-soft border border-slate-100 flex flex-col items-center relative overflow-hidden"
-                >
-                    <div className="absolute top-0 left-0 w-full h-2 bg-green-500" />
-                    <div className="p-3 bg-green-50 text-green-500 rounded-xl mb-4">
-                        <CheckCircle size={32} />
+                <div className="grid grid-cols-2 gap-6 mb-8">
+                    <div className="p-5 rounded-xl bg-slate-50 border border-slate-200">
+                        <p className="text-sm text-slate-500 mb-2">Total Rows</p>
+                        <p className="text-3xl font-bold text-slate-900">{results.total_rows.toLocaleString()}</p>
                     </div>
-                    <div className="text-5xl font-black text-slate-900 mb-2">{results.valid_rows}</div>
-                    <div className="text-green-600 text-sm font-bold uppercase tracking-widest flex items-center gap-2">
-                        Valid ({validPercent}%)
+                    <div className="p-5 rounded-xl bg-slate-50 border border-slate-200">
+                        <p className="text-sm text-slate-500 mb-2">Invalid Rows</p>
+                        <p className="text-3xl font-bold text-red-600">{results.invalid_rows.toLocaleString()}</p>
                     </div>
-                </motion.div>
+                </div>
 
-                <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.3 }}
-                    className="bg-white rounded-3xl p-8 shadow-soft border border-slate-100 flex flex-col items-center relative overflow-hidden"
-                >
-                    <div className="absolute top-0 left-0 w-full h-2 bg-red-500" />
-                    <div className="p-3 bg-red-50 text-red-500 rounded-xl mb-4">
-                        <XCircle size={32} />
-                    </div>
-                    <div className="text-5xl font-black text-slate-900 mb-2">{results.invalid_rows}</div>
-                    <div className="text-red-500 text-sm font-bold uppercase tracking-widest flex items-center gap-2">
-                        Invalid ({errorPercent}%)
-                    </div>
-                </motion.div>
-            </div>
-
-            {/* Per-Column Stats */}
-            {Object.keys(columnStats).length > 0 && (
-                <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.4 }}
-                    className="w-full max-w-5xl mb-12 bg-white rounded-3xl shadow-soft border border-slate-100 p-8"
-                >
-                    <h3 className="text-xl font-bold text-slate-900 mb-6">Column Validation Summary</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {Object.entries(columnStats).map(([colName, stats]) => (
-                            <div
-                                key={colName}
-                                className={`p-4 rounded-2xl border ${stats.passed ? 'border-green-200 bg-green-50/50' : 'border-red-200 bg-red-50/50'}`}
-                            >
-                                <div className="flex items-center gap-3 mb-2">
-                                    {stats.passed ? (
-                                        <CheckCircle className="text-green-500" size={20} />
-                                    ) : (
-                                        <XCircle className="text-red-500" size={20} />
-                                    )}
-                                    <span className="font-bold text-slate-800">{colName}</span>
-                                </div>
-                                {!stats.passed && stats.errors && stats.errors.length > 0 && (
-                                    <div className="mt-2 space-y-1">
-                                        {stats.errors.map((err, idx) => (
-                                            <div key={idx} className="text-xs text-red-600 flex items-start gap-2">
-                                                <AlertTriangle size={12} className="mt-0.5 flex-shrink-0" />
-                                                <span>{err.description}</span>
-                                            </div>
-                                        ))}
+                <div className="mb-10">
+                    <p className="text-sm text-slate-500 mb-4 font-medium">Rule Failures by Column</p>
+                    {columnFailures.length === 0 ? (
+                        <p className="text-sm text-slate-500 italic">No failures found.</p>
+                    ) : (
+                        <div className="space-y-4">
+                            {columnFailures.slice(0, 5).map((item) => {
+                                const failurePercentage = Math.round((item.errors / maxErrors) * 100);
+                                // Real failure percentage roughly vs invalid rows for display purpose:
+                                const displayPercent = Math.round((item.errors / (results.invalid_rows || 1)) * 100);
+                                return (
+                                    <div key={item.label}>
+                                        <div className="flex justify-between text-sm text-slate-700 mb-1.5">
+                                            <span>{item.label}</span>
+                                            <span className="font-medium text-slate-500">{displayPercent}%</span>
+                                        </div>
+                                        <div className="h-2.5 rounded-full bg-slate-100 overflow-hidden">
+                                            <div className="h-full bg-slate-800 rounded-full" style={{ width: `${failurePercentage}%` }} />
+                                        </div>
                                     </div>
-                                )}
-                                {stats.passed && (
-                                    <p className="text-xs text-green-600 mt-1">All rows passed validation</p>
-                                )}
-                            </div>
-                        ))}
-                    </div>
-                </motion.div>
-            )}
+                                );
+                            })}
+                        </div>
+                    )}
+                </div>
 
-            {/* Download Buttons */}
-            <div className="flex gap-8 w-full justify-center max-w-4xl">
-                <button
-                    onClick={() => handleDownload(results.valid_file)}
-                    className="group flex-1 bg-white hover:bg-slate-50 border border-slate-200 hover:border-green-400 transition-all p-6 rounded-2xl flex items-center justify-between shadow-sm hover:shadow-md"
-                >
-                    <div className="flex items-center gap-4">
-                        <div className="p-3 rounded-xl bg-slate-100 group-hover:bg-green-100 text-slate-500 group-hover:text-green-600 transition-colors">
-                            <FileText size={24} />
-                        </div>
-                        <div className="text-left">
-                            <div className="text-lg font-bold text-slate-800 group-hover:text-green-700">Clean Data</div>
-                            <div className="text-sm text-slate-400 group-hover:text-green-600/70">Download CSV</div>
-                        </div>
-                    </div>
-                    <Download size={24} className="text-slate-300 group-hover:text-green-500" />
-                </button>
-
-                <button
-                    onClick={() => handleDownload(results.error_file)}
-                    className="group flex-1 bg-white hover:bg-slate-50 border border-slate-200 hover:border-red-400 transition-all p-6 rounded-2xl flex items-center justify-between shadow-sm hover:shadow-md"
-                >
-                    <div className="flex items-center gap-4">
-                        <div className="p-3 rounded-xl bg-slate-100 group-hover:bg-red-100 text-slate-500 group-hover:text-red-600 transition-colors">
-                            <FileText size={24} />
-                        </div>
-                        <div className="text-left">
-                            <div className="text-lg font-bold text-slate-800 group-hover:text-red-700">Error Records</div>
-                            <div className="text-sm text-slate-400 group-hover:text-red-600/70">Download CSV</div>
+                <div>
+                    <p className="text-sm text-slate-500 mb-4 font-medium">Data Quality Mix</p>
+                    <div className="flex items-center gap-6">
+                        <svg width="100" height="100" viewBox="0 0 42 42" className="shrink-0 drop-shadow-sm">
+                            <circle cx="21" cy="21" r="15.915" fill="transparent" stroke="#e2e8f0" strokeWidth="6" />
+                            <circle
+                                cx="21"
+                                cy="21"
+                                r="15.915"
+                                fill="transparent"
+                                stroke="#0f172a"
+                                strokeWidth="6"
+                                strokeDasharray={dashArray}
+                                strokeLinecap="round"
+                                transform="rotate(-90 21 21)"
+                            />
+                        </svg>
+                        <div className="space-y-2 text-sm">
+                            <p className="text-slate-700 flex items-center">
+                                <span className="inline-block w-2.5 h-2.5 rounded-full bg-slate-900 mr-3" />
+                                Valid: <span className="font-semibold ml-1">{results.valid_rows.toLocaleString()}</span>
+                            </p>
+                            <p className="text-slate-700 flex items-center">
+                                <span className="inline-block w-2.5 h-2.5 rounded-full bg-slate-200 mr-3" />
+                                Invalid: <span className="font-semibold ml-1">{results.invalid_rows.toLocaleString()}</span>
+                            </p>
                         </div>
                     </div>
-                    <Download size={24} className="text-slate-300 group-hover:text-red-500" />
-                </button>
-            </div>
+                </div>
+            </motion.div>
 
-            <div className="mt-16">
+            <div className="mt-12">
                 <button
                     onClick={onReset}
-                    className="flex items-center gap-2 text-slate-400 hover:text-brand-blue transition-colors font-medium"
+                    className="flex items-center gap-2 text-slate-500 hover:text-slate-900 transition-colors font-medium px-4 py-2 hover:bg-slate-100 rounded-lg"
                 >
                     <RotateCcw size={18} /> Process Another File
                 </button>

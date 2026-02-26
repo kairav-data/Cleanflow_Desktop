@@ -1,50 +1,49 @@
 services:
-  postgres:
-    image: postgres:15
-    container_name: cleanflow_postgres
-    environment:
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: ${POSTGRES_DB}
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    ports:
-      - "${DB_PORT}:5432"
-    networks:
-      - cleanflow-net
+  # postgres:
+  #   image: postgres:15
+  #   container_name: cleanflow_postgres
+  #   environment:
+  #     POSTGRES_USER: ${POSTGRES_USER}
+  #     POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+  #     POSTGRES_DB: ${POSTGRES_DB}
+  #   volumes:
+  #     - postgres_data:/var/lib/postgresql/data
+  #   ports:
+  #     - "${DB_PORT}:5432"
+  #   networks:
+  #     - cleanflow-net
 
-  pgadmin:
-    image: dpage/pgadmin4
-    container_name: cleanflow_pgadmin
-    environment:
-      PGADMIN_DEFAULT_EMAIL: admin@admin.com
-      PGADMIN_DEFAULT_PASSWORD: admin
-      # Disables the login screen for local dev if desired, or keep as is
-      PGADMIN_CONFIG_SERVER_MODE: 'False' 
-    volumes:
-      # This maps the automatic server connection file we discussed
-      - ./pgadmin/servers.json:/pgadmin4/servers.json
-    ports:
-      - "5050:80"
-    depends_on:
-      - postgres
-    networks:
-      - cleanflow-net
+  # pgadmin:
+  #   image: dpage/pgadmin4
+  #   container_name: cleanflow_pgadmin
+  #   environment:
+  #     PGADMIN_DEFAULT_EMAIL: admin@admin.com
+  #     PGADMIN_DEFAULT_PASSWORD: admin
+  #     # Disables the login screen for local dev if desired, or keep as is
+  #     PGADMIN_CONFIG_SERVER_MODE: 'False' 
+  #   volumes:
+  #     # This maps the automatic server connection file we discussed
+  #     - ./pgadmin/servers.json:/pgadmin4/servers.json
+  #   ports:
+  #     - "5050:80"
+  #   depends_on:
+  #     - postgres
+  #   networks:
+  #     - cleanflow-net
 
   backend:
     build: ./backend
     container_name: cleanflow_backend
     restart: always
     environment:
-      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      - DATABASE_URL=${DATABASE_URL}
       - SECRET_KEY=${AUTH_SECRET_KEY}
       - ALGORITHM=${ALGORITHM}
       - SMTP_HOST=${SMTP_HOST}
       - SMTP_PORT=${SMTP_PORT}
       - SMTP_USER=${SMTP_USER}
       - SMTP_PASSWORD=${SMTP_PASSWORD}
-    depends_on:
-      - postgres
+      - FRONTEND_URL=${FRONTEND_URL}
     ports:
       - "${BACKEND_PORT}:8000"
     volumes:

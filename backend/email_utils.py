@@ -110,7 +110,7 @@ def send_otp_email(to_email: str, otp: str):
         
         logger.debug("Connecting to SMTP server...")
         with smtplib.SMTP(config['host'], config['port']) as server:
-            server.set_debuglevel(1) # Enable SMTP debug output
+            # server.set_debuglevel(1) # Disable SMTP debug output to avoid spamming logs
             logger.debug("Starting TLS...")
             server.starttls()
             logger.debug("Logging in...")

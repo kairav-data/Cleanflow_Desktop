@@ -15,25 +15,29 @@ const PlatformDropdown = ({ onFeatureSelect }) => {
       title: 'Schema Mapping',
       desc: 'Automatically map and transform files',
       icon: <Shuffle className="text-slate-900" size={20} />,
-      tabName: 'mapper'
+      tabName: 'mapper',
+      disabled: true
     },
     {
       title: 'Data Enrichment',
       desc: 'Enhance datasets with verified data',
       icon: <Sparkles className="text-slate-900" size={20} />,
-      tabName: 'enrichment'
+      tabName: 'enrichment',
+      disabled: true
     },
     {
       title: 'Web Scraping',
       desc: 'Extract structured data from websites',
       icon: <Globe className="text-slate-900" size={20} />,
-      tabName: 'scraper'
+      tabName: 'scraper',
+      disabled: true
     },
     {
       title: 'Data Matching',
       desc: 'Match data with reference datasets',
       icon: <GitMerge className="text-slate-900" size={20} />,
-      tabName: 'matching'
+      tabName: 'matching',
+      disabled: true
     }
   ];
 
@@ -76,8 +80,9 @@ const PlatformDropdown = ({ onFeatureSelect }) => {
             {features.map((feature, idx) => (
               <button
                 key={idx}
-                onClick={() => handleFeatureClick(feature.tabName)}
-                className="w-full flex items-start gap-3 px-4 py-3 rounded-lg hover:bg-slate-100 transition-all duration-200 group text-left"
+                onClick={() => !feature.disabled && handleFeatureClick(feature.tabName)}
+                disabled={feature.disabled}
+                className={`w-full flex items-start gap-3 px-4 py-3 rounded-lg transition-all duration-200 group text-left ${feature.disabled ? 'opacity-50 cursor-not-allowed' : 'hover:bg-slate-100'}`}
               >
                 <div className="mt-1 p-2 bg-slate-100 group-hover:bg-slate-200 rounded-lg transition-colors duration-200">
                   {feature.icon}

@@ -34,6 +34,10 @@ class ValidationJob(Base):
     status = Column(String)
     rules = Column(Text, nullable=True)
     module = Column(String, default="validation")
+    total_rows = Column(Integer, default=0)
+    valid_rows = Column(Integer, default=0)
+    invalid_rows = Column(Integer, default=0)
+    column_stats = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     # Relationship back to user
     owner = relationship("UserPG", back_populates="jobs")
@@ -68,28 +72,24 @@ class DatabaseManager:
                 Base.metadata.create_all(bind=self.pg_engine)
                 
                 # --- Quick migrations for missing columns in dev ---
-                with self.pg_engine.connect() as conn:
-                    with conn.begin():
-                        # Users table modifications
-                        try:
-                            conn.execute(text("ALTER TABLE users ADD COLUMN is_verified BOOLEAN DEFAULT FALSE;"))
-                        except Exception: pass
-                        try:
-                            conn.execute(text("ALTER TABLE users ADD COLUMN otp VARCHAR;"))
-                        except Exception: pass
-                        try:
-                            conn.execute(text("ALTER TABLE users ADD COLUMN otp_created_at TIMESTAMP;"))
-                        except Exception: pass
-                        
-                        # Jobs table modifications
-                        try:
-                            # Add rules column
-                            conn.execute(text("ALTER TABLE validation_jobs ADD COLUMN IF NOT EXISTS rules TEXT;"))
-                        except Exception: pass
-                        try:
-                            # Add module column to track difference between tool usage
-                            conn.execute(text("ALTER TABLE validation_jobs ADD COLUMN IF NOT EXISTS module VARCHAR DEFAULT 'validation';"))
-                        except Exception: pass
+                migration_queries = [
+                    "ALTER TABLE users ADD COLUMN is_verified BOOLEAN DEFAULT FALSE;",
+                    "ALTER TABLE users ADD COLUMN otp VARCHAR;",
+                    "ALTER TABLE users ADD COLUMN otp_created_at TIMESTAMP;",
+                    "ALTER TABLE validation_jobs ADD COLUMN IF NOT EXISTS rules TEXT;",
+                    "ALTER TABLE validation_jobs ADD COLUMN IF NOT EXISTS module VARCHAR DEFAULT 'validation';",
+                    "ALTER TABLE validation_jobs ADD COLUMN IF NOT EXISTS total_rows INTEGER DEFAULT 0;",
+                    "ALTER TABLE validation_jobs ADD COLUMN IF NOT EXISTS valid_rows INTEGER DEFAULT 0;",
+                    "ALTER TABLE validation_jobs ADD COLUMN IF NOT EXISTS invalid_rows INTEGER DEFAULT 0;",
+                    "ALTER TABLE validation_jobs ADD COLUMN IF NOT EXISTS column_stats TEXT;"
+                ]
+                
+                for query in migration_queries:
+                    try:
+                        with self.pg_engine.begin() as conn:
+                            conn.execute(text(query))
+                    except Exception as e:
+                        pass
                 
                 print("✅ PostgreSQL initialized and tables verified.")
                 return
@@ -166,7 +166,11 @@ class DatabaseManager:
                 filename=job_data.get('filename') or job_data.get('file_name', 'unknown'),
                 status=job_data.get('status', 'completed'),
                 rules=json.dumps(job_data.get('rules')) if job_data.get('rules') else None,
-                module=job_data.get('module', 'validation')
+                module=job_data.get('module', 'validation'),
+                total_rows=job_data.get('total_rows', 0),
+                valid_rows=job_data.get('valid_rows', 0),
+                invalid_rows=job_data.get('invalid_rows', 0),
+                column_stats=json.dumps(job_data.get('column_stats')) if job_data.get('column_stats') else None
             )
             db.add(job)
             db.commit()
@@ -182,7 +186,11 @@ class DatabaseManager:
                 "filename": j.filename, 
                 "created_at": j.created_at, 
                 "rules": json.loads(j.rules) if j.rules else [],
-                "module": getattr(j, "module", "validation") or "validation"
+                "module": getattr(j, "module", "validation") or "validation",
+                "total_rows": getattr(j, "total_rows", 0) or 0,
+                "valid_rows": getattr(j, "valid_rows", 0) or 0,
+                "invalid_rows": getattr(j, "invalid_rows", 0) or 0,
+                "column_stats": json.loads(getattr(j, "column_stats", "{}") or "{}") if getattr(j, "column_stats", None) else {}
             } 
             for j in jobs
         ]

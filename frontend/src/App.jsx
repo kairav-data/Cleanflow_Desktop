@@ -411,7 +411,8 @@ function App() {
                         tone: "bg-emerald-50 border-emerald-100",
                         stat: "Provider-ready flow",
                         desc: "Append missing attributes to make records more complete.",
-                        cta: () => handleFeatureAccess('enrichment')
+                        cta: () => handleFeatureAccess('enrichment'),
+                        disabled: true
                       },
                       {
                         title: "Schema Mapping",
@@ -419,7 +420,8 @@ function App() {
                         tone: "bg-indigo-50 border-indigo-100",
                         stat: "Field-level transforms",
                         desc: "Map and reshape source columns into target schema.",
-                        cta: () => handleFeatureAccess('mapper')
+                        cta: () => handleFeatureAccess('mapper'),
+                        disabled: true
                       },
                       {
                         title: "Web Scraping",
@@ -427,7 +429,8 @@ function App() {
                         tone: "bg-orange-50 border-orange-100",
                         stat: "Template-driven extraction",
                         desc: "Collect structured web data without writing scraper code.",
-                        cta: () => handleFeatureAccess('scraper')
+                        cta: () => handleFeatureAccess('scraper'),
+                        disabled: true
                       },
                       {
                         title: "Data Matching",
@@ -435,13 +438,15 @@ function App() {
                         tone: "bg-purple-50 border-purple-100",
                         stat: "Fuzzy record linking",
                         desc: "Identify duplicate or related entities across datasets.",
-                        cta: () => handleFeatureAccess('matching')
+                        cta: () => handleFeatureAccess('matching'),
+                        disabled: true
                       }
                     ].map((m) => (
                       <button
                         key={m.title}
-                        onClick={m.cta}
-                        className={`text-left p-5 rounded-xl border transition-all hover:-translate-y-0.5 hover:shadow-md ${m.tone} h-full flex flex-col`}
+                        onClick={() => !m.disabled && m.cta()}
+                        disabled={m.disabled}
+                        className={`text-left p-5 rounded-xl border transition-all h-full flex flex-col ${m.disabled ? 'opacity-50 cursor-not-allowed grayscale bg-slate-50 border-slate-200' : `hover:-translate-y-0.5 hover:shadow-md ${m.tone}`}`}
                       >
                         <div className="flex items-center justify-between mb-3 min-h-[42px]">
                           <div className="p-2 rounded-lg bg-white border border-slate-200">{m.icon}</div>
@@ -478,25 +483,28 @@ function App() {
                         title: "Schema Mapping",
                         desc: "Auto-map fields between datasets. Transform messy sources into clean, structured data.",
                         icon: <Shuffle size={24} className="text-slate-900" />,
-                        action: () => handleFeatureAccess('mapper')
+                        action: () => handleFeatureAccess('mapper'),
+                        disabled: true
                       },
                       {
                         title: "Data Enrichment",
                         desc: "Enhance datasets with verified information. Append emails, demographics, and verified attributes.",
                         icon: <Sparkles size={24} className="text-slate-900" />,
-                        action: () => handleFeatureAccess('enrichment')
+                        action: () => handleFeatureAccess('enrichment'),
+                        disabled: true
                       },
                       {
                         title: "Web Scraping",
                         desc: "Extract structured data from any website. No coding required, instantly ready to use.",
                         icon: <Globe size={24} className="text-slate-900" />,
-                        action: () => handleFeatureAccess('scraper')
+                        action: () => handleFeatureAccess('scraper'),
+                        disabled: true
                       }
                     ].map((card, i) => (
                       <div
                         key={i}
-                        onClick={card.action}
-                        className="p-6 bg-white border border-slate-200 rounded-lg hover:border-slate-300 hover:shadow-soft transition-all cursor-pointer"
+                        onClick={() => !card.disabled && card.action()}
+                        className={`p-6 bg-white border border-slate-200 rounded-lg ${card.disabled ? 'opacity-50 cursor-not-allowed' : 'hover:border-slate-300 hover:shadow-soft transition-all cursor-pointer'}`}
                       >
                         <div className="mb-4">{card.icon}</div>
                         <h3 className="text-lg font-bold text-slate-900 mb-2">{card.title}</h3>
@@ -707,28 +715,33 @@ function App() {
                   {
                     title: 'Data Enrichment',
                     description: 'Enhance records with additional verified attributes.',
-                    action: () => setActiveTab('enrichment')
+                    action: () => setActiveTab('enrichment'),
+                    disabled: true
                   },
                   {
                     title: 'Schema Mapping',
                     description: 'Map and transform columns between datasets.',
-                    action: () => setActiveTab('mapper')
+                    action: () => setActiveTab('mapper'),
+                    disabled: true
                   },
                   {
                     title: 'Web Scraping',
                     description: 'Extract structured data from URLs at scale.',
-                    action: () => setActiveTab('scraper')
+                    action: () => setActiveTab('scraper'),
+                    disabled: true
                   },
                   {
                     title: 'Data Matching',
                     description: 'Identify duplicate or related entities across datasets.',
-                    action: () => setActiveTab('matching')
+                    action: () => setActiveTab('matching'),
+                    disabled: true
                   }
                 ].map((item) => (
                   <button
                     key={item.title}
-                    onClick={item.action}
-                    className="text-left p-6 bg-white border border-slate-200 rounded-xl hover:border-slate-300 hover:shadow-sm transition-all"
+                    onClick={() => !item.disabled && item.action()}
+                    disabled={item.disabled}
+                    className={`text-left p-6 bg-white border border-slate-200 rounded-xl ${item.disabled ? 'opacity-50 cursor-not-allowed' : 'hover:border-slate-300 hover:shadow-sm transition-all'}`}
                   >
                     <h3 className="text-lg font-bold text-slate-900 mb-2">{item.title}</h3>
                     <p className="text-sm text-slate-600 mb-4 leading-relaxed">{item.description}</p>

@@ -525,5 +525,6 @@ async def download_matching_results(session_id: str):
 
 if __name__ == "__main__":
     import uvicorn
-    backend_port = int(os.getenv("BACKEND_PORT", "8000"))
-    uvicorn.run(app, host="0.0.0.0", port=backend_port)
+    # Look for Render's PORT first, then fallback to local BACKEND_PORT
+    backend_port = int(os.environ.get("PORT", os.environ.get("BACKEND_PORT", "8000")))
+    uvicorn.run("main:app", host="0.0.0.0", port=backend_port)

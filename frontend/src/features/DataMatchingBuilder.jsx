@@ -3,7 +3,7 @@ import axios from 'axios';
 import { motion } from 'framer-motion';
 import { GitMerge, Upload, Play, CheckCircle, TrendingUp, Plus, Trash2 } from 'lucide-react';
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+const API_BASE = import.meta.env.VITE_API_BASE_URL || 'import.meta.env.VITE_API_URL';
 
 export default function DataMatchingBuilder({ onComplete }) {
     const [algorithms, setAlgorithms] = useState([]);

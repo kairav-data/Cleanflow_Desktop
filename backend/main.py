@@ -4,6 +4,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 from contextlib import asynccontextmanager
 import os
+import sys
+# Adding current directory to Python path for modules like models.py
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 try:
     from dotenv import load_dotenv
     load_dotenv(os.path.join(os.path.dirname(__file__), "..", ".env"))
@@ -53,17 +56,18 @@ app = FastAPI(
 )
 
 # --- CORS setup ---
+frontend_url = os.environ.get("FRONTEND_URL", "https://cleanflow.vercel.app")
 origins = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
     "http://localhost:5173",   
     "http://127.0.0.1:5173",
-    "https://cleanflow.vercel.app"
+    frontend_url
 ]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://localhost:5173", "http://127.0.0.1:5173","https://cleanflow.vercel.app"],
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -526,5 +530,6 @@ async def download_matching_results(session_id: str):
 
 if __name__ == "__main__":
     import uvicorn
-    backend_port = int(os.getenv("BACKEND_PORT", "8000"))
-    uvicorn.run(app, host="0.0.0.0", port=backend_port)
+    # Render binds the port using the PORT environment variable
+    backend_port = int(os.environ.get("PORT", os.environ.get("BACKEND_PORT", "8000")))
+    uvicorn.run("main:app", host="0.0.0.0", port=backend_port)

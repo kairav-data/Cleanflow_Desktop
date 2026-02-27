@@ -3,7 +3,7 @@ import { Plus, Trash2, Play, AlertCircle, CheckCircle2, History, X, Save, Folder
 import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+const API_BASE = import.meta.env.VITE_API_BASE_URL || 'import.meta.env.VITE_API_URL';
 const SAVED_RULESETS_KEY = 'cleanflow_saved_rulesets_v1';
 
 const RULE_CATEGORIES = {

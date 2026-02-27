@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import html2canvas from 'html2canvas';
 
 // Pulling the URL from the .env file
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+const API_BASE = import.meta.env.VITE_API_BASE_URL || 'import.meta.env.VITE_API_URL';
 
 const ResultsDashboard = ({ results, onReset }) => {
     const reportRef = useRef(null);

@@ -19,7 +19,7 @@ import { EnrichmentBuilder, ScraperBuilder, SchemaMapper, DataMatchingBuilder } 
 // Assets
 import Logo from './assets/logo.png';
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+const API_BASE = import.meta.env.VITE_API_BASE_URL || 'import.meta.env.VITE_API_URL';
 
 function App() {
   const [activeTab, setActiveTab] = useState('home');

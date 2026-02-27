@@ -3,7 +3,7 @@ import axios from 'axios';
 import { motion } from 'framer-motion';
 import { Shuffle, ArrowRight, CheckCircle, Wand2, Upload } from 'lucide-react';
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+const API_BASE = import.meta.env.VITE_API_BASE_URL || 'import.meta.env.VITE_API_URL';
 
 export default function SchemaMapper({ onComplete }) {
     const [transformations, setTransformations] = useState([]);

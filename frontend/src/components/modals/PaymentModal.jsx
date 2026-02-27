@@ -4,7 +4,7 @@ import { X, Check, CreditCard, ShieldCheck } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 // Pulling the URL from the .env file
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+const API_BASE = import.meta.env.VITE_API_BASE_URL || 'import.meta.env.VITE_API_URL';
 
 const PaymentModal = ({ isOpen, onClose, onPaymentSuccess }) => {
     const [loading, setLoading] = useState(false);

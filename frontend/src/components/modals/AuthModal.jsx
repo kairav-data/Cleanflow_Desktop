@@ -4,7 +4,7 @@ import { X, Mail, Lock, User, ArrowRight, AlertCircle, CheckCircle2 } from 'luci
 import { motion, AnimatePresence } from 'framer-motion';
 
 // Pulling the URL from the .env file
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'import.meta.env.VITE_API_URL';
+const API_BASE = import.meta.env.VITE_API_BASE_URL;
 
 const AuthModal = ({ isOpen, onClose, onLoginSuccess }) => {
     const [isLogin, setIsLogin] = useState(true);

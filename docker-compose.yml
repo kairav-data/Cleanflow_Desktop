@@ -35,17 +35,10 @@ services:
     build: ./backend
     container_name: cleanflow_backend
     restart: always
-    environment:
-      - DATABASE_URL=${DATABASE_URL}
-      - SECRET_KEY=${AUTH_SECRET_KEY}
-      - ALGORITHM=${ALGORITHM}
-      - SMTP_HOST=${SMTP_HOST}
-      - SMTP_PORT=${SMTP_PORT}
-      - SMTP_USER=${SMTP_USER}
-      - SMTP_PASSWORD=${SMTP_PASSWORD}
-      - FRONTEND_URL=${FRONTEND_URL}
+    env_file:
+      - ./backend/.env
     ports:
-      - "${BACKEND_PORT}:8000"
+      - "${BACKEND_PORT:-8000}:8000"
     volumes:
       - ./uploads:/app/uploads
       - ./results:/app/results
@@ -58,11 +51,9 @@ services:
     container_name: cleanflow_frontend
     restart: always
     ports:
-      - "${FRONTEND_PORT}:5173"
-    environment:
-      # Fixed: Vite requires VITE_ prefix to be visible in the browser
-      - VITE_API_BASE_URL=http://localhost:${BACKEND_PORT}
-      - CHOKIDAR_USEPOLLING=true 
+      - "${FRONTEND_PORT:-5173}:5173"
+    env_file:
+      - ./frontend/.env
     tty: true
     stdin_open: true
     depends_on:

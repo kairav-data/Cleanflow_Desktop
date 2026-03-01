@@ -63,8 +63,9 @@ origins = [
     "http://localhost:5173",   
     "http://127.0.0.1:5173",
     "https://cleanflow-one.vercel.app",
+    "https://www.cleanflow.one",
+    "https://cleanflow.one",
     frontend_url
-
 ]
 
 app.add_middleware(

@@ -1,56 +1,29 @@
-import smtplib
-from email.message import EmailMessage
 import os
+import resend
+
 try:
     from dotenv import load_dotenv
     load_dotenv(os.path.join(os.path.dirname(__file__), "..", ".env"))
 except ImportError:
     pass
 
-def get_smtp_config():
-    return {
-        "host": os.getenv("SMTP_HOST", "smtp.gmail.com"),
-        "port": int(os.getenv("SMTP_PORT") or 587),
-        "user": os.getenv("SMTP_USER"),
-        "password": os.getenv("SMTP_PASSWORD")
-    }
-
 from logger import setup_logger
 logger = setup_logger(__name__)
 
+# Initialize the Resend API Key
+resend.api_key = os.getenv("RESEND_API_KEY")
+
 def send_otp_email(to_email: str, otp: str):
-    """Sends an OTP email to the user. Prints warning if SMTP is not configured."""
-    config = get_smtp_config()
-    logger.debug(f"Attempting to send OTP email to {to_email}")
-    logger.debug(f"Using Host: {config['host']}:{config['port']}")
-    logger.debug(f"SMTP User configured: {'YES' if config['user'] else 'NO'}, SMTP Password configured: {'YES' if config['password'] else 'NO'}")
+    """Sends an OTP email to the user using the Resend API. Prints warning if API key is not configured."""
+    logger.debug(f"Attempting to send OTP email to {to_email} via Resend")
     
-    if not config['user'] or not config['password']:
-        logger.warning(f"[MOCK EMAIL] Missing credentials. OTP for {to_email} is: {otp}")
+    if not resend.api_key:
+        logger.warning(f"[MOCK EMAIL] Missing RESEND_API_KEY. OTP for {to_email} is: {otp}")
         return
         
     try:
         import datetime
-        from email.mime.multipart import MIMEMultipart
-        from email.mime.text import MIMEText
-        from email.mime.image import MIMEImage
-        import base64
-        try:
-            from logo_b64 import LOGO_BASE64
-        except ImportError:
-            LOGO_BASE64 = "" # Fallback if missing
-            
-        msg = MIMEMultipart('related')
-        msg['Subject'] = 'Your CleanFlow Verification Code'
-        msg['From'] = f"CleanFlow <{config['user']}>"
-        msg['To'] = to_email
-        
-        msg_alternative = MIMEMultipart('alternative')
-        msg.attach(msg_alternative)
-        
-        # Plain text fallback
-        plain_text = f"Your CleanFlow verification code is: {otp}\n\nThis code will expire in 10 minutes.\nIf you didn't request this, please ignore this email."
-        msg_alternative.attach(MIMEText(plain_text, 'plain'))
+        from logo_b64 import LOGO_BASE64
         
         # HTML professional version
         html_content = f"""
@@ -63,11 +36,6 @@ def send_otp_email(to_email: str, otp: str):
         </head>
         <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f4f4f5; margin: 0; padding: 40px 0;">
             <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);">
-                
-                <!-- Header -->
-                <div style="background-color: #0f172a; padding: 30px; text-align: center;">
-                    <img src="cid:cleanflow_logo" alt="CleanFlow" style="height: 36px; width: auto;" />
-                </div>
                 
                 <!-- Body -->
                 <div style="padding: 40px 30px;">
@@ -99,29 +67,15 @@ def send_otp_email(to_email: str, otp: str):
         </html>
         """
         
-        msg_alternative.attach(MIMEText(html_content, 'html'))
+        params = {
+            "from": "CleanFlow <no-reply@onboarding.cleanflow.one>",
+            "to": [to_email],
+            "subject": "Your CleanFlow Verification Code",
+            "html": html_content,
+        }
         
-        if LOGO_BASE64:
-            logo_bytes = base64.b64decode(LOGO_BASE64)
-            img = MIMEImage(logo_bytes, _subtype='png')
-            img.add_header('Content-ID', '<cleanflow_logo>')
-            img.add_header('Content-Disposition', 'inline')
-            msg.attach(img)
+        response = resend.Emails.send(params)
+        logger.info(f"✅ OTP Email sent successfully to {to_email}. Resend Email ID: {response.get('id')}")
         
-        logger.debug("Connecting to SMTP server...")
-        with smtplib.SMTP(config['host'], config['port']) as server:
-            # server.set_debuglevel(1) # Disable SMTP debug output to avoid spamming logs
-            logger.debug("Starting TLS...")
-            server.starttls()
-            logger.debug("Logging in...")
-            server.login(config['user'], config['password'])
-            logger.debug("Sending message...")
-            server.send_message(msg)
-            
-        logger.info(f"✅ OTP Email sent successfully to {to_email}")
-    except smtplib.SMTPAuthenticationError as e:
-        logger.error(f"❌ [SMTP ERROR] Authentication failed. Check your App Password and Gmail settings: {e}")
-    except smtplib.SMTPException as e:
-        logger.error(f"❌ [SMTP ERROR] SMTP protocol error: {e}")
     except Exception as e:
-        logger.error(f"❌ [SMTP ERROR] General failure sending OTP email to {to_email}: {e}")
+        logger.error(f"❌ [RESEND API ERROR] General failure sending OTP email to {to_email}: {e}")

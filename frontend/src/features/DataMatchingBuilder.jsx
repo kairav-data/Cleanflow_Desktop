@@ -365,13 +365,56 @@ export default function DataMatchingBuilder({ onComplete }) {
             )}
 
             {step === 3 && finalResults && (
-                <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} className="text-center py-12">
-                    <CheckCircle className="mx-auto text-green-500 mb-4" size={64} />
-                    <h3 className="text-3xl font-black mb-4">Matching Complete!</h3>
-                    <p className="text-slate-600 mb-8">
-                        Process completed successfully. Found {totalMatches} matches.
-                    </p>
-                    <div className="flex gap-4 justify-center">
+                <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} className="py-12 w-full">
+                    <div className="text-center mb-8">
+                        <CheckCircle className="mx-auto text-green-500 mb-4" size={64} />
+                        <h3 className="text-3xl font-black mb-4">Matching Complete!</h3>
+                        <p className="text-slate-600">
+                            Process completed successfully. Found {totalMatches} matches.
+                        </p>
+                    </div>
+
+                    {/* Matched Data Preview Table */}
+                    {finalResults.length > 0 && (
+                        <div className="mb-8 border border-slate-200 rounded-2xl overflow-hidden bg-white shadow-sm">
+                            <div className="bg-slate-50 px-6 py-4 border-b border-slate-200">
+                                <h4 className="font-bold text-slate-800">Sample API Output Preview (Top Matches)</h4>
+                            </div>
+                            <div className="overflow-x-auto max-h-[400px]">
+                                <table className="w-full text-sm text-left relative">
+                                    <thead className="text-xs text-slate-500 uppercase bg-slate-50 sticky top-0 z-10 shadow-sm">
+                                        <tr>
+                                            {Object.keys(finalResults[0])
+                                                .filter(k => k !== 'match_details')
+                                                .map(key => (
+                                                    <th key={key} className="px-6 py-3 whitespace-nowrap bg-slate-50 border-b border-slate-200">
+                                                        {key}
+                                                    </th>
+                                                ))}
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-100">
+                                        {finalResults.slice(0, 10).map((row, idx) => (
+                                            <tr key={idx} className="hover:bg-slate-50 transition-colors">
+                                                {Object.entries(row)
+                                                    .filter(([k]) => k !== 'match_details')
+                                                    .map(([key, value], i) => (
+                                                        <td key={i} className="px-6 py-4 whitespace-nowrap text-slate-700">
+                                                            {typeof value === 'object' ? JSON.stringify(value) : String(value)}
+                                                        </td>
+                                                    ))}
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div className="bg-slate-50 px-6 py-3 border-t border-slate-200 text-xs text-slate-500 text-center">
+                                Showing top {Math.min(finalResults.length, 10)} records
+                            </div>
+                        </div>
+                    )}
+
+                    <div className="flex gap-4 justify-center mt-8">
                         <button
                             onClick={async () => {
                                 try {

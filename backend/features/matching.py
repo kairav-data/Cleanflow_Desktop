@@ -485,7 +485,8 @@ class DataMatcher(BaseFeature):
                      if 'match_details' in row:
                          del row['match_details']
                      flat_results.append(row)
-                 df = pl.DataFrame(flat_results)
+                 import pandas as pd
+                 df = pl.from_pandas(pd.DataFrame(flat_results))
             
             upload_dir = os.path.join(os.getcwd(), "uploads")
             os.makedirs(upload_dir, exist_ok=True)

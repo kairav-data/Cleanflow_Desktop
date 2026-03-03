@@ -9,8 +9,10 @@ from models import UserCreate, UserInDB, Token, TokenData, VerifyOTPRequest, Res
 from database import get_user, create_user, update_user_otp, verify_user
 from email_utils import send_otp_email
 
+import os
+
 # Configuration
-SECRET_KEY = "supersecretkey" # In production, use os.getenv("SECRET_KEY")
+SECRET_KEY = os.getenv("AUTH_SECRET_KEY")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 

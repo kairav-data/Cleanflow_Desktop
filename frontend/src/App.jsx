@@ -412,7 +412,7 @@ function App() {
                         stat: "Provider-ready flow",
                         desc: "Append missing attributes to make records more complete.",
                         cta: () => handleFeatureAccess('enrichment'),
-                        disabled: true
+                        //disabled: true
                       },
                       {
                         title: "Schema Mapping",
@@ -421,7 +421,7 @@ function App() {
                         stat: "Field-level transforms",
                         desc: "Map and reshape source columns into target schema.",
                         cta: () => handleFeatureAccess('mapper'),
-                        disabled: true
+                        //disabled: true
                       },
                       {
                         title: "Web Scraping",
@@ -430,7 +430,7 @@ function App() {
                         stat: "Template-driven extraction",
                         desc: "Collect structured web data without writing scraper code.",
                         cta: () => handleFeatureAccess('scraper'),
-                        disabled: true
+                        //disabled: true
                       },
                       {
                         title: "Data Matching",
@@ -439,7 +439,7 @@ function App() {
                         stat: "Fuzzy record linking",
                         desc: "Identify duplicate or related entities across datasets.",
                         cta: () => handleFeatureAccess('matching'),
-                        disabled: true
+                        //disabled: true
                       }
                     ].map((m) => (
                       <button
@@ -484,21 +484,21 @@ function App() {
                         desc: "Auto-map fields between datasets. Transform messy sources into clean, structured data.",
                         icon: <Shuffle size={24} className="text-slate-900" />,
                         action: () => handleFeatureAccess('mapper'),
-                        disabled: true
+                        //disabled: true
                       },
                       {
                         title: "Data Enrichment",
                         desc: "Enhance datasets with verified information. Append emails, demographics, and verified attributes.",
                         icon: <Sparkles size={24} className="text-slate-900" />,
                         action: () => handleFeatureAccess('enrichment'),
-                        disabled: true
+                        //disabled: true
                       },
                       {
                         title: "Web Scraping",
                         desc: "Extract structured data from any website. No coding required, instantly ready to use.",
                         icon: <Globe size={24} className="text-slate-900" />,
                         action: () => handleFeatureAccess('scraper'),
-                        disabled: true
+                        //disabled: true
                       }
                     ].map((card, i) => (
                       <div
@@ -716,25 +716,25 @@ function App() {
                     title: 'Data Enrichment',
                     description: 'Enhance records with additional verified attributes.',
                     action: () => setActiveTab('enrichment'),
-                    disabled: true
+                    //disabled: true
                   },
                   {
                     title: 'Schema Mapping',
                     description: 'Map and transform columns between datasets.',
                     action: () => setActiveTab('mapper'),
-                    disabled: true
+                    //disabled: true
                   },
                   {
                     title: 'Web Scraping',
                     description: 'Extract structured data from URLs at scale.',
                     action: () => setActiveTab('scraper'),
-                    disabled: true
+                    //disabled: true
                   },
                   {
                     title: 'Data Matching',
                     description: 'Identify duplicate or related entities across datasets.',
                     action: () => setActiveTab('matching'),
-                    disabled: true
+                    //disabled: true
                   }
                 ].map((item) => (
                   <button

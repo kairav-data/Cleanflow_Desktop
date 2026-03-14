@@ -68,6 +68,9 @@ async def register(user: UserCreate):
         "email": user.email,
         "hashed_password": hashed_password,
         "full_name": user.full_name,
+        "phone_number": user.phone_number,
+        "professional_field": user.professional_field,
+        "country": user.country,
         "is_premium": False
     }
     

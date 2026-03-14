@@ -17,6 +17,9 @@ class UserPG(Base):
     id = Column(Integer, primary_key=True, index=True)
     email = Column(String, unique=True, index=True)
     full_name = Column(String, nullable=True)
+    phone_number = Column(String, nullable=True)
+    professional_field = Column(String, nullable=True)
+    country = Column(String, nullable=True)
     hashed_password = Column(String)
     is_premium = Column(Boolean, default=False)
     is_verified = Column(Boolean, default=False)
@@ -73,9 +76,12 @@ class DatabaseManager:
                 
                 # --- Quick migrations for missing columns in dev ---
                 migration_queries = [
-                    "ALTER TABLE users ADD COLUMN is_verified BOOLEAN DEFAULT FALSE;",
-                    "ALTER TABLE users ADD COLUMN otp VARCHAR;",
-                    "ALTER TABLE users ADD COLUMN otp_created_at TIMESTAMP;",
+                    "ALTER TABLE users ADD COLUMN IF NOT EXISTS is_verified BOOLEAN DEFAULT FALSE;",
+                    "ALTER TABLE users ADD COLUMN IF NOT EXISTS otp VARCHAR;",
+                    "ALTER TABLE users ADD COLUMN IF NOT EXISTS otp_created_at TIMESTAMP;",
+                    "ALTER TABLE users ADD COLUMN IF NOT EXISTS phone_number VARCHAR;",
+                    "ALTER TABLE users ADD COLUMN IF NOT EXISTS professional_field VARCHAR;",
+                    "ALTER TABLE users ADD COLUMN IF NOT EXISTS country VARCHAR;",
                     "ALTER TABLE validation_jobs ADD COLUMN IF NOT EXISTS rules TEXT;",
                     "ALTER TABLE validation_jobs ADD COLUMN IF NOT EXISTS module VARCHAR DEFAULT 'validation';",
                     "ALTER TABLE validation_jobs ADD COLUMN IF NOT EXISTS total_rows INTEGER DEFAULT 0;",
@@ -105,6 +111,9 @@ class DatabaseManager:
             db_user = UserPG(
                 email=user_data['email'],
                 full_name=user_data.get('full_name'),
+                phone_number=user_data.get('phone_number'),
+                professional_field=user_data.get('professional_field'),
+                country=user_data.get('country'),
                 hashed_password=user_data['hashed_password'],
                 is_premium=user_data.get('is_premium', False),
                 is_verified=False
@@ -122,6 +131,9 @@ class DatabaseManager:
             return {
                 "email": user.email,
                 "full_name": user.full_name,
+                "phone_number": user.phone_number,
+                "professional_field": user.professional_field,
+                "country": user.country,
                 "hashed_password": user.hashed_password,
                 "is_premium": user.is_premium,
                 "is_verified": user.is_verified,

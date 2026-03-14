@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import {
   ArrowRight, User, Lock, Mail, LogOut, Save, Eye, EyeOff,
   AlertCircle, CheckCircle2, X, Clock, History as HistoryIcon,
-  Database, FileCheck, GitMerge, Globe, Shuffle, Sparkles
+  Database, FileCheck, GitMerge, Globe, Shuffle, Sparkles, Phone, Briefcase
 } from 'lucide-react';
 import axios from 'axios';
 
@@ -24,6 +24,9 @@ const UserProfilePage = ({ user, onLogout, onClose }) => {
   const [profileData, setProfileData] = useState({
     full_name: user?.full_name || '',
     email: user?.email || '',
+    phone_number: user?.phone_number || '',
+    professional_field: user?.professional_field || '',
+    country: user?.country || '',
   });
 
   // Password form state
@@ -155,8 +158,8 @@ const UserProfilePage = ({ user, onLogout, onClose }) => {
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
             className={`flex items-center gap-2 px-6 py-4 border-b-2 transition-colors ${activeTab === tab.id
-                ? 'border-slate-900 text-slate-900 font-semibold'
-                : 'border-transparent text-slate-600 hover:text-slate-900'
+              ? 'border-slate-900 text-slate-900 font-semibold'
+              : 'border-transparent text-slate-600 hover:text-slate-900'
               }`}
           >
             <tab.icon size={18} />
@@ -285,6 +288,67 @@ const UserProfilePage = ({ user, onLogout, onClose }) => {
               <p className="text-xs text-slate-600 mt-2">Email cannot be changed</p>
             </div>
 
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+              <div>
+                <label className="block text-sm font-semibold text-slate-900 mb-2">
+                  Phone Number
+                </label>
+                <div className="relative">
+                  <Phone className="absolute left-3 top-2.5 text-slate-400" size={18} />
+                  <input
+                    type="tel"
+                    value={profileData.phone_number}
+                    onChange={(e) =>
+                      setProfileData({ ...profileData, phone_number: e.target.value })
+                    }
+                    className="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:border-slate-900 focus:ring-2 focus:ring-slate-900/20 transition-all"
+                    placeholder="+1 234 567 890"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-slate-900 mb-2">
+                  Country
+                </label>
+                <div className="relative">
+                  <Globe className="absolute left-3 top-2.5 text-slate-400" size={18} />
+                  <input
+                    type="text"
+                    value={profileData.country}
+                    onChange={(e) =>
+                      setProfileData({ ...profileData, country: e.target.value })
+                    }
+                    className="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:border-slate-900 focus:ring-2 focus:ring-slate-900/20 transition-all"
+                    placeholder="e.g. USA"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="mb-8">
+              <label className="block text-sm font-semibold text-slate-900 mb-2">
+                Profession
+              </label>
+              <div className="relative">
+                <Briefcase className="absolute left-3 top-2.5 text-slate-400" size={18} />
+                <select
+                  value={profileData.professional_field}
+                  onChange={(e) =>
+                    setProfileData({ ...profileData, professional_field: e.target.value })
+                  }
+                  className="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:border-slate-900 focus:ring-2 focus:ring-slate-900/20 transition-all appearance-none bg-white font-medium"
+                >
+                  <option value="" disabled>Select Profession</option>
+                  <option value="Engineer">Engineer</option>
+                  <option value="Data Scientist">Data Scientist</option>
+                  <option value="Product Manager">Product Manager</option>
+                  <option value="Analyst">Analyst</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+            </div>
+
             <button
               type="submit"
               disabled={loading}
@@ -393,6 +457,18 @@ const UserProfilePage = ({ user, onLogout, onClose }) => {
                 <p className="text-sm text-slate-600">Name</p>
                 <p className="text-base font-semibold text-slate-900">{user?.full_name}</p>
               </div>
+              <div>
+                <p className="text-sm text-slate-600">Mobile Number</p>
+                <p className="text-base font-semibold text-slate-900">{user?.phone_number || 'Not provided'}</p>
+              </div>
+              <div>
+                <p className="text-sm text-slate-600">Profession</p>
+                <p className="text-base font-semibold text-slate-900">{user?.professional_field || 'Not provided'}</p>
+              </div>
+              <div>
+                <p className="text-sm text-slate-600">Country</p>
+                <p className="text-base font-semibold text-slate-900">{user?.country || 'Not provided'}</p>
+              </div>
               {user?.created_at && (
                 <div>
                   <p className="text-sm text-slate-600">Member Since</p>
@@ -438,8 +514,9 @@ const UserProfilePage = ({ user, onLogout, onClose }) => {
             </button>
           </div>
         </div>
-      )}
-    </motion.div>
+      )
+      }
+    </motion.div >
   );
 };
 

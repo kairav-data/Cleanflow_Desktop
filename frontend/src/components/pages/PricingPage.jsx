@@ -1,13 +1,16 @@
-import React from 'react';
+import React, { useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import { ArrowRight, Check, Zap, Sparkles, Crown } from 'lucide-react';
 
 const PricingPage = ({ onClose }) => {
-  const plans = [
+  const [billingCycle, setBillingCycle] = useState('monthly'); // 'monthly' | 'annual'
+  const MotionDiv = motion.div;
+  const MotionDetails = motion.details;
+
+  const basePlans = useMemo(() => ([
     {
       name: 'Starter',
-      price: '$29',
-      period: '/month',
+      monthlyPrice: 29,
       description: 'Perfect for individuals and small teams',
       features: [
         'Up to 100k records/month',
@@ -23,8 +26,7 @@ const PricingPage = ({ onClose }) => {
     },
     {
       name: 'Professional',
-      price: '$99',
-      period: '/month',
+      monthlyPrice: 99,
       description: 'For growing data teams',
       features: [
         'Up to 5M records/month',
@@ -42,8 +44,6 @@ const PricingPage = ({ onClose }) => {
     },
     {
       name: 'Enterprise',
-      price: 'Custom',
-      period: 'pricing',
       description: 'For large-scale operations',
       features: [
         'Unlimited records',
@@ -59,7 +59,21 @@ const PricingPage = ({ onClose }) => {
       highlighted: false,
       icon: <Crown className="text-yellow-500" size={24} />
     }
-  ];
+  ]), []);
+
+  const plans = useMemo(() => {
+    const annualMultiplier = 12 * 0.8; // 20% discount
+    return basePlans.map((p) => {
+      if (p.name === 'Enterprise') {
+        return { ...p, price: 'Custom', period: 'pricing' };
+      }
+      const monthly = p.monthlyPrice;
+      const annual = Math.round(monthly * annualMultiplier);
+      return billingCycle === 'annual'
+        ? { ...p, price: `$${annual}`, period: '/year' }
+        : { ...p, price: `$${monthly}`, period: '/month' };
+    });
+  }, [basePlans, billingCycle]);
 
   const faqs = [
     {
@@ -89,7 +103,7 @@ const PricingPage = ({ onClose }) => {
   ];
 
   return (
-    <motion.div
+    <MotionDiv
       key="pricing-tab"
       initial={{ opacity: 0, y: 15 }}
       animate={{ opacity: 1, y: 0 }}
@@ -115,11 +129,27 @@ const PricingPage = ({ onClose }) => {
           Choose the perfect plan for your data validation needs. All plans include a 14-day free trial.
         </p>
         <div className="flex items-center justify-center gap-3">
-          <button className="px-6 py-2 text-sm font-medium text-slate-900 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-all">
+          <button
+            type="button"
+            onClick={() => setBillingCycle('monthly')}
+            className={`px-6 py-2 text-sm font-semibold rounded-lg transition-all border ${
+              billingCycle === 'monthly'
+                ? 'bg-slate-900 text-white border-slate-900'
+                : 'bg-white text-slate-900 border-slate-200 hover:bg-slate-50'
+            }`}
+          >
             Monthly
           </button>
-          <button className="px-6 py-2 text-sm font-medium text-white bg-slate-900 rounded-lg hover:bg-slate-800 transition-all">
-            Annual <span className="ml-1 text-slate-300">-20%</span>
+          <button
+            type="button"
+            onClick={() => setBillingCycle('annual')}
+            className={`px-6 py-2 text-sm font-semibold rounded-lg transition-all border ${
+              billingCycle === 'annual'
+                ? 'bg-slate-900 text-white border-slate-900'
+                : 'bg-white text-slate-900 border-slate-200 hover:bg-slate-50'
+            }`}
+          >
+            Annual <span className="ml-1 text-slate-500">-20%</span>
           </button>
         </div>
       </div>
@@ -127,7 +157,7 @@ const PricingPage = ({ onClose }) => {
       {/* Pricing Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full mb-24 max-w-6xl">
         {plans.map((plan, idx) => (
-          <motion.div
+          <MotionDiv
             key={idx}
             whileHover={{ y: -4 }}
             className={`relative rounded-lg p-8 transition-all duration-300 ${
@@ -191,7 +221,7 @@ const PricingPage = ({ onClose }) => {
                 </div>
               ))}
             </div>
-          </motion.div>
+          </MotionDiv>
         ))}
       </div>
 
@@ -229,7 +259,7 @@ const PricingPage = ({ onClose }) => {
         </h2>
         <div className="space-y-3">
           {faqs.map((faq, i) => (
-            <motion.details
+            <MotionDetails
               key={i}
               className="group bg-white border border-slate-200 rounded-lg overflow-hidden hover:border-slate-300 transition-colors"
             >
@@ -242,24 +272,24 @@ const PricingPage = ({ onClose }) => {
               <div className="px-6 py-4 border-t border-slate-100 text-slate-600">
                 {faq.a}
               </div>
-            </motion.details>
+            </MotionDetails>
           ))}
         </div>
       </div>
 
       {/* CTA Section */}
-      <div className="w-full max-w-4xl bg-gradient-to-r from-blue-600 to-purple-600 rounded-3xl p-12 text-center mb-12">
+      <div className="w-full max-w-4xl bg-slate-900 rounded-3xl p-12 text-center mb-12">
         <h2 className="text-3xl font-black text-white mb-4">
           Ready to transform your data?
         </h2>
-        <p className="text-blue-100 mb-8 text-lg">
+        <p className="text-slate-300 mb-8 text-lg">
           Start your 14-day free trial today. No credit card required.
         </p>
-        <button className="bg-white text-blue-600 px-8 py-4 rounded-xl font-bold hover:bg-slate-50 transition-all shadow-lg">
+        <button className="bg-white text-slate-900 px-8 py-4 rounded-xl font-bold hover:bg-slate-100 transition-all shadow-lg">
           Start Free Trial <ArrowRight className="inline ml-2" size={20} />
         </button>
       </div>
-    </motion.div>
+    </MotionDiv>
   );
 };
 

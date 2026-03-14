@@ -50,10 +50,7 @@ const PlatformDropdown = ({ onFeatureSelect }) => {
     <div
       className="relative"
       onMouseEnter={() => setIsOpen(true)}
-      onMouseLeave={() => {
-        const timer = setTimeout(() => setIsOpen(false), 100);
-        return () => clearTimeout(timer);
-      }}
+      onMouseLeave={() => setIsOpen(false)}
     >
       <button
         className="px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors cursor-pointer flex items-center gap-1"
@@ -109,14 +106,6 @@ const PlatformDropdown = ({ onFeatureSelect }) => {
             </a>
           </div>
         </div>
-      )}
-
-      {/* Overlay to close dropdown */}
-      {isOpen && (
-        <div
-          className="fixed inset-0 z-40"
-          onClick={() => setIsOpen(false)}
-        />
       )}
     </div>
   );

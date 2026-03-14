@@ -80,7 +80,7 @@ const Footer = () => {
               />
               <button
                 type="submit"
-                className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl transition-all flex items-center gap-2 whitespace-nowrap shadow-md hover:shadow-lg"
+                className="px-6 py-3 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl transition-all flex items-center gap-2 whitespace-nowrap shadow-md hover:shadow-lg"
               >
                 {subscribed ? '✓' : <Send size={18} />} {subscribed ? 'Subscribed' : 'Subscribe'}
               </button>

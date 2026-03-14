@@ -1,21 +1,45 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-import { X, Mail, Lock, User, ArrowRight, AlertCircle, CheckCircle2 } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { X, Mail, Lock, User, ArrowRight, AlertCircle, CheckCircle2, Phone, Briefcase, Globe, Building2 } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 // Pulling the URL from the .env file
 const API_BASE = import.meta.env.VITE_API_BASE_URL;
 
-const AuthModal = ({ isOpen, onClose, onLoginSuccess }) => {
+const COUNTRY_CODES = [
+    { code: '+1', label: 'US/CA (+1)' },
+    { code: '+44', label: 'UK (+44)' },
+    { code: '+49', label: 'DE (+49)' },
+    { code: '+61', label: 'AU (+61)' },
+    { code: '+91', label: 'IN (+91)' },
+    { code: '+971', label: 'UAE (+971)' },
+];
+
+const AuthModal = ({ isOpen, onClose, onLoginSuccess, defaultMode = 'login' }) => {
     const [isLogin, setIsLogin] = useState(true);
     const [showOtp, setShowOtp] = useState(false);
     const [otp, setOtp] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [fullName, setFullName] = useState('');
+    const [phoneCountryCode, setPhoneCountryCode] = useState('+91');
+    const [phoneLocalNumber, setPhoneLocalNumber] = useState('');
+    const [profession, setProfession] = useState('');
+    const [country, setCountry] = useState('');
+    const [companyName, setCompanyName] = useState('');
     const [error, setError] = useState('');
     const [successMsg, setSuccessMsg] = useState('');
     const [loading, setLoading] = useState(false);
+    const MotionDiv = motion.div;
+
+    useEffect(() => {
+        if (!isOpen) return;
+        setIsLogin(defaultMode !== 'signup');
+        setShowOtp(false);
+        setOtp('');
+        setError('');
+        setSuccessMsg('');
+    }, [isOpen, defaultMode]);
 
     if (!isOpen) return null;
 
@@ -71,10 +95,15 @@ const AuthModal = ({ isOpen, onClose, onLoginSuccess }) => {
                 }
             } else {
                 // REGISTRATION FLOW (Uses JSON)
+                const phoneNumber = `${phoneCountryCode} ${phoneLocalNumber}`.trim();
                 await axios.post(`${API_BASE}/register`, {
                     email: email,
                     password: password,
-                    full_name: fullName
+                    full_name: fullName,
+                    phone_number: phoneNumber,
+                    professional_field: profession,
+                    country: country,
+                    company_name: companyName
                 });
 
                 setSuccessMsg("Account created! You can now sign in.");
@@ -106,7 +135,7 @@ const AuthModal = ({ isOpen, onClose, onLoginSuccess }) => {
 
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-            <motion.div
+            <MotionDiv
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
@@ -114,7 +143,7 @@ const AuthModal = ({ isOpen, onClose, onLoginSuccess }) => {
                 onClick={onClose}
             />
 
-            <motion.div
+            <MotionDiv
                 initial={{ opacity: 0, scale: 0.95, y: 20 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95, y: 20 }}
@@ -155,20 +184,105 @@ const AuthModal = ({ isOpen, onClose, onLoginSuccess }) => {
                         ) : (
                             <>
                                 {!isLogin && (
-                                    <div className="space-y-1">
-                                        <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Full Name</label>
-                                        <div className="relative">
-                                            <User className="absolute left-4 top-3.5 text-slate-400" size={18} />
-                                            <input
-                                                type="text"
-                                                value={fullName}
-                                                onChange={(e) => setFullName(e.target.value)}
-                                                className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all"
-                                                placeholder="John Doe"
-                                                required={!isLogin}
-                                            />
+                                    <>
+                                        <div className="space-y-1">
+                                            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Full Name</label>
+                                            <div className="relative">
+                                                <User className="absolute left-4 top-3.5 text-slate-400" size={18} />
+                                                <input
+                                                    type="text"
+                                                    value={fullName}
+                                                    onChange={(e) => setFullName(e.target.value)}
+                                                    className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all"
+                                                    placeholder="John Doe"
+                                                    required={!isLogin}
+                                                />
+                                            </div>
                                         </div>
-                                    </div>
+
+                                        <div className="space-y-1">
+                                            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Mobile Number</label>
+                                            <div className="flex gap-3">
+                                                <div className="relative w-[42%]">
+                                                    <Phone className="absolute left-4 top-3.5 text-slate-400" size={18} />
+                                                    <select
+                                                        value={phoneCountryCode}
+                                                        onChange={(e) => setPhoneCountryCode(e.target.value)}
+                                                        className="w-full pl-12 pr-10 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all appearance-none text-slate-900"
+                                                        required={!isLogin}
+                                                    >
+                                                        {COUNTRY_CODES.map((c) => (
+                                                            <option key={c.code} value={c.code}>{c.label}</option>
+                                                        ))}
+                                                    </select>
+                                                </div>
+                                                <div className="relative flex-1">
+                                                    <input
+                                                        type="tel"
+                                                        inputMode="tel"
+                                                        autoComplete="tel-national"
+                                                        value={phoneLocalNumber}
+                                                        onChange={(e) => setPhoneLocalNumber(e.target.value)}
+                                                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all"
+                                                        placeholder="9876543210"
+                                                        required={!isLogin}
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-1">
+                                            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Company Name</label>
+                                            <div className="relative">
+                                                <Building2 className="absolute left-4 top-3.5 text-slate-400" size={18} />
+                                                <input
+                                                    type="text"
+                                                    value={companyName}
+                                                    onChange={(e) => setCompanyName(e.target.value)}
+                                                    className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all"
+                                                    placeholder="e.g. Acme Corp"
+                                                    required={!isLogin}
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div className="space-y-1">
+                                                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Profession</label>
+                                                <div className="relative">
+                                                    <Briefcase className="absolute left-4 top-3.5 text-slate-400" size={18} />
+                                                    <select
+                                                        value={profession}
+                                                        onChange={(e) => setProfession(e.target.value)}
+                                                        className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all appearance-none text-slate-900"
+                                                        required={!isLogin}
+                                                    >
+                                                        <option value="" disabled>Select...</option>
+                                                        <option value="Engineer">Engineer</option>
+                                                        <option value="Data Scientist">Data Scientist</option>
+                                                        <option value="Product Manager">Product Manager</option>
+                                                        <option value="Analyst">Analyst</option>
+                                                        <option value="Other">Other</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+
+                                            <div className="space-y-1">
+                                                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Country</label>
+                                                <div className="relative">
+                                                    <Globe className="absolute left-4 top-3.5 text-slate-400" size={18} />
+                                                    <input
+                                                        type="text"
+                                                        value={country}
+                                                        onChange={(e) => setCountry(e.target.value)}
+                                                        className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all"
+                                                        placeholder="e.g. India"
+                                                        required={!isLogin}
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </>
                                 )}
 
                                 <div className="space-y-1">
@@ -252,7 +366,7 @@ const AuthModal = ({ isOpen, onClose, onLoginSuccess }) => {
                         </div>
                     )}
                 </div>
-            </motion.div>
+            </MotionDiv>
         </div>
     );
 };

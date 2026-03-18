@@ -12,6 +12,7 @@ import { DataConnection, RuleBuilder, ResultsDashboard } from './components';
 import { AuthModal, PaymentModal } from './components/modals';
 import { Footer, PlatformDropdown } from './components/common';
 import { HomePage, PricingPage, UserProfilePage } from './components/pages';
+import ChatBot from './components/ChatBot';
 
 // Feature Builders
 import { EnrichmentBuilder, ScraperBuilder, SchemaMapper, DataMatchingBuilder } from './features';
@@ -564,6 +565,7 @@ function App() {
           }
         }}
       />
+      <ChatBot />
       <Footer />
     </div>
   );

@@ -24,3 +24,5 @@ rapidfuzz
 scikit-learn
 fastexcel
 resend
+huggingface_hub
+python-dotenv

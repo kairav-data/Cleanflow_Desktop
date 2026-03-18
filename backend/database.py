@@ -20,6 +20,7 @@ class UserPG(Base):
     phone_number = Column(String, nullable=True)
     professional_field = Column(String, nullable=True)
     country = Column(String, nullable=True)
+    company_name = Column(String, nullable=True)
     hashed_password = Column(String)
     is_premium = Column(Boolean, default=False)
     is_verified = Column(Boolean, default=False)
@@ -82,6 +83,7 @@ class DatabaseManager:
                     "ALTER TABLE users ADD COLUMN IF NOT EXISTS phone_number VARCHAR;",
                     "ALTER TABLE users ADD COLUMN IF NOT EXISTS professional_field VARCHAR;",
                     "ALTER TABLE users ADD COLUMN IF NOT EXISTS country VARCHAR;",
+                    "ALTER TABLE users ADD COLUMN IF NOT EXISTS company_name VARCHAR;",
                     "ALTER TABLE validation_jobs ADD COLUMN IF NOT EXISTS rules TEXT;",
                     "ALTER TABLE validation_jobs ADD COLUMN IF NOT EXISTS module VARCHAR DEFAULT 'validation';",
                     "ALTER TABLE validation_jobs ADD COLUMN IF NOT EXISTS total_rows INTEGER DEFAULT 0;",
@@ -114,6 +116,7 @@ class DatabaseManager:
                 phone_number=user_data.get('phone_number'),
                 professional_field=user_data.get('professional_field'),
                 country=user_data.get('country'),
+                company_name=user_data.get('company_name'),
                 hashed_password=user_data['hashed_password'],
                 is_premium=user_data.get('is_premium', False),
                 is_verified=False
@@ -134,6 +137,7 @@ class DatabaseManager:
                 "phone_number": user.phone_number,
                 "professional_field": user.professional_field,
                 "country": user.country,
+                "company_name": user.company_name,
                 "hashed_password": user.hashed_password,
                 "is_premium": user.is_premium,
                 "is_verified": user.is_verified,

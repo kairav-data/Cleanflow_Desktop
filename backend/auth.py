@@ -71,13 +71,20 @@ async def register(user: UserCreate):
         "phone_number": user.phone_number,
         "professional_field": user.professional_field,
         "country": user.country,
+        "company_name": user.company_name,
         "is_premium": False
     }
     
     await create_user(user_in_db)
     
-    access_token = create_access_token(data={"sub": user.email})
-    return {"access_token": access_token, "token_type": "bearer"}
+    otp = str(random.randint(100000, 999999))
+    await update_user_otp(user.email, otp, datetime.utcnow())
+    send_otp_email(user.email, otp)
+    
+    raise HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail="OTP_REQUIRED"
+    )
 
 @router.post("/token", response_model=Token)
 async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends()):

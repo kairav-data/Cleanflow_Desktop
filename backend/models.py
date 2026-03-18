@@ -8,6 +8,7 @@ class UserBase(BaseModel):
     phone_number: Optional[str] = None
     professional_field: Optional[str] = None
     country: Optional[str] = None
+    company_name: Optional[str] = None
 
 class UserCreate(UserBase):
     password: str

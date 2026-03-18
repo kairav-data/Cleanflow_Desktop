@@ -95,20 +95,27 @@ const AuthModal = ({ isOpen, onClose, onLoginSuccess, defaultMode = 'login' }) =
                 }
             } else {
                 // REGISTRATION FLOW (Uses JSON)
-                const phoneNumber = `${phoneCountryCode} ${phoneLocalNumber}`.trim();
-                await axios.post(`${API_BASE}/register`, {
-                    email: email,
-                    password: password,
-                    full_name: fullName,
-                    phone_number: phoneNumber,
-                    professional_field: profession,
-                    country: country,
-                    company_name: companyName
-                });
-
-                setSuccessMsg("Account created! You can now sign in.");
-                setIsLogin(true); // Switch to login view
-                setLoading(false);
+                try {
+                    const phoneNumber = `${phoneCountryCode} ${phoneLocalNumber}`.trim();
+                    const response = await axios.post(`${API_BASE}/register`, {
+                        email: email,
+                        password: password,
+                        full_name: fullName,
+                        phone_number: phoneNumber,
+                        professional_field: profession,
+                        country: country,
+                        company_name: companyName
+                    });
+                } catch (err) {
+                    const detail = err.response?.data?.detail;
+                    if (detail === "OTP_REQUIRED") {
+                        setShowOtp(true);
+                        setSuccessMsg("An OTP code has been sent to your email.");
+                        setLoading(false);
+                        return;
+                    }
+                    throw err; // Re-throw if it wasn't the expected OTP response
+                }
             }
         } catch (err) {
             console.error("Auth Error:", err);

@@ -25,6 +25,11 @@ const DataConnection = ({ onUploadSuccess }) => {
     const [query, setQuery] = useState('SELECT * FROM your_table LIMIT 100');
     const [loadingConnections, setLoadingConnections] = useState(false);
     const [showNewConnForm, setShowNewConnForm] = useState(false);
+    
+    // New states for table selection
+    const [tables, setTables] = useState([]);
+    const [loadingTables, setLoadingTables] = useState(false);
+    const [selectedTable, setSelectedTable] = useState('');
 
     const [newConn, setNewConn] = useState({
         name: '', db_type: 'postgresql', host: '', port: 5432, database: '', username: '', password: ''
@@ -40,13 +45,48 @@ const DataConnection = ({ onUploadSuccess }) => {
     const fetchConnections = async () => {
         setLoadingConnections(true);
         try {
-            const res = await axios.get(`${API_BASE}/history/connections`, { headers });
+            const res = await axios.get(`${API_BASE}/connections`, { headers });
             setConnections(res.data);
             if (res.data.length > 0 && !selectedConnection) setSelectedConnection(res.data[0]);
         } catch (err) {
             setError("Could not load saved connections.");
         } finally {
             setLoadingConnections(false);
+        }
+    };
+
+    useEffect(() => {
+        if (selectedConnection) {
+            fetchTables(selectedConnection.id);
+        } else {
+            setTables([]);
+            setSelectedTable('');
+        }
+    }, [selectedConnection]);
+
+    const fetchTables = async (connId) => {
+        setLoadingTables(true);
+        setTables([]);
+        setSelectedTable('');
+        try {
+            const res = await axios.get(`${API_BASE}/connections/${connId}/tables`, { headers });
+            if (res.data.status === 'success') {
+                setTables(res.data.tables || []);
+            }
+        } catch (err) {
+            console.error("Could not load tables.", err);
+        } finally {
+            setLoadingTables(false);
+        }
+    };
+
+    const handleTableChange = (e) => {
+        const table = e.target.value;
+        setSelectedTable(table);
+        if (table) {
+            setQuery(`SELECT * FROM ${table} LIMIT 1000`);
+        } else {
+            setQuery('');
         }
     };
 
@@ -199,9 +239,7 @@ const DataConnection = ({ onUploadSuccess }) => {
                         </motion.div>
                     </motion.div>
                 ) : (
-                    /* Database Connection Mode (Simplified for brevity but styled similarly) */
                     <motion.div key="db" className="bg-white border border-slate-200 rounded-[2.5rem] p-10 shadow-xl shadow-slate-200/50">
-                        {/* ... Database logic remains same but uses updated spacing and rounded-3xl buttons ... */}
                         <div className="flex items-center gap-4 mb-8">
                             <div className="p-4 bg-brand-dark/5 text-brand-dark rounded-2xl"><Server size={32} /></div>
                             <div>
@@ -209,7 +247,111 @@ const DataConnection = ({ onUploadSuccess }) => {
                                 <p className="text-slate-500">Select a secure connection to your warehouse</p>
                             </div>
                         </div>
-                        {/* Render Saved Connections here with updated card styling */}
+                        
+                        {error && (
+                            <div className="mb-6 p-4 bg-red-50 text-red-700 border border-red-200 rounded-xl flex items-center gap-3">
+                                <AlertCircle size={20} className="shrink-0" />
+                                <span className="text-sm font-medium">{error}</span>
+                            </div>
+                        )}
+
+                        {loadingConnections ? (
+                            <div className="flex justify-center py-12">
+                                <Loader2 className="w-8 h-8 text-brand-blue animate-spin" />
+                            </div>
+                        ) : connections.length === 0 ? (
+                            <div className="text-center py-12 px-6 bg-slate-50 border border-slate-200 border-dashed rounded-3xl">
+                                <Database size={48} className="mx-auto text-slate-300 mb-4" />
+                                <h4 className="text-lg font-bold text-slate-700 mb-2">No Connections Found</h4>
+                                <p className="text-slate-500 text-sm mb-6 max-w-sm mx-auto">You haven't added any database connections yet. Please add one from the sidebar.</p>
+                            </div>
+                        ) : (
+                            <div className="space-y-6">
+                                <div>
+                                    <label className="block text-sm font-bold text-slate-700 mb-2">1. Select Connection</label>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        {connections.map(conn => (
+                                            <button
+                                                key={conn.id}
+                                                onClick={() => setSelectedConnection(conn)}
+                                                className={`p-4 rounded-2xl border text-left flex items-start gap-4 transition-all ${
+                                                    selectedConnection?.id === conn.id
+                                                        ? 'border-brand-blue bg-brand-blue/5 shadow-md shadow-brand-blue/10'
+                                                        : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50'
+                                                }`}
+                                            >
+                                                <div className={`mt-0.5 w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 ${
+                                                    selectedConnection?.id === conn.id ? 'border-brand-blue' : 'border-slate-300'
+                                                }`}>
+                                                    {selectedConnection?.id === conn.id && <div className="w-2 h-2 bg-brand-blue rounded-full" />}
+                                                </div>
+                                                <div>
+                                                    <div className="font-bold text-slate-800">{conn.name}</div>
+                                                    <div className="text-xs text-slate-500 mt-1">{conn.db_type.toUpperCase()} • {conn.host}</div>
+                                                </div>
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                                
+                                <div>
+                                    <label className="block text-sm font-bold text-slate-700 mb-2">2. Select Table</label>
+                                    {loadingTables ? (
+                                        <div className="flex items-center gap-2 text-slate-500 text-sm py-3 px-4 border border-slate-200 rounded-xl">
+                                            <Loader2 className="w-4 h-4 animate-spin" /> Loading tables...
+                                        </div>
+                                    ) : (
+                                        <div className="relative">
+                                            <select 
+                                                value={selectedTable}
+                                                onChange={handleTableChange}
+                                                className="w-full p-4 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-brand-blue focus:ring-4 focus:ring-brand-blue/10 appearance-none bg-white pr-10"
+                                            >
+                                                <option value="">-- Select a table --</option>
+                                                {tables.map(t => (
+                                                    <option key={t} value={t}>{t}</option>
+                                                ))}
+                                            </select>
+                                            <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={16} />
+                                        </div>
+                                    )}
+                                </div>
+                                
+                                <div>
+                                    <label className="block text-sm font-bold text-slate-700 mb-2">3. SQL Query</label>
+                                    <textarea
+                                        value={query}
+                                        onChange={(e) => setQuery(e.target.value)}
+                                        className="w-full p-4 border border-slate-200 rounded-2xl font-mono text-sm min-h-[120px] focus:outline-none focus:border-brand-blue focus:ring-4 focus:ring-brand-blue/10"
+                                        placeholder="SELECT * FROM users LIMIT 1000"
+                                    />
+                                    <p className="text-xs text-slate-500 mt-2">Write a SELECT query to pull the exact dataset you want to clean.</p>
+                                </div>
+                                
+                                <button
+                                    onClick={async () => {
+                                        if (!selectedConnection || !query) return;
+                                        setIsLoading(true);
+                                        setError(null);
+                                        try {
+                                            const response = await axios.post(`${API_BASE}/ingest/database`, {
+                                                connection_id: selectedConnection.id,
+                                                query: query
+                                            }, { headers });
+                                            onUploadSuccess(response.data);
+                                        } catch (err) {
+                                            setError(err.response?.data?.detail || "Error connecting to database.");
+                                            setIsLoading(false);
+                                        }
+                                    }}
+                                    disabled={!selectedConnection || !query || isLoading}
+                                    className="w-full py-4 bg-brand-dark hover:bg-slate-800 disabled:bg-slate-300 disabled:cursor-not-allowed text-white rounded-2xl font-black text-lg flex items-center justify-center gap-2"
+                                >
+                                    {isLoading ? <Loader2 size={24} className="animate-spin" /> : <Play size={20} />}
+                                    {isLoading ? 'Ingesting Data...' : 'Run Query & Import'}
+                                </button>
+                            </div>
+                        )}
                     </motion.div>
                 )}
             </AnimatePresence>

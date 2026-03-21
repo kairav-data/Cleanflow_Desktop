@@ -449,6 +449,52 @@ async def load_matching_dataset_file(
         logger.exception(f"Matching upload error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.post("/features/matching/ingest-database")
+async def ingest_database_matching(request: dict, current_user: UserInDB = Depends(get_current_user)):
+    """Load a dataset from database query for matching"""
+    from features.matching import DataMatcher
+    from history import _build_connection_string_from_dict
+    
+    session_id = request.get('session_id')
+    dataset_id = request.get('dataset_id')
+    connection_id = request.get('connection_id')
+    query = request.get('query')
+    
+    if not all([session_id, dataset_id, connection_id, query]):
+        raise HTTPException(status_code=400, detail="session_id, dataset_id, connection_id, and query are required")
+        
+    conn_data = await db.get_connection(connection_id, current_user.email)
+    if not conn_data:
+        raise HTTPException(status_code=404, detail="Connection not found")
+
+    try:
+        conn_str = _build_connection_string_from_dict(conn_data)
+        
+        try:
+             df = pl.read_database(query, conn_str)
+        except:
+             engine_db = create_engine(conn_str)
+             pdf = pd.read_sql(query, engine_db)
+             df = pl.from_pandas(pdf)
+             
+        if session_id not in sessions:
+            matcher = DataMatcher(session_id)
+            sessions[session_id] = matcher
+        else:
+            matcher = sessions[session_id]
+            
+        matcher.load_dataset(dataset_id, df)
+        
+        return {
+            "session_id": session_id,
+            "dataset_id": dataset_id,
+            "columns": df.columns,
+            "rows": len(df)
+        }
+    except Exception as e:
+        logger.exception(f"Matching database ingest error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.post("/features/matching/preview/{session_id}")
 async def preview_matching(session_id: str, config: dict):
     """Preview matching on sample data"""

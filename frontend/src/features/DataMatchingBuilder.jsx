@@ -18,8 +18,16 @@ export default function DataMatchingBuilder({ onComplete }) {
     const [progress, setProgress] = useState({ percent: 0, message: '', status: 'idle' });
     const [step, setStep] = useState(1); // 1: Upload, 2: Configure, 3: Complete
     const [separators, setSeparators] = useState({ dataset1: ',', dataset2: ',' });
-    const [showSeparatorInput, setShowSeparatorInput] = useState({ dataset1: false, dataset2: false });
     const [elapsedTime, setElapsedTime] = useState(0);
+
+    // Database connection states
+    const [connections, setConnections] = useState([]);
+    const [datasetMode, setDatasetMode] = useState({ dataset1: 'file', dataset2: 'file' });
+    const [datasetQueries, setDatasetQueries] = useState({ dataset1: 'SELECT * FROM table1 LIMIT 100', dataset2: 'SELECT * FROM table2 LIMIT 100' });
+    const [datasetConnections, setDatasetConnections] = useState({ dataset1: '', dataset2: '' });
+    
+    const token = localStorage.getItem('token');
+    const headers = token ? { Authorization: `Bearer ${token}` } : {};
 
     useEffect(() => {
         let interval;
@@ -36,6 +44,7 @@ export default function DataMatchingBuilder({ onComplete }) {
 
     useEffect(() => {
         fetchAlgorithms();
+        fetchConnections();
     }, []);
 
     const fetchAlgorithms = async () => {
@@ -44,6 +53,40 @@ export default function DataMatchingBuilder({ onComplete }) {
             setAlgorithms(res.data.algorithms || []);
         } catch (e) {
             console.error('Error fetching algorithms:', e);
+        }
+    };
+
+    const fetchConnections = async () => {
+        if (!token) return;
+        try {
+            const res = await axios.get(`${API_BASE}/history/connections`, { headers });
+            setConnections(res.data);
+            if (res.data.length > 0) {
+                setDatasetConnections({ dataset1: res.data[0].id, dataset2: res.data[0].id });
+            }
+        } catch (err) {
+            console.error("Could not load saved connections.", err);
+        }
+    };
+
+    const handleDatabaseIngest = async (datasetId) => {
+        const query = datasetQueries[datasetId];
+        const connectionId = datasetConnections[datasetId];
+        
+        if (!query || !connectionId) return;
+
+        try {
+            const res = await axios.post(`${API_BASE}/features/matching/ingest-database`, {
+                session_id: sessionId,
+                dataset_id: datasetId,
+                connection_id: connectionId,
+                query: query
+            }, { headers });
+
+            setDatasets(prev => ({ ...prev, [datasetId]: true }));
+            setDatasetColumns(prev => ({ ...prev, [datasetId]: res.data.columns }));
+        } catch (e) {
+            alert('Database import failed: ' + (e.response?.data?.detail || e.message || e));
         }
     };
 
@@ -185,58 +228,112 @@ export default function DataMatchingBuilder({ onComplete }) {
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
                     <div className="grid grid-cols-2 gap-8 mb-8">
                         {['dataset1', 'dataset2'].map((dsId, idx) => (
-                            <div key={dsId} className="border-2 border-dashed border-slate-200 rounded-2xl p-8">
-                                <Upload className="mx-auto text-slate-400 mb-4" size={48} />
-                                <h3 className="font-black text-lg mb-2 text-center">Dataset {idx + 1}</h3>
-
-                                {/* Delimiter Selection */}
-                                <div className="flex flex-col items-center gap-2 mb-4">
-                                    <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Separator</span>
-                                    <div className="flex gap-2">
-                                        {[',', ';', '|'].map(d => (
-                                            <button
-                                                key={d}
-                                                onClick={() => setSeparators(prev => ({ ...prev, [dsId]: d }))}
-                                                className={`w-8 h-8 rounded-lg flex items-center justify-center font-mono border transition-all text-sm ${separators[dsId] === d ? 'bg-purple-600 text-white border-purple-600' : 'bg-white text-slate-400 border-slate-200 hover:border-purple-600/30'
-                                                    }`}
-                                            >
-                                                {d}
-                                            </button>
-                                        ))}
-                                        <input
-                                            type="text"
-                                            placeholder="..."
-                                            maxLength={1}
-                                            className={`w-12 h-8 rounded-lg text-center font-mono border transition-all outline-none focus:border-purple-600 text-sm ${![',', ';', '|'].includes(separators[dsId]) ? 'border-purple-600 text-purple-600 font-bold' : 'border-slate-200 text-slate-500'
-                                                }`}
-                                            value={![',', ';', '|'].includes(separators[dsId]) ? separators[dsId] : ''}
-                                            onChange={(e) => setSeparators(prev => ({ ...prev, [dsId]: e.target.value }))}
-                                        />
+                            <div key={dsId} className="border-2 border-dashed border-slate-200 rounded-2xl p-6 bg-white flex flex-col h-full">
+                                <div className="flex justify-between items-center mb-6">
+                                    <h3 className="font-black text-lg text-slate-800">Dataset {idx + 1}</h3>
+                                    <div className="flex bg-slate-100 rounded-lg p-1">
+                                        <button 
+                                            onClick={() => setDatasetMode(prev => ({ ...prev, [dsId]: 'file' }))}
+                                            className={`px-3 py-1 text-xs font-bold rounded-md transition-all ${datasetMode[dsId] === 'file' ? 'bg-white text-purple-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                                        >
+                                            File
+                                        </button>
+                                        <button 
+                                            onClick={() => setDatasetMode(prev => ({ ...prev, [dsId]: 'database' }))}
+                                            className={`px-3 py-1 text-xs font-bold rounded-md transition-all ${datasetMode[dsId] === 'database' ? 'bg-white text-purple-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                                        >
+                                            Database
+                                        </button>
                                     </div>
                                 </div>
 
-                                <input
-                                    type="file"
-                                    accept=".csv,.txt,.xlsx,.xls"
-                                    onChange={(e) => e.target.files[0] && handleFileUpload(dsId, e.target.files[0])}
-                                    className="hidden"
-                                    id={`upload-${dsId}`}
-                                />
-                                <label
-                                    htmlFor={`upload-${dsId}`}
-                                    className="block text-center px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-xl font-bold cursor-pointer"
-                                >
-                                    {datasets[dsId] ? '✓ Uploaded' : 'Upload File'}
-                                </label>
-                                {datasets[dsId] && (
-                                    <div className="mt-3 text-center">
-                                        <p className="text-sm text-slate-600">File uploaded</p>
-                                        <p className="text-xs text-slate-500">{datasetColumns[dsId].length} columns found</p>
+                                {datasetMode[dsId] === 'file' ? (
+                                    <div className="flex flex-col items-center justify-center flex-1">
+                                        <Upload className="mx-auto text-slate-400 mb-4" size={48} />
+                                        
+                                        {/* Delimiter Selection */}
+                                        <div className="flex flex-col items-center gap-2 mb-4">
+                                            <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Separator</span>
+                                            <div className="flex gap-2">
+                                                {[',', ';', '|'].map(d => (
+                                                    <button
+                                                        key={d}
+                                                        onClick={() => setSeparators(prev => ({ ...prev, [dsId]: d }))}
+                                                        className={`w-8 h-8 rounded-lg flex items-center justify-center font-mono border transition-all text-sm ${separators[dsId] === d ? 'bg-purple-600 text-white border-purple-600' : 'bg-white text-slate-400 border-slate-200 hover:border-purple-600/30'}`}
+                                                    >
+                                                        {d}
+                                                    </button>
+                                                ))}
+                                                <input
+                                                    type="text"
+                                                    placeholder="..."
+                                                    maxLength={1}
+                                                    className={`w-12 h-8 rounded-lg text-center font-mono border transition-all outline-none focus:border-purple-600 text-sm ${![',', ';', '|'].includes(separators[dsId]) ? 'border-purple-600 text-purple-600 font-bold' : 'border-slate-200 text-slate-500'}`}
+                                                    value={![',', ';', '|'].includes(separators[dsId]) ? separators[dsId] : ''}
+                                                    onChange={(e) => setSeparators(prev => ({ ...prev, [dsId]: e.target.value }))}
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <input
+                                            type="file"
+                                            accept=".csv,.txt,.xlsx,.xls"
+                                            onChange={(e) => e.target.files[0] && handleFileUpload(dsId, e.target.files[0])}
+                                            className="hidden"
+                                            id={`upload-${dsId}`}
+                                        />
+                                        <label
+                                            htmlFor={`upload-${dsId}`}
+                                            className="block text-center px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-xl font-bold cursor-pointer w-full text-sm"
+                                        >
+                                            {datasets[dsId] ? '✓ Uploaded Successfully' : 'Upload File'}
+                                        </label>
+                                        <p className="text-xs text-slate-400 mt-3 text-center">Supports: CSV, Excel (.xlsx)</p>
+                                    </div>
+                                ) : (
+                                    <div className="flex flex-col flex-1 text-left space-y-4">
+                                        {connections.length === 0 ? (
+                                            <div className="text-center py-8 text-slate-500 text-sm">No databases connected. Add one from the sidebar.</div>
+                                        ) : (
+                                            <>
+                                                <div>
+                                                    <label className="block text-xs font-bold text-slate-500 mb-1">Select Connection</label>
+                                                    <select 
+                                                        value={datasetConnections[dsId]} 
+                                                        onChange={(e) => setDatasetConnections(prev => ({ ...prev, [dsId]: e.target.value }))}
+                                                        className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-700 focus:outline-none focus:border-purple-500"
+                                                    >
+                                                        <option value="">Select a connection...</option>
+                                                        {connections.map(c => <option key={c.id} value={c.id}>{c.name} ({c.db_type})</option>)}
+                                                    </select>
+                                                </div>
+                                                <div className="flex-1 flex flex-col">
+                                                    <label className="block text-xs font-bold text-slate-500 mb-1">SQL Query</label>
+                                                    <textarea 
+                                                        value={datasetQueries[dsId]}
+                                                        onChange={(e) => setDatasetQueries(prev => ({ ...prev, [dsId]: e.target.value }))}
+                                                        className="w-full p-3 bg-slate-50 border border-slate-200 rounded-lg text-sm font-mono flex-1 min-h-[100px] resize-none focus:outline-none focus:border-purple-500"
+                                                        placeholder="SELECT * FROM table"
+                                                    />
+                                                </div>
+                                                <button
+                                                    onClick={() => handleDatabaseIngest(dsId)}
+                                                    disabled={!datasetConnections[dsId] || !datasetQueries[dsId]}
+                                                    className="w-full py-3 bg-purple-600 hover:bg-purple-700 disabled:bg-slate-300 text-white rounded-xl font-bold text-sm transition-colors"
+                                                >
+                                                    {datasets[dsId] ? '✓ Refresh Integration' : 'Import from Database'}
+                                                </button>
+                                            </>
+                                        )}
                                     </div>
                                 )}
-                                <p className="text-xs text-slate-400 mt-2 text-center">
-                                    Supports: CSV, Excel (.xlsx)
-                                </p>
+                                
+                                {datasets[dsId] && (
+                                    <div className="mt-4 pt-4 border-t border-slate-100 flex items-center justify-between text-xs font-medium text-slate-500">
+                                        <span className="flex items-center gap-1 text-green-600"><CheckCircle size={14} /> Ready</span>
+                                        <span>{datasetColumns[dsId].length} columns mapped</span>
+                                    </div>
+                                )}
                             </div>
                         ))}
                     </div>

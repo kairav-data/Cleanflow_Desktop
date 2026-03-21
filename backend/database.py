@@ -263,6 +263,26 @@ class DatabaseManager:
         db.close()
         return conns
 
+    async def get_connection(self, conn_id: str, getattr_email: str = None):
+        db = self.SessionLocal()
+        query = db.query(DbConnection).filter(DbConnection.id == conn_id)
+        if getattr_email:
+            query = query.filter(DbConnection.user_email == getattr_email)
+        conn = query.first()
+        db.close()
+        if conn:
+            return {
+                "id": conn.id,
+                "name": conn.name,
+                "db_type": conn.db_type,
+                "host": conn.host,
+                "port": conn.port,
+                "database": conn.database,
+                "username": conn.username,
+                "password": conn.password
+            }
+        return None
+
 db = DatabaseManager()
 async def get_user(email: str): return await db.get_user(email)
 async def create_user(user_data: dict): return await db.create_user(user_data)

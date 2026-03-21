@@ -85,11 +85,22 @@ async def get_connections(current_user: UserInDB = Depends(get_current_user)) ->
     """Get all saved database connections for the user"""
     try:
         connections = await db.get_user_connections(current_user.email)
-        # Remove sensitive info before returning to frontend
-        for conn in connections:
-            conn.pop("password", None)
-            conn.pop("_id", None)
-        return connections
+        
+        # Convert SQLAlchemy objects to dicts and remove sensitive info
+        result = []
+        for conn_obj in connections:
+            conn = {
+                "id": conn_obj.id,
+                "name": conn_obj.name,
+                "db_type": conn_obj.db_type,
+                "host": conn_obj.host,
+                "port": conn_obj.port,
+                "database": conn_obj.database,
+                "username": conn_obj.username,
+                "created_at": conn_obj.created_at.isoformat() if conn_obj.created_at else None
+            }
+            result.append(conn)
+        return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -98,6 +109,7 @@ async def save_connection(conn: DatabaseConnectionCreate, current_user: UserInDB
     """Save a new database connection"""
     try:
         conn_data = conn.model_dump()
+        conn_data["db_type"] = conn.db_type.value
         conn_data["user_email"] = current_user.email
         conn_data["created_at"] = datetime.utcnow().isoformat()
         conn_data["id"] = str(uuid.uuid4())
@@ -140,8 +152,48 @@ async def run_query(request: DatabaseQueryRequest, current_user: UserInDB = Depe
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@connections_router.get("/{conn_id}/tables")
+async def get_tables(conn_id: str, current_user: UserInDB = Depends(get_current_user)) -> dict:
+    """Get list of tables from a saved connection"""
+    try:
+        conn = await db.get_connection(conn_id, current_user.email)
+        if not conn:
+            raise HTTPException(status_code=404, detail="Connection not found")
+        
+        tables = await _get_tables(conn)
+        return {"status": "success", "tables": tables}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 # --- Helper Functions ---
+async def _get_tables(conn: dict) -> List[str]:
+    db_type = conn.get("db_type", "")
+    query = ""
+    if db_type == "mssql":
+        query = "SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_TYPE = 'BASE TABLE'"
+    elif db_type == "mysql":
+        query = "SHOW TABLES"
+    elif db_type == "postgresql":
+        query = "SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' AND table_type = 'BASE TABLE'"
+    elif db_type == "sqlite":
+        query = "SELECT name FROM sqlite_master WHERE type='table'"
+    elif db_type == "oracle":
+        query = "SELECT object_name FROM all_objects WHERE object_type = 'TABLE'"
+    else:
+        raise ValueError(f"Retrieving tables not supported for DB type: {db_type}")
+
+    rows = await _execute_query(conn, query)
+    
+    tables = []
+    for row in rows:
+        # The column name depends on the DB type, so we just take the first value
+        values = list(row.values())
+        if values:
+            tables.append(str(values[0]))
+    
+    return tables
 
 async def _test_db_connection(conn: DatabaseConnectionCreate) -> bool:
     db_type = conn.db_type.value

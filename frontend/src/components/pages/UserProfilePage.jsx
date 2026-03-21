@@ -3,7 +3,8 @@ import { motion } from 'framer-motion';
 import {
   ArrowRight, User, Lock, Mail, LogOut, Save, Eye, EyeOff,
   AlertCircle, CheckCircle2, X, Clock, History as HistoryIcon,
-  Database, FileCheck, GitMerge, Globe, Shuffle, Sparkles, Phone, Briefcase
+  Database, FileCheck, GitMerge, Globe, Shuffle, Sparkles, Phone, Briefcase,
+  Server, Plus, Trash2
 } from 'lucide-react';
 import axios from 'axios';
 
@@ -19,6 +20,14 @@ const UserProfilePage = ({ user, onLogout, onClose }) => {
   // History state
   const [jobs, setJobs] = useState([]);
   const [loadingJobs, setLoadingJobs] = useState(true);
+
+  // Connection state
+  const [connections, setConnections] = useState([]);
+  const [loadingConnections, setLoadingConnections] = useState(false);
+  const [showConnectionForm, setShowConnectionForm] = useState(false);
+  const [newConn, setNewConn] = useState({
+      name: '', db_type: 'mssql', host: '', port: 1433, database: '', username: '', password: ''
+  });
 
   // Profile form state
   const [profileData, setProfileData] = useState({
@@ -42,6 +51,8 @@ const UserProfilePage = ({ user, onLogout, onClose }) => {
   useEffect(() => {
     if (activeTab === 'history') {
       fetchJobs();
+    } else if (activeTab === 'connections') {
+      fetchConnections();
     }
   }, [activeTab]);
 
@@ -54,6 +65,48 @@ const UserProfilePage = ({ user, onLogout, onClose }) => {
       console.error("Failed to fetch jobs:", e);
     } finally {
       setLoadingJobs(false);
+    }
+  };
+
+  const fetchConnections = async () => {
+    setLoadingConnections(true);
+    try {
+      const res = await axios.get(`${API_BASE}/connections`, { headers });
+      setConnections(res.data || []);
+    } catch (e) {
+      console.error('Error fetching connections:', e);
+    } finally {
+      setLoadingConnections(false);
+    }
+  };
+
+  const saveConnection = async () => {
+    try {
+        await axios.post(`${API_BASE}/connections`, newConn, { headers });
+        setShowConnectionForm(false);
+        setNewConn({ name: '', db_type: 'mssql', host: '', port: 1433, database: '', username: '', password: '' });
+        fetchConnections();
+    } catch (e) {
+        alert('Failed to save: ' + (e.response?.data?.detail || e.message));
+    }
+  };
+
+  const testConnection = async () => {
+    try {
+        const res = await axios.post(`${API_BASE}/connections/test`, newConn, { headers });
+        alert(res.data.status === 'success' ? 'Connection successful!' : 'Connection failed: ' + (res.data.error || 'Unknown error'));
+    } catch (e) {
+        alert('Test failed: ' + e.message);
+    }
+  };
+
+  const deleteConnection = async (id) => {
+    if (!window.confirm('Delete this connection?')) return;
+    try {
+        await axios.delete(`${API_BASE}/connections/${id}`, { headers });
+        fetchConnections();
+    } catch (e) {
+        alert('Failed to delete');
     }
   };
 
@@ -114,6 +167,7 @@ const UserProfilePage = ({ user, onLogout, onClose }) => {
 
   const tabs = [
     { id: 'history', label: 'History', icon: HistoryIcon },
+    { id: 'connections', label: 'Connections', icon: Database },
     { id: 'profile', label: 'Profile', icon: User },
     { id: 'security', label: 'Security', icon: Lock },
     { id: 'account', label: 'Account', icon: Mail },
@@ -253,6 +307,143 @@ const UserProfilePage = ({ user, onLogout, onClose }) => {
               })}
             </div>
           )}
+        </div>
+      )}
+
+      {/* Connections Tab */}
+      {activeTab === 'connections' && (
+        <div className="space-y-6">
+            <div className="flex justify-between items-center mb-6">
+                <h2 className="text-xl font-bold text-slate-900">Saved Connections</h2>
+                <button
+                    onClick={() => setShowConnectionForm(true)}
+                    className="flex items-center gap-2 px-4 py-2 bg-slate-900 text-white rounded-lg text-sm font-semibold hover:bg-slate-800 transition-colors"
+                >
+                    <Plus size={16} /> Add New
+                </button>
+            </div>
+
+            {/* Connection Form */}
+            {showConnectionForm && (
+                <div className="mb-6 p-6 bg-slate-50 rounded-xl border border-slate-200">
+                    <div className="flex justify-between items-center mb-6">
+                        <span className="font-bold text-slate-800">New Database Connection</span>
+                        <button onClick={() => setShowConnectionForm(false)} className="text-slate-400 hover:text-red-500">
+                            <X size={20} />
+                        </button>
+                    </div>
+                    <div className="space-y-4">
+                        <input
+                            type="text"
+                            placeholder="Connection Name"
+                            className="w-full p-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-slate-900 focus:ring-2 focus:ring-slate-900/20"
+                            value={newConn.name}
+                            onChange={(e) => setNewConn({ ...newConn, name: e.target.value })}
+                        />
+                        <select
+                            className="w-full p-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-slate-900 focus:ring-2 focus:ring-slate-900/20 appearance-none bg-white"
+                            value={newConn.db_type}
+                            onChange={(e) => setNewConn({ ...newConn, db_type: e.target.value })}
+                        >
+                            <option value="mssql">MS SQL Server</option>
+                            <option value="mysql">MySQL</option>
+                            <option value="postgresql">PostgreSQL</option>
+                            <option value="oracle">Oracle</option>
+                            <option value="sqlite">SQLite</option>
+                        </select>
+                        <div className="flex gap-4">
+                            <input
+                                type="text"
+                                placeholder="Host"
+                                className="flex-1 p-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-slate-900 focus:ring-2 focus:ring-slate-900/20"
+                                value={newConn.host}
+                                onChange={(e) => setNewConn({ ...newConn, host: e.target.value })}
+                            />
+                            <input
+                                type="number"
+                                placeholder="Port"
+                                className="w-32 p-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-slate-900 focus:ring-2 focus:ring-slate-900/20"
+                                value={newConn.port}
+                                onChange={(e) => setNewConn({ ...newConn, port: parseInt(e.target.value) })}
+                            />
+                        </div>
+                        <input
+                            type="text"
+                            placeholder="Database Name"
+                            className="w-full p-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-slate-900 focus:ring-2 focus:ring-slate-900/20"
+                            value={newConn.database}
+                            onChange={(e) => setNewConn({ ...newConn, database: e.target.value })}
+                        />
+                        <div className="flex gap-4">
+                            <input
+                                type="text"
+                                placeholder="Username"
+                                className="flex-1 p-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-slate-900 focus:ring-2 focus:ring-slate-900/20"
+                                value={newConn.username}
+                                onChange={(e) => setNewConn({ ...newConn, username: e.target.value })}
+                            />
+                            <input
+                                type="password"
+                                placeholder="Password"
+                                className="flex-1 p-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-slate-900 focus:ring-2 focus:ring-slate-900/20"
+                                value={newConn.password}
+                                onChange={(e) => setNewConn({ ...newConn, password: e.target.value })}
+                            />
+                        </div>
+                        <div className="flex gap-4 mt-6">
+                            <button
+                                onClick={testConnection}
+                                className="flex-1 py-3 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-xl font-semibold text-sm transition-colors"
+                            >
+                                Test Connection
+                            </button>
+                            <button
+                                onClick={saveConnection}
+                                className="flex-1 py-3 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-semibold text-sm shadow-md transition-colors"
+                            >
+                                Save Connection
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Connections List */}
+            {loadingConnections ? (
+                <div className="text-center py-12 text-slate-500">Loading connections...</div>
+            ) : connections.length === 0 && !showConnectionForm ? (
+                <div className="text-center py-12 bg-slate-50 border border-slate-200 rounded-xl">
+                    <Server size={48} className="mx-auto text-slate-300 mb-4" />
+                    <p className="text-slate-600 font-medium">No saved connections.</p>
+                    <p className="text-sm text-slate-500 mt-2">Add a database connection securely to get started.</p>
+                </div>
+            ) : (
+                <div className="space-y-4">
+                    {connections.map(conn => (
+                        <div
+                            key={conn.id}
+                            className="bg-white border border-slate-200 rounded-xl p-5 hover:border-brand-blue/50 flex items-center justify-between group transition-all"
+                        >
+                            <div className="flex items-center gap-4">
+                                <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center">
+                                    <Database size={24} />
+                                </div>
+                                <div>
+                                    <div className="font-bold text-slate-900 text-lg">{conn.name}</div>
+                                    <div className="text-sm text-slate-500 mt-1">{conn.db_type?.toUpperCase()} • {conn.host}</div>
+                                </div>
+                            </div>
+                            <button
+                                onClick={() => deleteConnection(conn.id)}
+                                className="p-3 text-slate-300 hover:bg-red-50 hover:text-red-600 rounded-xl opacity-0 group-hover:opacity-100 transition-all focus:opacity-100"
+                                title="Delete Connection"
+                            >
+                                <Trash2 size={20} />
+                            </button>
+                        </div>
+                    ))}
+                </div>
+            )}
         </div>
       )}
 

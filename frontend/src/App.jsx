@@ -395,12 +395,16 @@ function App() {
             )}
 
             {/* 2. QUALITY VALIDATION VIEW */}
-            {activeTab === 'validate' && (
-                <motion.div key="validate-tab" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="w-full max-w-5xl mx-auto pb-20 pt-4">
-                    <div className="flex items-center justify-end mb-8">
-                        <div className="flex items-center gap-2">
-                            {[1, 2, 3].map((s) => (
-                                <div key={s} className="flex items-center">
+        {activeTab === 'validate' && (
+            <motion.div key="validate-tab" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="w-full max-w-4xl mx-auto pb-16 pt-2">
+                <div className="flex items-center justify-between gap-4 mb-6">
+                <div>
+                    <h2 className="text-2xl md:text-3xl font-black text-slate-900">Quality Validation</h2>
+                    <p className="text-sm md:text-base text-slate-500 mt-1">Upload, define rules, and review quality issues without leaving the workspace.</p>
+                </div>
+                <div className="flex items-center gap-2">
+                    {[1, 2, 3].map((s) => (
+                    <div key={s} className="flex items-center">
                                     <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${step === s ? 'bg-slate-900 text-white shadow-md' : step > s ? 'bg-slate-300 text-white' : 'bg-slate-200 text-slate-500'}`}>
                                         {step > s ? '✓' : s}
                                     </div>
@@ -410,20 +414,21 @@ function App() {
                         </div>
                     </div>
 
-                    {step === 1 && (
-                        <div className="bg-white p-10 rounded-[32px] border border-slate-200 shadow-sm">
-                            <h2 className="text-3xl font-black text-slate-900 mb-2">Upload Your Data</h2>
-                            <p className="text-slate-500 font-medium mb-8 text-lg">Provide data via CSV, Excel, or direct database connection.</p>
-                            <DataConnection onUploadSuccess={(data) => { setSessionId(data.session_id); setFilename(data.filename || `Dataset_${new Date().getTime()}`); setColumns(data.columns); setStep(2); }} />
-                        </div>
-                    )}
+                {step === 1 && (
+                <div className="bg-white p-5 md:p-6 rounded-[28px] border border-slate-200 shadow-sm">
+                    <h3 className="text-xl font-bold text-slate-900 mb-2">Upload Dataset</h3>
+                    <p className="text-slate-500 font-medium mb-5 text-sm md:text-base">Provide data via CSV, Excel, or direct database connection.</p>
+                    <DataConnection compact={true} onUploadSuccess={(data) => { setSessionId(data.session_id); setFilename(data.filename || `Dataset_${new Date().getTime()}`); setColumns(data.columns); setStep(2); }} />
+                </div>
+                )}
 
-                    {step === 2 && (
-                        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
-                            <RuleBuilder
-                                columns={columns}
-                                initialRules={validationResults?.rules || []}
-                                onRunValidation={async (rules) => {
+                {step === 2 && (
+                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+                    <RuleBuilder
+                    compact={true}
+                    columns={columns}
+                    initialRules={validationResults?.rules || []}
+                    onRunValidation={async (rules) => {
                                     try {
                                         const token = localStorage.getItem('token');
                                         const headers = token ? { Authorization: `Bearer ${token}` } : {};

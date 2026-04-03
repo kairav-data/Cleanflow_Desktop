@@ -3,6 +3,7 @@ import fastapi
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 from contextlib import asynccontextmanager
+import asyncio
 import os
 import sys
 # Adding current directory to Python path for modules like models.py
@@ -96,16 +97,22 @@ def read_root():
 @app.post("/upload")
 async def upload_file(file: UploadFile = File(...), delimiter: str = Form(",")):
     try:
-        # Ensure upload directory exists
         logger.debug(f"Upload received. Filename: {file.filename}, Delimiter: '{delimiter}'")
         os.makedirs(UPLOAD_DIR, exist_ok=True)
         
         file_path = os.path.join(UPLOAD_DIR, file.filename)
-        with open(file_path, "wb") as buffer:
-            shutil.copyfileobj(file.file, buffer)
         
+        # Use async read to avoid blocking the event loop during I/O
+        contents = await file.read()
+        with open(file_path, "wb") as buffer:
+            buffer.write(contents)
+        
+        # Run blocking Polars CSV parsing in a thread pool so the event loop stays free
+        loop = asyncio.get_event_loop()
         engine = ValidationEngine()
-        columns = engine.load_data(file_path=file_path, sep=delimiter) 
+        columns = await loop.run_in_executor(
+            None, lambda: engine.load_data(file_path=file_path, sep=delimiter)
+        )
         
         sessions[engine.session_id] = engine
         
@@ -129,13 +136,11 @@ async def upload_data_from_query(payload: dict):
         if not data:
             raise HTTPException(status_code=400, detail="No data provided")
         
-        # Convert to DataFrame
-        # Polars from list of dicts
-        df = pl.from_dicts(data)
-        
-        # Initialize engine with DataFrame
+        # Run blocking Polars operation in thread pool
+        loop = asyncio.get_event_loop()
         engine = ValidationEngine()
-        columns = engine.load_data(dataframe=df)
+        df = await loop.run_in_executor(None, lambda: pl.from_dicts(data))
+        columns = await loop.run_in_executor(None, lambda: engine.load_data(dataframe=df))
         
         # Store engine in session
         sessions[engine.session_id] = engine
@@ -493,13 +498,18 @@ async def load_matching_dataset_file(
         else:
             matcher = sessions[session_id]
         
-        # Save to temp
+        # Save to temp using async read
         os.makedirs(UPLOAD_DIR, exist_ok=True)
         file_path = os.path.join(UPLOAD_DIR, f"{session_id}_{dataset_id}_{file.filename}")
+        contents = await file.read()
         with open(file_path, "wb") as buffer:
-            shutil.copyfileobj(file.file, buffer)
+            buffer.write(contents)
             
-        columns, rows = matcher.load_dataset_from_file(dataset_id, file_path, sep=delimiter)
+        # Run blocking file-load in thread pool
+        loop = asyncio.get_event_loop()
+        columns, rows = await loop.run_in_executor(
+            None, lambda: matcher.load_dataset_from_file(dataset_id, file_path, sep=delimiter)
+        )
         
         return {
             "session_id": session_id,

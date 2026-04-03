@@ -10,7 +10,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 // Pulling the URL from the .env file
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'import.meta.env.VITE_API_URL';
 
-const DataConnection = ({ onUploadSuccess }) => {
+const DataConnection = ({ onUploadSuccess, compact = false }) => {
     const [mode, setMode] = useState('file');
     const [isDragging, setIsDragging] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
@@ -98,53 +98,116 @@ const DataConnection = ({ onUploadSuccess }) => {
 
         setIsLoading(true);
         setError(null);
+        setUploadProgress(0);
 
-        // Dynamic progress simulation for UI feel
-        const interval = setInterval(() => {
-            setUploadProgress(prev => (prev < 90 ? prev + 10 : prev));
-        }, 100);
+        // Phase 1 interval: simulate file transfer while we wait for real browser events
+        let phase1 = setInterval(() => {
+            setUploadProgress(prev => (prev < 80 ? prev + 4 : prev));
+        }, 80);
+
+        let phase2 = null;
 
         try {
             const response = await axios.post(`${API_BASE}/upload`, formData, {
-                headers: { 'Content-Type': 'multipart/form-data', ...headers }
+                headers: { 'Content-Type': 'multipart/form-data', ...headers },
+                timeout: 120000,
+                onUploadProgress: (e) => {
+                    if (e.total) {
+                        const real = Math.round((e.loaded / e.total) * 80);
+                        setUploadProgress(real);
+                    }
+                }
             });
+
+            // Phase 2: backend is parsing — animate slowly from 80 -> 97
+            clearInterval(phase1);
+            phase1 = null;
+            phase2 = setInterval(() => {
+                setUploadProgress(prev => (prev < 97 ? prev + 1 : prev));
+            }, 120);
+
             setUploadProgress(100);
-            setTimeout(() => onUploadSuccess(response.data), 500);
+            clearInterval(phase2);
+            phase2 = null;
+            setTimeout(() => onUploadSuccess(response.data), 400);
         } catch (err) {
-            setError(err.response?.data?.detail || "Error uploading file.");
+            if (err.code === 'ECONNABORTED' || err.message?.includes('timeout')) {
+                setError('Upload timed out. Your file may be too large or the server is busy. Please try again.');
+            } else {
+                setError(err.response?.data?.detail || 'Error uploading file. Please try again.');
+            }
             setUploadProgress(0);
         } finally {
-            clearInterval(interval);
+            if (phase1) clearInterval(phase1);
+            if (phase2) clearInterval(phase2);
             setIsLoading(false);
         }
     };
 
+    const wrapperClass = compact
+        ? 'w-full max-w-3xl mx-auto py-0 px-0'
+        : 'w-full max-w-5xl mx-auto py-12 px-6';
+    const headerWrapClass = compact ? 'text-left mb-6' : 'text-center mb-12';
+    const badgeClass = compact
+        ? 'inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-brand-blue/10 text-brand-blue text-[11px] font-bold uppercase tracking-wider mb-3'
+        : 'inline-flex items-center gap-2 px-3 py-1 rounded-full bg-brand-blue/10 text-brand-blue text-xs font-bold uppercase tracking-wider mb-4';
+    const titleClass = compact
+        ? 'text-2xl md:text-3xl font-black text-slate-900 mb-2 tracking-tight'
+        : 'text-5xl font-black text-slate-900 mb-4 tracking-tight';
+    const bodyClass = compact
+        ? 'text-slate-500 text-sm md:text-base max-w-xl'
+        : 'text-slate-500 text-lg max-w-2xl mx-auto';
+    const modeClass = compact
+        ? 'flex p-1 bg-slate-200/50 backdrop-blur-md rounded-xl mb-6 w-fit border border-white/50 shadow-inner'
+        : 'flex p-1.5 bg-slate-200/50 backdrop-blur-md rounded-2xl mb-10 w-fit mx-auto border border-white/50 shadow-inner';
+    const modeButtonClass = compact
+        ? 'relative flex items-center gap-2 px-5 py-2.5 rounded-lg font-bold text-sm transition-all z-10'
+        : 'relative flex items-center gap-2 px-8 py-3.5 rounded-xl font-bold transition-all z-10';
+    const delimiterWrapClass = compact
+        ? 'flex items-center justify-start gap-3 bg-white/70 py-2.5 px-4 rounded-xl w-fit border border-slate-100 shadow-sm'
+        : 'flex items-center justify-center gap-4 bg-white/50 py-3 px-6 rounded-2xl w-fit mx-auto border border-slate-100 shadow-sm';
+    const dropzoneClass = compact
+        ? `relative group cursor-pointer border-2 border-dashed rounded-[1.75rem] p-10 md:p-12 flex flex-col items-center justify-center transition-all overflow-hidden ${isDragging ? 'border-brand-blue bg-brand-blue/5' : 'border-slate-300 bg-white hover:border-brand-blue hover:shadow-glow'}`
+        : `relative group cursor-pointer border-2 border-dashed rounded-[2.5rem] p-20 flex flex-col items-center justify-center transition-all overflow-hidden ${isDragging ? 'border-brand-blue bg-brand-blue/5' : 'border-slate-300 bg-white hover:border-brand-blue hover:shadow-glow'}`;
+    const uploadShellClass = compact ? 'w-16 h-16 bg-brand-blue/10 text-brand-blue rounded-2xl flex items-center justify-center mb-5 group-hover:scale-105 transition-transform duration-300' : 'w-24 h-24 bg-brand-blue/10 text-brand-blue rounded-[2rem] flex items-center justify-center mb-8 group-hover:scale-110 transition-transform duration-500';
+    const uploadTitleClass = compact ? 'text-xl md:text-2xl font-black text-slate-800 mb-2' : 'text-3xl font-black text-slate-800 mb-2';
+    const uploadTextClass = compact ? 'text-slate-400 font-medium text-sm text-center' : 'text-slate-400 font-medium';
+    const dbCardClass = compact
+        ? 'bg-white border border-slate-200 rounded-[1.75rem] p-6 shadow-lg shadow-slate-200/40'
+        : 'bg-white border border-slate-200 rounded-[2.5rem] p-10 shadow-xl shadow-slate-200/50';
+
     return (
-        <div className="w-full max-w-5xl mx-auto py-12 px-6">
+        <div className={wrapperClass}>
             {/* Header Section */}
             <motion.div
                 initial={{ opacity: 0, y: -20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="text-center mb-12"
+                className={headerWrapClass}
             >
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-brand-blue/10 text-brand-blue text-xs font-bold uppercase tracking-wider mb-4">
-                    <Zap size={14} /> Data Ingestion Engine
+                <div className={badgeClass}>
+                    <Zap size={14} /> {compact ? 'Data Import' : 'Data Ingestion Engine'}
                 </div>
-                <h2 className="text-5xl font-black text-slate-900 mb-4 tracking-tight">
-                    Bring Your <span className="text-brand-blue">Data</span> to Life
+                <h2 className={titleClass}>
+                    {compact ? (
+                        <>Import <span className="text-brand-blue">Dataset</span></>
+                    ) : (
+                        <>Bring Your <span className="text-brand-blue">Data</span> to Life</>
+                    )}
                 </h2>
-                <p className="text-slate-500 text-lg max-w-2xl mx-auto">
-                    Seamlessly connect to your cloud warehouses or upload local assets to begin your cleaning workflow.
+                <p className={bodyClass}>
+                    {compact
+                        ? 'Upload a file or connect to a database to continue with workspace processing.'
+                        : 'Seamlessly connect to your cloud warehouses or upload local assets to begin your cleaning workflow.'}
                 </p>
             </motion.div>
 
             {/* Mode Switcher */}
-            <div className="flex p-1.5 bg-slate-200/50 backdrop-blur-md rounded-2xl mb-10 w-fit mx-auto border border-white/50 shadow-inner">
+            <div className={modeClass}>
                 {['file', 'database'].map((m) => (
                     <button
                         key={m}
                         onClick={() => setMode(m)}
-                        className={`relative flex items-center gap-2 px-8 py-3.5 rounded-xl font-bold transition-all z-10 ${mode === m ? 'text-brand-blue' : 'text-slate-500 hover:text-slate-700'
+                        className={`${modeButtonClass} ${mode === m ? 'text-brand-blue' : 'text-slate-500 hover:text-slate-700'
                             }`}
                     >
                         {mode === m && (
@@ -170,7 +233,7 @@ const DataConnection = ({ onUploadSuccess }) => {
                         className="space-y-6"
                     >
                         {/* Delimiter Selection */}
-                        <div className="flex items-center justify-center gap-4 bg-white/50 py-3 px-6 rounded-2xl w-fit mx-auto border border-slate-100 shadow-sm">
+                        <div className={delimiterWrapClass}>
                             <span className="text-sm font-bold text-slate-600">CSV Settings:</span>
                             <div className="flex gap-2">
                                 {[',', ';', '|'].map(d => (
@@ -203,8 +266,7 @@ const DataConnection = ({ onUploadSuccess }) => {
                             onDragLeave={() => setIsDragging(false)}
                             onDrop={(e) => { e.preventDefault(); setIsDragging(false); handleFileUpload(e.dataTransfer.files[0]); }}
                             onClick={() => !isLoading && fileInputRef.current.click()}
-                            className={`relative group cursor-pointer border-2 border-dashed rounded-[2.5rem] p-20 flex flex-col items-center justify-center transition-all overflow-hidden ${isDragging ? 'border-brand-blue bg-brand-blue/5' : 'border-slate-300 bg-white hover:border-brand-blue hover:shadow-glow'
-                                }`}
+                            className={dropzoneClass}
                         >
                             <input type="file" ref={fileInputRef} onChange={(e) => handleFileUpload(e.target.files[0])} className="hidden" accept=".csv,.xlsx,.xls" />
 
@@ -229,21 +291,21 @@ const DataConnection = ({ onUploadSuccess }) => {
                                 </div>
                             ) : (
                                 <div className="flex flex-col items-center z-10">
-                                    <div className="w-24 h-24 bg-brand-blue/10 text-brand-blue rounded-[2rem] flex items-center justify-center mb-8 group-hover:scale-110 transition-transform duration-500">
-                                        <Upload size={48} strokeWidth={2.5} />
+                                    <div className={uploadShellClass}>
+                                        <Upload size={compact ? 30 : 48} strokeWidth={2.5} />
                                     </div>
-                                    <h3 className="text-3xl font-black text-slate-800 mb-2">Drop your dataset here</h3>
-                                    <p className="text-slate-400 font-medium">Supports CSV, Excel (XLSX) up to 50MB</p>
+                                    <h3 className={uploadTitleClass}>Drop your dataset here</h3>
+                                    <p className={uploadTextClass}>Supports CSV, Excel (XLSX) up to 50MB</p>
                                 </div>
                             )}
                         </motion.div>
                     </motion.div>
                 ) : (
-                    <motion.div key="db" className="bg-white border border-slate-200 rounded-[2.5rem] p-10 shadow-xl shadow-slate-200/50">
-                        <div className="flex items-center gap-4 mb-8">
-                            <div className="p-4 bg-brand-dark/5 text-brand-dark rounded-2xl"><Server size={32} /></div>
+                    <motion.div key="db" className={dbCardClass}>
+                        <div className={`flex items-center gap-4 ${compact ? 'mb-6' : 'mb-8'}`}>
+                            <div className={`bg-brand-dark/5 text-brand-dark rounded-2xl ${compact ? 'p-3' : 'p-4'}`}><Server size={compact ? 24 : 32} /></div>
                             <div>
-                                <h3 className="text-2xl font-bold text-slate-800">Direct Ingestion</h3>
+                                <h3 className={`${compact ? 'text-xl' : 'text-2xl'} font-bold text-slate-800`}>Direct Ingestion</h3>
                                 <p className="text-slate-500">Select a secure connection to your warehouse</p>
                             </div>
                         </div>
@@ -357,11 +419,13 @@ const DataConnection = ({ onUploadSuccess }) => {
             </AnimatePresence>
 
             {/* Trust Footer */}
-            <div className="mt-16 flex flex-wrap justify-center gap-12 text-slate-400 grayscale opacity-70">
-                <div className="flex items-center gap-2 font-bold"><ShieldCheck size={20} /> SOC2 COMPLIANT</div>
-                <div className="flex items-center gap-2 font-bold"><HardDrive size={20} /> AES-256 ENCRYPTION</div>
-                <div className="flex items-center gap-2 font-bold"><RefreshCw size={20} /> REAL-TIME SYNC</div>
-            </div>
+            {!compact && (
+                <div className="mt-16 flex flex-wrap justify-center gap-12 text-slate-400 grayscale opacity-70">
+                    <div className="flex items-center gap-2 font-bold"><ShieldCheck size={20} /> SOC2 COMPLIANT</div>
+                    <div className="flex items-center gap-2 font-bold"><HardDrive size={20} /> AES-256 ENCRYPTION</div>
+                    <div className="flex items-center gap-2 font-bold"><RefreshCw size={20} /> REAL-TIME SYNC</div>
+                </div>
+            )}
         </div>
     );
 };

@@ -641,6 +641,26 @@ async def download_matching_results(session_id: str):
         logger.exception("Error executing download_matching_results")
         raise HTTPException(status_code=500, detail=str(e))
 
+# --- Pipeline Feature ---
+
+@app.post("/features/pipeline/execute/{session_id}")
+async def execute_pipeline(session_id: str, config: dict):
+    from features.pipeline_runner import PipelineOrchestrator
+    if session_id not in sessions:
+        raise HTTPException(status_code=404, detail="Session not found")
+    
+    engine = sessions[session_id]
+    if engine.df is None:
+        raise HTTPException(status_code=400, detail="No data available in session")
+        
+    orchestrator = PipelineOrchestrator(session_id=session_id, initial_df=engine.df)
+    result = await orchestrator.execute_graph(config)
+    
+    if not result.get("success"):
+        raise HTTPException(status_code=400, detail=result.get("error", "Pipeline execution failed"))
+        
+    return result
+
 if __name__ == "__main__":
     import uvicorn
     # Look for Render's PORT first, then fallback to local BACKEND_PORT

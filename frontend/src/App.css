@@ -163,3 +163,36 @@ input:focus, textarea:focus, select:focus {
   background-color: #fee2e2;
   color: #dc2626;
 }
+
+.sidebar-scrollbar {
+  scrollbar-width: none;
+  scrollbar-color: transparent transparent;
+  -ms-overflow-style: none;
+}
+
+.sidebar-scrollbar::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  background: transparent;
+  display: none;
+}
+
+.sidebar-scrollbar::-webkit-scrollbar-track {
+  background: transparent !important;
+}
+
+.sidebar-scrollbar::-webkit-scrollbar-thumb {
+  background: transparent !important;
+  border-radius: 9999px;
+  border: 2px solid transparent;
+}
+
+.sidebar-scrollbar::-webkit-scrollbar-button {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+.sidebar-scrollbar::-webkit-scrollbar-corner {
+  background: transparent;
+}

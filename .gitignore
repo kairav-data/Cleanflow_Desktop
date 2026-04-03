@@ -2,7 +2,6 @@
 node_modules/
 __pycache__/
 *.pyc
-.env
 .DS_Store
 
 # Docker volumes & data
@@ -17,3 +16,8 @@ frontend/build/
 # Python Virtual Environments
 venv/
 .venv/
+
+__pycache__/
+*.log
+*.csv
+*.xlsx

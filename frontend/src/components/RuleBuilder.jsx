@@ -62,7 +62,7 @@ const DATE_FORMATS = [
     { label: "MM/DD/YYYY HH:MM:SS", value: "%m/%d/%Y %H:%M:%S" },
 ];
 
-const RuleBuilder = ({ columns, onRunValidation, initialRules = [] }) => {
+const RuleBuilder = ({ columns = [], onRunValidation, onSaveRules, isEmbedded = false, initialRules = [] }) => {
     const [rules, setRules] = useState([]);
     const [loading, setLoading] = useState(false);
     const [pastJobs, setPastJobs] = useState([]);
@@ -364,14 +364,25 @@ const RuleBuilder = ({ columns, onRunValidation, initialRules = [] }) => {
                             <div className="grid grid-cols-1 md:grid-cols-12 gap-4 w-full">
                                 {/* Column Selection */}
                                 <div className="col-span-3">
-                                    <label className="text-xs font-bold text-slate-400 uppercase mb-1 block">Column</label>
-                                    <select
-                                        className="w-full p-3 bg-white border border-slate-200 rounded-xl font-medium focus:border-brand-blue outline-none"
-                                        value={rule.column}
-                                        onChange={(e) => updateRule(rule.id, 'column', e.target.value)}
-                                    >
-                                        {columns.map(c => <option key={c} value={c}>{c}</option>)}
-                                    </select>
+                                    <label className="text-xs font-bold text-slate-400 uppercase mb-1 block">Column / Field</label>
+                                    {columns.length > 0 ? (
+                                        <select
+                                            className="w-full p-3 bg-white border border-slate-200 rounded-xl font-medium focus:border-brand-blue outline-none"
+                                            value={rule.column}
+                                            onChange={(e) => updateRule(rule.id, 'column', e.target.value)}
+                                        >
+                                            <option value="">Select...</option>
+                                            {columns.map(c => <option key={c} value={c}>{c}</option>)}
+                                        </select>
+                                    ) : (
+                                        <input
+                                            type="text"
+                                            placeholder="Type column name"
+                                            className="w-full p-3 bg-white border border-slate-200 rounded-xl font-medium outline-none text-sm"
+                                            value={rule.column}
+                                            onChange={(e) => updateRule(rule.id, 'column', e.target.value)}
+                                        />
+                                    )}
                                 </div>
 
                                 {/* Category Selection */}
@@ -593,21 +604,35 @@ const RuleBuilder = ({ columns, onRunValidation, initialRules = [] }) => {
             </div>
 
             {/* Submit Button Area - always visible, just disabled if empty */}
-            <div className="mt-8 flex justify-end">
-                <button
-                    onClick={handleRun}
-                    disabled={loading || rules.length === 0}
-                    className={`
-                        px-8 py-4 rounded-xl font-bold flex items-center gap-2 transition-all 
-                        ${rules.length === 0
-                            ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
-                            : 'bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-600/30 hover:scale-105'
-                        }
-                    `}
-                >
-                    {loading ? "Running Checks..." : "Run Validation Check"}
-                    {!loading && <Play size={20} fill="currentColor" />}
-                </button>
+            <div className="mt-8 flex justify-end gap-3">
+                {isEmbedded && (
+                    <button
+                        onClick={() => {
+                            const payload = rules.map(({ column, rule_type, params }) => ({ column, rule_type, params }));
+                            if (onSaveRules) onSaveRules(payload);
+                        }}
+                        className="px-6 py-3 rounded-xl font-bold flex items-center gap-2 transition-all bg-slate-900 border border-slate-800 text-white hover:bg-slate-800 shadow-xl"
+                    >
+                        Save Configuration <Save size={18} />
+                    </button>
+                )}
+                
+                {!isEmbedded && (
+                    <button
+                        onClick={handleRun}
+                        disabled={loading || rules.length === 0}
+                        className={`
+                            px-8 py-4 rounded-xl font-bold flex items-center gap-2 transition-all 
+                            ${rules.length === 0
+                                ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                                : 'bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-600/30 hover:scale-105'
+                            }
+                        `}
+                    >
+                        {loading ? "Running Checks..." : "Run Validation Check"}
+                        {!loading && <Play size={20} fill="currentColor" />}
+                    </button>
+                )}
             </div>
 
             {columns.length === 0 && (

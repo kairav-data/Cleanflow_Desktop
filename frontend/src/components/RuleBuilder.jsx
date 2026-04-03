@@ -62,7 +62,7 @@ const DATE_FORMATS = [
     { label: "MM/DD/YYYY HH:MM:SS", value: "%m/%d/%Y %H:%M:%S" },
 ];
 
-const RuleBuilder = ({ columns, onRunValidation }) => {
+const RuleBuilder = ({ columns, onRunValidation, initialRules = [] }) => {
     const [rules, setRules] = useState([]);
     const [loading, setLoading] = useState(false);
     const [pastJobs, setPastJobs] = useState([]);
@@ -81,6 +81,12 @@ const RuleBuilder = ({ columns, onRunValidation }) => {
                 category: cat
             };
         });
+
+    useEffect(() => {
+        if (initialRules && initialRules.length > 0) {
+            setRules(mapRawRulesToUiRules(initialRules));
+        }
+    }, [initialRules]);
 
     useEffect(() => {
         try {

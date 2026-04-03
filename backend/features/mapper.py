@@ -94,7 +94,7 @@ class SchemaMapper(BaseFeature):
             if not is_valid:
                 return FeatureResult(success=False, error=error)
             
-            if self.df is None:
+            if self.df is None:  
                 return FeatureResult(success=False, error="No data loaded")
             
             # Use lazy evaluation

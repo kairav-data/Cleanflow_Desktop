@@ -110,6 +110,10 @@ function App() {
       setIsAuthOpen(true);
       return;
     }
+    setValidationResults(null);
+    setColumns([]);
+    setFilename('');
+    setSessionId(null);
     handleFeatureAccess('validate');
   };
   const goToLanding = () => setActiveTab(user ? 'dashboard' : 'home');
@@ -133,12 +137,18 @@ function App() {
     const targetTab = getTabFromModule(job.module);
     if (targetTab === 'validate') {
       setFilename(job.file_name || job.filename || '');
+      // Extract columns from job rules and stats so RuleBuilder has column options if the user edits
+      const allColumns = job.column_stats ? Object.keys(job.column_stats) : [];
+      const uniqueColumns = Array.from(new Set([...allColumns, ...(job.rules || []).map(r => r.column).filter(Boolean)]));
+      if (uniqueColumns.length > 0) {
+        setColumns(uniqueColumns);
+      }
       setValidationResults({
         total_rows: job.total_rows || 0,
         valid_rows: job.valid_rows || 0,
         invalid_rows: job.invalid_rows || 0,
         column_stats: job.column_stats || {},
-        // valid_file and error_file will be undefined for history items
+        rules: job.rules || []
       });
       setStep(3); // Jump straight to results dashboard
     }
@@ -296,12 +306,13 @@ function App() {
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
                   <RuleBuilder
                     columns={columns}
+                    initialRules={validationResults?.rules || []}
                     onRunValidation={async (rules) => {
                       try {
                         const token = localStorage.getItem('token');
                         const headers = token ? { Authorization: `Bearer ${token}` } : {};
                         const res = await axios.post(`${API_BASE}/validate/${sessionId}`, { rules }, { headers });
-                        setValidationResults(res.data);
+                        setValidationResults({ ...res.data, rules });
 
                         if (token) {
                           try {
@@ -329,7 +340,13 @@ function App() {
 
               {step === 3 && (
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                  <ResultsDashboard results={validationResults} onReset={() => setStep(1)} />
+                  <ResultsDashboard results={validationResults} onReset={() => {
+                    setValidationResults(null);
+                    setColumns([]);
+                    setFilename('');
+                    setSessionId(null);
+                    setStep(1);
+                  }} onEditRules={() => setStep(2)} />
                 </motion.div>
               )}
             </motion.div>
@@ -355,6 +372,10 @@ function App() {
                     title: 'Quality Validation',
                     description: 'Upload data, configure rules, and validate records.',
                     action: () => {
+                      setValidationResults(null);
+                      setColumns([]);
+                      setFilename('');
+                      setSessionId(null);
                       setStep(1);
                       setActiveTab('validate');
                     }

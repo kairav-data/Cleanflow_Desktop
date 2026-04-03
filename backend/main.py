@@ -24,7 +24,7 @@ logger = setup_logger(__name__)
 
 # Internal imports
 from models import ValidationConfig, UserInDB
-from engine_polars import PolarsValidationEngine as ValidationEngine, UPLOAD_DIR, RESULTS_DIR
+from features.validation import PolarsValidationEngine as ValidationEngine, UPLOAD_DIR, RESULTS_DIR
 from database import db
 from auth import router as auth_router, get_current_user
 from history import (
@@ -262,6 +262,68 @@ async def execute_enrichment(session_id: str, config: dict):
         engine.df = pl.DataFrame(result.data) # Result is list of dicts, convert back
     
     return result.dict()
+
+# Data Cleaner Feature
+@app.get("/features/cleaner/operations")
+async def get_cleaner_operations():
+    """Get available cleaner operations"""
+    from features.cleaner import DataCleaner
+    return {"operations": DataCleaner.get_operations()}
+
+@app.post("/features/cleaner/preview/{session_id}")
+async def preview_cleaner(session_id: str, config: dict):
+    """Preview cleaning on sample data"""
+    from features.cleaner import DataCleaner
+    if session_id not in sessions:
+        raise HTTPException(status_code=404, detail="Session not found")
+    engine = sessions[session_id]
+    cleaner = DataCleaner(session_id)
+    cleaner.load_data(engine.df)
+    result = await cleaner.preview(config, limit=5)
+    if not result.success:
+        raise HTTPException(status_code=400, detail=result.error)
+    return result.dict()
+
+@app.post("/features/cleaner/execute/{session_id}")
+async def execute_cleaner(session_id: str, config: dict):
+    """Execute cleaning on full dataset"""
+    from features.cleaner import DataCleaner
+    if session_id not in sessions:
+        raise HTTPException(status_code=404, detail="Session not found")
+    engine = sessions[session_id]
+    cleaner = DataCleaner(session_id)
+    cleaner.load_data(engine.df)
+    result = await cleaner.execute(config)
+    if not result.success:
+        raise HTTPException(status_code=400, detail=result.error)
+    if result.data:
+        engine.df = pl.DataFrame(result.data)
+    return result.dict()
+
+@app.get("/features/export/{session_id}")
+async def export_data(session_id: str, format: str = "csv"):
+    """Export current session data directly"""
+    import os
+    if session_id not in sessions:
+        raise HTTPException(status_code=404, detail="Session not found")
+    
+    engine = sessions[session_id]
+    if engine.df is None:
+        raise HTTPException(status_code=400, detail="No data available")
+        
+    os.makedirs(RESULTS_DIR, exist_ok=True)
+    file_path = os.path.join(RESULTS_DIR, f"export_{session_id}.{format}")
+    
+    if format == "csv":
+        engine.df.write_csv(file_path)
+    elif format == "json":
+        engine.df.write_json(file_path)
+    elif format == "xlsx":
+        engine.df.write_excel(file_path)
+    else:
+        raise HTTPException(status_code=400, detail="Format not supported")
+        
+    return FileResponse(file_path, filename=f"dataset_cleaned.{format}")
 
 # Scraping Feature
 @app.get("/features/scraper/templates")

@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import { Download, CheckCircle, XCircle, RotateCcw, FileText, AlertTriangle, BarChart3, ShieldCheck, Image as ImageIcon } from 'lucide-react';
 import { motion } from 'framer-motion';
 import html2canvas from 'html2canvas';
@@ -6,8 +6,9 @@ import html2canvas from 'html2canvas';
 // Pulling the URL from the .env file
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'import.meta.env.VITE_API_URL';
 
-const ResultsDashboard = ({ results, onReset }) => {
+const ResultsDashboard = ({ results, onReset, onEditRules }) => {
     const reportRef = useRef(null);
+    const [showJsonRules, setShowJsonRules] = useState(false);
 
     if (!results) return null;
 
@@ -146,6 +147,30 @@ const ResultsDashboard = ({ results, onReset }) => {
                         </div>
                     )}
                 </div>
+                
+                {results.rules && results.rules.length > 0 && (
+                    <div className="mb-10">
+                        <div className="flex justify-between items-center mb-4">
+                            <p className="text-sm text-slate-500 font-medium">Rules Applied</p>
+                            <button onClick={() => setShowJsonRules(!showJsonRules)} className="text-xs text-brand-blue font-semibold hover:underline bg-slate-100 px-3 py-1 rounded-lg">
+                                {showJsonRules ? 'View as Cards' : 'View JSON'}
+                            </button>
+                        </div>
+                        {showJsonRules ? (
+                            <pre className="p-4 bg-slate-900 text-slate-300 rounded-xl overflow-x-auto text-xs font-mono">
+                                {JSON.stringify(results.rules, null, 2)}
+                            </pre>
+                        ) : (
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                {results.rules.map((rule, idx) => (
+                                    <div key={idx} className="p-3 rounded-xl bg-slate-50 border border-slate-200">
+                                        <p className="text-sm font-semibold text-slate-900">{rule.rule_type} <span className="text-slate-500 font-normal">on</span> {rule.column}</p>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                )}
 
                 <div>
                     <p className="text-sm text-slate-500 mb-4 font-medium">Data Quality Mix</p>
@@ -178,7 +203,15 @@ const ResultsDashboard = ({ results, onReset }) => {
                 </div>
             </motion.div>
 
-            <div className="mt-12">
+            <div className="mt-12 flex gap-4">
+                {onEditRules && (
+                    <button
+                        onClick={onEditRules}
+                        className="flex items-center gap-2 text-slate-700 hover:text-slate-900 font-medium px-4 py-2 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors border border-slate-200"
+                    >
+                        <ShieldCheck size={18} /> Edit Rules & Re-run
+                    </button>
+                )}
                 <button
                     onClick={onReset}
                     className="flex items-center gap-2 text-slate-500 hover:text-slate-900 transition-colors font-medium px-4 py-2 hover:bg-slate-100 rounded-lg"

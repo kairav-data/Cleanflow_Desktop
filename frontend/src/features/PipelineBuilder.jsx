@@ -603,7 +603,7 @@ const CleanerConfigPanel = ({ node, columns = [], onSave }) => {
                             </div>
                             <div>
                                 <label className="text-xs font-bold text-slate-500 uppercase">Operation</label>
-                                <select className="w-full text-sm p-2 border border-slate-200 rounded-lg outline-none focus:border-emerald-500" value={r.operation} onChange={e => { updateRule(r.id, 'operation', e.target.value); updateRule(r.id, 'params', {}); }}>
+                                <select className="w-full text-sm p-2 border border-slate-200 rounded-lg outline-none focus:border-emerald-500" value={r.operation} onChange={e => { const val = e.target.value; setRules(prev => prev.map(rule => rule.id === r.id ? { ...rule, operation: val, params: {} } : rule)); }}>
                                     <option value="trim_whitespace">Trim Whitespace</option>
                                     <option value="uppercase">Uppercase</option>
                                     <option value="lowercase">Lowercase</option>

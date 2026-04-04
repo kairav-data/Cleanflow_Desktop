@@ -408,7 +408,7 @@ export const PipelineBuilder = ({ onComplete }) => {
                 fitView
                 >
                 <Controls />
-                <Background color="#e2e8f0" gap={20} size={1} />
+                <Background variant="dots" gap={20} size={1.5} color="#cbd5e1" />
                 </ReactFlow>
             </ReactFlowProvider>
 

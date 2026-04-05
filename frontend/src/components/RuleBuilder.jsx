@@ -212,7 +212,7 @@ const RuleBuilder = ({ columns = [], onRunValidation, onSaveRules, isEmbedded = 
     };
 
     const shellClass = compact
-        ? 'bg-white rounded-2xl shadow-sm border border-slate-200 p-5 md:p-6 w-full'
+        ? 'w-full'
         : 'bg-white rounded-[32px] shadow-xl border border-slate-200 p-8 w-full';
     const headerClass = compact
         ? 'flex flex-col md:flex-row md:justify-between md:items-start gap-4 mb-6'
@@ -412,6 +412,20 @@ const RuleBuilder = ({ columns = [], onRunValidation, onSaveRules, isEmbedded = 
                             exit={{ opacity: 0, height: 0 }}
                             className={ruleCardClass(rule.category)}
                         >
+                            {/* Card header: rule number + delete */}
+                            <div className="flex items-center justify-between mb-4">
+                                <span className="inline-flex items-center gap-1.5 text-xs font-black text-slate-500 bg-slate-100 px-2.5 py-1 rounded-lg">
+                                    Rule {index + 1}
+                                </span>
+                                <button
+                                    onClick={() => removeRule(rule.id)}
+                                    className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
+                                    title="Remove Rule"
+                                >
+                                    <Trash2 size={15} />
+                                </button>
+                            </div>
+
                             <div className={gridClass}>
                                 {/* Column Selection */}
                                 <div className={columnSpanClass}>
@@ -634,13 +648,6 @@ const RuleBuilder = ({ columns = [], onRunValidation, onSaveRules, isEmbedded = 
                                 </div>
                             </div>
 
-                            <button
-                                onClick={() => removeRule(rule.id)}
-                                className={`${compact ? 'bg-red-50 hover:bg-red-600 hover:text-white text-red-500 p-2.5 rounded-lg transition-colors self-end' : 'bg-red-50 hover:bg-red-600 hover:text-white text-red-500 p-3.5 rounded-xl transition-colors md:self-center self-end'}`}
-                                title="Remove Rule"
-                            >
-                                <Trash2 size={compact ? 18 : 20} />
-                            </button>
                         </motion.div>
                     ))}
                 </AnimatePresence>

@@ -209,89 +209,14 @@ function App() {
                     className="w-full max-w-7xl mx-auto pb-20"
                 >
                     {/* Hero Section */}
-                    <div className="mb-10 pt-4 relative overflow-hidden rounded-3xl
-                                    bg-[#0d1424] border border-white/[0.06]
-                                    shadow-[0_0_60px_rgba(0,0,0,0.5)]">
-                        {/* Background decoration */}
-                        <div className="absolute inset-0 pointer-events-none">
-                            <div className="absolute -top-20 -right-20 w-72 h-72 rounded-full bg-indigo-600/10 blur-3xl" />
-                            <div className="absolute bottom-0 left-1/3 w-48 h-32 rounded-full bg-emerald-500/8 blur-3xl" />
-                            {/* Subtle grid */}
-                            <div className="absolute inset-0 opacity-[0.025]"
-                                style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,0.5) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.5) 1px,transparent 1px)', backgroundSize: '40px 40px' }} />
+                    <div className="mb-10 pt-4 bg-gradient-to-r from-slate-900 to-slate-800 rounded-3xl p-8 md:p-12 text-white shadow-xl relative overflow-hidden">
+                        <div className="relative z-10">
+                            <h1 className="text-4xl md:text-5xl font-black mb-4 tracking-tight">Active Workspace</h1>
+                            <p className="text-slate-300 text-lg max-w-2xl leading-relaxed">
+                                Welcome back, {user.full_name || 'User'}. Execute intelligent data workflows, manage your recent jobs, and read through how to leverage the toolset below.
+                            </p>
                         </div>
-
-                        <div className="relative z-10 p-8 md:p-10">
-                            <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-8">
-
-                                {/* Left — Text */}
-                                <div className="flex-1 min-w-0">
-                                    {/* Label */}
-                                    <div className="flex items-center gap-2 mb-4">
-                                        <span className="relative flex h-2 w-2">
-                                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-60" />
-                                            <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
-                                        </span>
-                                        <span className="text-[10px] font-black text-emerald-400 uppercase tracking-[0.2em]">
-                                            Active Workspace
-                                        </span>
-                                    </div>
-
-                                    {/* Heading */}
-                                    <h1 className="text-4xl md:text-5xl font-black tracking-tight leading-[1.1] mb-3">
-                                        <span className="text-white">Welcome back,</span>
-                                        <br />
-                                        <span className="text-transparent bg-clip-text bg-gradient-to-r from-sky-400 via-indigo-400 to-purple-400">
-                                            {user.full_name || 'User'}
-                                        </span>
-                                    </h1>
-
-                                    <p className="text-slate-400 text-sm md:text-base max-w-xl leading-relaxed font-medium mb-7">
-                                        Execute intelligent data workflows, manage your recent jobs, and read through how to leverage the toolset below.
-                                    </p>
-
-                                    {/* Action Buttons */}
-                                    <div className="flex flex-wrap items-center gap-3">
-                                        <button
-                                            onClick={() => { setValidationResults(null); setColumns([]); setFilename(''); setSessionId(null); setStep(1); setActiveTab('validate'); }}
-                                            className="flex items-center gap-2 px-5 py-2.5 bg-white text-slate-950
-                                                       rounded-xl font-bold text-sm
-                                                       hover:bg-slate-100 hover:-translate-y-0.5
-                                                       transition-all duration-200 shadow-md"
-                                        >
-                                            <Zap size={14} fill="currentColor" className="text-emerald-600" />
-                                            New Workflow
-                                        </button>
-                                        <button
-                                            onClick={() => document.getElementById('job-history-section')?.scrollIntoView({ behavior: 'smooth' })}
-                                            className="flex items-center gap-2 px-5 py-2.5
-                                                       bg-indigo-500/10 border border-indigo-500/30 text-indigo-300
-                                                       rounded-xl font-bold text-sm
-                                                       hover:bg-indigo-500/20 hover:-translate-y-0.5
-                                                       transition-all duration-200"
-                                        >
-                                            <BarChart3 size={14} />
-                                            View Recent Jobs
-                                        </button>
-                                    </div>
-                                </div>
-
-                                {/* Right — Stats */}
-                                <div className="flex md:flex-col gap-6 md:gap-5 shrink-0">
-                                    {[
-                                        { value: recentJobs.length, label: 'active jobs' },
-                                        { value: recentJobs.length > 0 ? '100%' : '—', label: 'success rate' },
-                                        { value: recentJobs.reduce((acc, j) => acc + (j.total_rows || 0), 0).toLocaleString('en-IN') || '0', label: 'rows processed' },
-                                    ].map(({ value, label }) => (
-                                        <div key={label} className="text-left md:text-right">
-                                            <p className="text-2xl md:text-3xl font-black text-white leading-none">{value}</p>
-                                            <p className="text-[11px] text-slate-500 font-semibold mt-1 uppercase tracking-wider">{label}</p>
-                                        </div>
-                                    ))}
-                                </div>
-
-                            </div>
-                        </div>
+                        <Sparkles size={160} className="absolute -bottom-10 -right-10 text-white/5 rotate-12" />
                     </div>
 
                     {/* Section: Tutorials & Tools */}
@@ -398,7 +323,7 @@ function App() {
                     </div>
 
                     {/* Section: Job History & Orchestration */}
-                    <div id="job-history-section" className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-12">
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-12">
                         <div className="lg:col-span-3">
                             <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden flex flex-col">
                                 <div className="p-6 border-b border-slate-100 bg-slate-50 flex items-center justify-between">
@@ -519,86 +444,107 @@ function App() {
 
             {/* 2. QUALITY VALIDATION VIEW */}
             {activeTab === 'validate' && (
-                <motion.div key="validate-tab" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="w-full max-w-4xl mx-auto pb-16 pt-2">
-                    <div className="flex items-center justify-between gap-4 mb-6">
-                        <div>
-                            <h2 className="text-2xl md:text-3xl font-black text-slate-900">Quality Validation</h2>
-                            <p className="text-sm md:text-base text-slate-500 mt-1">Upload, define rules, and review quality issues without leaving the workspace.</p>
+                <motion.div key="validate-tab" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="w-full h-full flex flex-col">
+                    {/* Page Header */}
+                    <div className="flex items-center justify-between px-8 py-5 border-b border-slate-200 bg-white shrink-0">
+                        <div className="flex items-center gap-4">
+                            <div className="w-10 h-10 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center">
+                                <ShieldCheck size={20} className="text-blue-600" />
+                            </div>
+                            <div>
+                                <h2 className="text-2xl font-black text-slate-900 tracking-tight">Quality Validation</h2>
+                                <p className="text-sm text-slate-500 mt-0.5">Upload, define rules, and review quality issues in one place.</p>
+                            </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                            {[1, 2, 3].map((s) => (
-                                <div key={s} className="flex items-center">
-                                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${step === s ? 'bg-slate-900 text-white shadow-md' : step > s ? 'bg-slate-300 text-white' : 'bg-slate-200 text-slate-500'}`}>
-                                        {step > s ? '✓' : s}
+                        <div className="flex items-center gap-1">
+                            {['Upload', 'Configure', 'Results'].map((label, i) => {
+                                const s = i + 1;
+                                return (
+                                    <div key={s} className="flex items-center">
+                                        <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold transition-all ${step === s ? 'bg-slate-900 text-white' :
+                                                step > s ? 'bg-emerald-100 text-emerald-700' :
+                                                    'bg-slate-100 text-slate-400'
+                                            }`}>
+                                            <span className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-black ${step === s ? 'bg-white text-slate-900' :
+                                                    step > s ? 'bg-emerald-500 text-white' :
+                                                        'bg-slate-300 text-slate-500'
+                                                }`}>{step > s ? '✓' : s}</span>
+                                            {label}
+                                        </div>
+                                        {s < 3 && <div className={`w-6 h-px mx-1 ${step > s ? 'bg-emerald-300' : 'bg-slate-200'}`} />}
                                     </div>
-                                    {s < 3 && <div className={`w-8 h-1 rounded-full mx-1 ${step > s ? 'bg-slate-300' : 'bg-slate-200'}`} />}
-                                </div>
-                            ))}
+                                );
+                            })}
                         </div>
                     </div>
 
-                    {step === 1 && (
-                        <div className="bg-white p-5 md:p-6 rounded-[28px] border border-slate-200 shadow-sm">
-                            <h3 className="text-xl font-bold text-slate-900 mb-2">Upload Dataset</h3>
-                            <p className="text-slate-500 font-medium mb-5 text-sm md:text-base">Provide data via CSV, Excel, or direct database connection.</p>
-                            <DataConnection compact={true} onUploadSuccess={(data) => { setSessionId(data.session_id); setFilename(data.filename || `Dataset_${new Date().getTime()}`); setColumns(data.columns); setStep(2); }} />
-                        </div>
-                    )}
+                    {/* Content Area */}
+                    <div className="flex-1 overflow-y-auto px-8 py-6">
+                        {step === 1 && (
+                            <div>
+                                <div className="mb-5">
+                                    <h3 className="text-lg font-bold text-slate-800">Import Dataset</h3>
+                                    <p className="text-sm text-slate-500 mt-1">Provide data via CSV, Excel, or a live database connection.</p>
+                                </div>
+                                <DataConnection compact={true} onUploadSuccess={(data) => { setSessionId(data.session_id); setFilename(data.filename || `Dataset_${new Date().getTime()}`); setColumns(data.columns); setStep(2); }} />
+                            </div>
+                        )}
 
-                    {step === 2 && (
-                        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
-                            <RuleBuilder
-                                compact={true}
-                                columns={columns}
-                                initialRules={validationResults?.rules || []}
-                                onRunValidation={async (rules) => {
-                                    try {
-                                        const token = localStorage.getItem('token');
-                                        const headers = token ? { Authorization: `Bearer ${token}` } : {};
-                                        const res = await axios.post(`${API_BASE}/validate/${sessionId}`, { rules }, { headers });
-                                        setValidationResults({ ...res.data, rules });
+                        {step === 2 && (
+                            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+                                <RuleBuilder
+                                    compact={true}
+                                    columns={columns}
+                                    initialRules={validationResults?.rules || []}
+                                    onRunValidation={async (rules) => {
+                                        try {
+                                            const token = localStorage.getItem('token');
+                                            const headers = token ? { Authorization: `Bearer ${token}` } : {};
+                                            const res = await axios.post(`${API_BASE}/validate/${sessionId}`, { rules }, { headers });
+                                            setValidationResults({ ...res.data, rules });
 
-                                        if (token) {
-                                            try {
-                                                await axios.post(`${API_BASE}/history/jobs`, {
-                                                    session_id: sessionId,
-                                                    file_name: filename,
-                                                    rules: rules,
-                                                    total_rows: res.data.total_rows || 0,
-                                                    valid_rows: res.data.valid_rows || 0,
-                                                    invalid_rows: res.data.invalid_rows || 0,
-                                                    column_stats: res.data.column_stats || null
-                                                }, { headers });
-                                                fetchRecentJobs();
-                                            } catch (histErr) {
-                                                console.error("Failed to save history:", histErr);
+                                            if (token) {
+                                                try {
+                                                    await axios.post(`${API_BASE}/history/jobs`, {
+                                                        session_id: sessionId,
+                                                        file_name: filename,
+                                                        rules: rules,
+                                                        total_rows: res.data.total_rows || 0,
+                                                        valid_rows: res.data.valid_rows || 0,
+                                                        invalid_rows: res.data.invalid_rows || 0,
+                                                        column_stats: res.data.column_stats || null
+                                                    }, { headers });
+                                                    fetchRecentJobs();
+                                                } catch (histErr) {
+                                                    console.error("Failed to save history:", histErr);
+                                                }
                                             }
-                                        }
 
-                                        setStep(3);
-                                    } catch (e) { alert("Validation Failed: " + (e.response?.data?.detail || e.message)); }
-                                }}
-                            />
-                        </motion.div>
-                    )}
+                                            setStep(3);
+                                        } catch (e) { alert("Validation Failed: " + (e.response?.data?.detail || e.message)); }
+                                    }}
+                                />
+                            </motion.div>
+                        )}
 
-                    {step === 3 && (
-                        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
-                            <ResultsDashboard results={validationResults} onReset={() => {
-                                setValidationResults(null);
-                                setColumns([]);
-                                setFilename('');
-                                setSessionId(null);
-                                setStep(1);
-                            }} onEditRules={() => setStep(2)} />
-                        </motion.div>
-                    )}
+                        {step === 3 && (
+                            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+                                <ResultsDashboard results={validationResults} onReset={() => {
+                                    setValidationResults(null);
+                                    setColumns([]);
+                                    setFilename('');
+                                    setSessionId(null);
+                                    setStep(1);
+                                }} onEditRules={() => setStep(2)} />
+                            </motion.div>
+                        )}
+                    </div>
                 </motion.div>
             )}
 
             {/* 3. ENRICHMENT VIEW */}
             {activeTab === 'enrichment' && (
-                <motion.div key="enrichment-tab" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="w-full max-w-5xl mx-auto pb-20 pt-4">
+                <motion.div key="enrichment-tab" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="w-full h-full">
 
                     <EnrichmentBuilder onComplete={goToLanding} />
                 </motion.div>
@@ -606,7 +552,7 @@ function App() {
 
             {/* 4. SCRAPER VIEW */}
             {activeTab === 'scraper' && (
-                <motion.div key="scraper-tab" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="w-full max-w-5xl mx-auto pb-20 pt-4">
+                <motion.div key="scraper-tab" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="w-full h-full">
 
                     <ScraperBuilder onComplete={goToLanding} />
                 </motion.div>
@@ -614,7 +560,7 @@ function App() {
 
             {/* 5. MAPPER VIEW */}
             {activeTab === 'mapper' && (
-                <motion.div key="mapper-tab" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="w-full max-w-5xl mx-auto pb-20 pt-4">
+                <motion.div key="mapper-tab" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="w-full h-full">
 
                     <SchemaMapper onComplete={goToLanding} />
                 </motion.div>
@@ -622,7 +568,7 @@ function App() {
 
             {/* 6. DATA MATCHING VIEW */}
             {activeTab === 'matching' && (
-                <motion.div key="matching-tab" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="w-full max-w-5xl mx-auto pb-20 pt-4">
+                <motion.div key="matching-tab" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="w-full h-full">
 
                     <DataMatchingBuilder onComplete={goToLanding} />
                 </motion.div>
@@ -878,7 +824,7 @@ function App() {
 
             {/* Main Central Content Area */}
             <main className="flex-1 flex flex-col bg-slate-50 relative h-screen pt-16 lg:pt-0 overflow-hidden">
-                <div className={`flex-1 w-full max-w-full h-full overflow-y-auto ${activeTab === 'pipeline' ? 'p-0' : 'p-6 md:p-8'}`}>
+                <div className={`flex-1 w-full max-w-full h-full overflow-y-auto ${activeTab === 'pipeline' ? 'p-0' : activeTab === 'validate' || activeTab === 'enrichment' || activeTab === 'scraper' || activeTab === 'mapper' || activeTab === 'matching' ? 'p-0' : 'p-6 md:p-8'}`}>
                     {renderWorkspaceContent()}
                 </div>
             </main>

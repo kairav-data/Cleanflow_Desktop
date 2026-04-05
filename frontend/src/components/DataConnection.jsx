@@ -178,28 +178,24 @@ const DataConnection = ({ onUploadSuccess, compact = false }) => {
 
     return (
         <div className={wrapperClass}>
-            {/* Header Section */}
+            {/* Header Section - only shown in non-compact (standalone) mode */}
+            {!compact && (
             <motion.div
                 initial={{ opacity: 0, y: -20 }}
                 animate={{ opacity: 1, y: 0 }}
                 className={headerWrapClass}
             >
                 <div className={badgeClass}>
-                    <Zap size={14} /> {compact ? 'Data Import' : 'Data Ingestion Engine'}
+                    <Zap size={14} /> Data Ingestion Engine
                 </div>
                 <h2 className={titleClass}>
-                    {compact ? (
-                        <>Import <span className="text-brand-blue">Dataset</span></>
-                    ) : (
-                        <>Bring Your <span className="text-brand-blue">Data</span> to Life</>
-                    )}
+                    Bring Your <span className="text-brand-blue">Data</span> to Life
                 </h2>
                 <p className={bodyClass}>
-                    {compact
-                        ? 'Upload a file or connect to a database to continue with workspace processing.'
-                        : 'Seamlessly connect to your cloud warehouses or upload local assets to begin your cleaning workflow.'}
+                    Seamlessly connect to your cloud warehouses or upload local assets to begin your cleaning workflow.
                 </p>
             </motion.div>
+            )}
 
             {/* Mode Switcher */}
             <div className={modeClass}>
@@ -234,7 +230,7 @@ const DataConnection = ({ onUploadSuccess, compact = false }) => {
                     >
                         {/* Delimiter Selection */}
                         <div className={delimiterWrapClass}>
-                            <span className="text-sm font-bold text-slate-600">CSV Settings:</span>
+                            <span className="text-sm font-bold text-slate-600">Separator:</span>
                             <div className="flex gap-2">
                                 {[',', ';', '|'].map(d => (
                                     <button
@@ -301,95 +297,137 @@ const DataConnection = ({ onUploadSuccess, compact = false }) => {
                         </motion.div>
                     </motion.div>
                 ) : (
-                    <motion.div key="db" className={dbCardClass}>
-                        <div className={`flex items-center gap-4 ${compact ? 'mb-6' : 'mb-8'}`}>
-                            <div className={`bg-brand-dark/5 text-brand-dark rounded-2xl ${compact ? 'p-3' : 'p-4'}`}><Server size={compact ? 24 : 32} /></div>
-                            <div>
-                                <h3 className={`${compact ? 'text-xl' : 'text-2xl'} font-bold text-slate-800`}>Direct Ingestion</h3>
-                                <p className="text-slate-500">Select a secure connection to your warehouse</p>
-                            </div>
-                        </div>
-                        
+                    <motion.div
+                        key="db"
+                        initial={{ opacity: 0, scale: 0.98 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.98 }}
+                        className="space-y-4"
+                    >
+                        {/* Error Banner */}
                         {error && (
-                            <div className="mb-6 p-4 bg-red-50 text-red-700 border border-red-200 rounded-xl flex items-center gap-3">
-                                <AlertCircle size={20} className="shrink-0" />
+                            <div className="flex items-start gap-3 p-4 bg-red-50 text-red-700 border border-red-200 rounded-2xl">
+                                <AlertCircle size={18} className="shrink-0 mt-0.5" />
                                 <span className="text-sm font-medium">{error}</span>
                             </div>
                         )}
 
                         {loadingConnections ? (
-                            <div className="flex justify-center py-12">
+                            <div className="flex flex-col items-center justify-center py-16 gap-3">
                                 <Loader2 className="w-8 h-8 text-brand-blue animate-spin" />
+                                <p className="text-sm text-slate-500 font-medium">Loading saved connections…</p>
                             </div>
                         ) : connections.length === 0 ? (
-                            <div className="text-center py-12 px-6 bg-slate-50 border border-slate-200 border-dashed rounded-3xl">
-                                <Database size={48} className="mx-auto text-slate-300 mb-4" />
-                                <h4 className="text-lg font-bold text-slate-700 mb-2">No Connections Found</h4>
-                                <p className="text-slate-500 text-sm mb-6 max-w-sm mx-auto">You haven't added any database connections yet. Please add one from the sidebar.</p>
+                            <div className="flex flex-col items-center justify-center py-14 px-6 border-2 border-dashed border-slate-200 bg-slate-50/60 rounded-2xl text-center">
+                                <div className="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center mb-4">
+                                    <Database size={32} className="text-slate-400" />
+                                </div>
+                                <h4 className="text-lg font-black text-slate-700 mb-1">No Connections Yet</h4>
+                                <p className="text-slate-500 text-sm max-w-xs mb-5 leading-relaxed">
+                                    You haven't saved any database connections. Add one from the sidebar to get started.
+                                </p>
+                                <div className="flex items-center gap-2 text-xs font-semibold text-slate-400">
+                                    <ShieldCheck size={14} className="text-emerald-500" />
+                                    All connections are encrypted at rest
+                                </div>
                             </div>
                         ) : (
-                            <div className="space-y-6">
-                                <div>
-                                    <label className="block text-sm font-bold text-slate-700 mb-2">1. Select Connection</label>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        {connections.map(conn => (
-                                            <button
-                                                key={conn.id}
-                                                onClick={() => setSelectedConnection(conn)}
-                                                className={`p-4 rounded-2xl border text-left flex items-start gap-4 transition-all ${
-                                                    selectedConnection?.id === conn.id
-                                                        ? 'border-brand-blue bg-brand-blue/5 shadow-md shadow-brand-blue/10'
-                                                        : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50'
-                                                }`}
-                                            >
-                                                <div className={`mt-0.5 w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 ${
-                                                    selectedConnection?.id === conn.id ? 'border-brand-blue' : 'border-slate-300'
-                                                }`}>
-                                                    {selectedConnection?.id === conn.id && <div className="w-2 h-2 bg-brand-blue rounded-full" />}
-                                                </div>
-                                                <div>
-                                                    <div className="font-bold text-slate-800">{conn.name}</div>
-                                                    <div className="text-xs text-slate-500 mt-1">{conn.db_type.toUpperCase()} • {conn.host}</div>
-                                                </div>
-                                            </button>
-                                        ))}
+                            <div className="space-y-4">
+
+                                {/* Step 1: Select Connection */}
+                                <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
+                                    <div className="flex items-center gap-3 px-5 py-3.5 border-b border-slate-100 bg-slate-50/80">
+                                        <div className="w-6 h-6 rounded-full bg-brand-blue text-white flex items-center justify-center text-xs font-black shrink-0">1</div>
+                                        <span className="text-sm font-bold text-slate-700">Select Connection</span>
+                                        <button onClick={fetchConnections} className="ml-auto p-1.5 text-slate-400 hover:text-brand-blue hover:bg-brand-blue/5 rounded-lg transition-all" title="Refresh">
+                                            <RefreshCw size={14} />
+                                        </button>
+                                    </div>
+                                    <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-3">
+                                        {connections.map(conn => {
+                                            const isSelected = selectedConnection?.id === conn.id;
+                                            const dbColors = { postgresql: 'bg-blue-100 text-blue-700', mysql: 'bg-orange-100 text-orange-700', mssql: 'bg-red-100 text-red-700', sqlite: 'bg-slate-100 text-slate-600' };
+                                            const colorClass = dbColors[conn.db_type] || 'bg-slate-100 text-slate-600';
+                                            return (
+                                                <button key={conn.id} onClick={() => setSelectedConnection(conn)}
+                                                    className={`p-4 rounded-xl border-2 text-left flex items-center gap-3.5 transition-all ${
+                                                        isSelected ? 'border-brand-blue bg-brand-blue/5 shadow-md shadow-brand-blue/10' : 'border-slate-200 bg-white hover:border-brand-blue/40 hover:shadow-sm'
+                                                    }`}
+                                                >
+                                                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-colors ${isSelected ? 'bg-brand-blue text-white' : 'bg-slate-100 text-slate-500'}`}>
+                                                        <Server size={18} />
+                                                    </div>
+                                                    <div className="flex-1 min-w-0">
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="font-bold text-slate-800 text-sm truncate">{conn.name}</span>
+                                                            <span className={`text-[10px] px-1.5 py-0.5 rounded-md font-black uppercase shrink-0 ${colorClass}`}>{conn.db_type}</span>
+                                                        </div>
+                                                        <p className="text-xs text-slate-400 mt-0.5 truncate">{conn.host} &middot; {conn.database}</p>
+                                                    </div>
+                                                    <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 transition-all ${isSelected ? 'border-brand-blue bg-brand-blue' : 'border-slate-300'}`}>
+                                                        {isSelected && <Check size={10} className="text-white" strokeWidth={3} />}
+                                                    </div>
+                                                </button>
+                                            );
+                                        })}
                                     </div>
                                 </div>
-                                
-                                <div>
-                                    <label className="block text-sm font-bold text-slate-700 mb-2">2. Select Table</label>
-                                    {loadingTables ? (
-                                        <div className="flex items-center gap-2 text-slate-500 text-sm py-3 px-4 border border-slate-200 rounded-xl">
-                                            <Loader2 className="w-4 h-4 animate-spin" /> Loading tables...
-                                        </div>
-                                    ) : (
-                                        <div className="relative">
-                                            <select 
-                                                value={selectedTable}
-                                                onChange={handleTableChange}
-                                                className="w-full p-4 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-brand-blue focus:ring-4 focus:ring-brand-blue/10 appearance-none bg-white pr-10"
-                                            >
-                                                <option value="">-- Select a table --</option>
-                                                {tables.map(t => (
-                                                    <option key={t} value={t}>{t}</option>
-                                                ))}
-                                            </select>
-                                            <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={16} />
-                                        </div>
-                                    )}
+
+                                {/* Step 2: Select Table */}
+                                <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
+                                    <div className="flex items-center gap-3 px-5 py-3.5 border-b border-slate-100 bg-slate-50/80">
+                                        <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-black shrink-0 ${selectedConnection ? 'bg-brand-blue text-white' : 'bg-slate-200 text-slate-400'}`}>2</div>
+                                        <span className={`text-sm font-bold ${selectedConnection ? 'text-slate-700' : 'text-slate-400'}`}>Select Table</span>
+                                        {loadingTables && <Loader2 size={14} className="ml-auto text-brand-blue animate-spin" />}
+                                    </div>
+                                    <div className="p-4">
+                                        {!selectedConnection ? (
+                                            <p className="text-sm text-slate-400 text-center py-2">Select a connection first</p>
+                                        ) : loadingTables ? (
+                                            <div className="flex items-center gap-2 text-slate-500 text-sm py-1">
+                                                <Loader2 className="w-4 h-4 animate-spin text-brand-blue" /> Fetching tables…
+                                            </div>
+                                        ) : tables.length === 0 ? (
+                                            <p className="text-sm text-slate-400 text-center py-2">No tables found</p>
+                                        ) : (
+                                            <div className="relative">
+                                                <select value={selectedTable} onChange={handleTableChange}
+                                                    className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:border-brand-blue focus:ring-4 focus:ring-brand-blue/10 appearance-none bg-white pr-10 text-slate-700">
+                                                    <option value="">— Select a table —</option>
+                                                    {tables.map(t => <option key={t} value={t}>{t}</option>)}
+                                                </select>
+                                                <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={16} />
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
-                                
-                                <div>
-                                    <label className="block text-sm font-bold text-slate-700 mb-2">3. SQL Query</label>
-                                    <textarea
-                                        value={query}
-                                        onChange={(e) => setQuery(e.target.value)}
-                                        className="w-full p-4 border border-slate-200 rounded-2xl font-mono text-sm min-h-[120px] focus:outline-none focus:border-brand-blue focus:ring-4 focus:ring-brand-blue/10"
-                                        placeholder="SELECT * FROM users LIMIT 1000"
-                                    />
-                                    <p className="text-xs text-slate-500 mt-2">Write a SELECT query to pull the exact dataset you want to clean.</p>
+
+                                {/* Step 3: SQL Query */}
+                                <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
+                                    <div className="flex items-center gap-3 px-5 py-3.5 border-b border-slate-100 bg-slate-50/80">
+                                        <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-black shrink-0 ${query ? 'bg-brand-blue text-white' : 'bg-slate-200 text-slate-400'}`}>3</div>
+                                        <span className={`text-sm font-bold ${query ? 'text-slate-700' : 'text-slate-400'}`}>SQL Query</span>
+                                        <span className="ml-auto text-[11px] text-slate-400 font-semibold bg-slate-100 px-2 py-0.5 rounded-md">SELECT only</span>
+                                    </div>
+                                    <div className="p-4">
+                                        <div className="relative bg-slate-900 rounded-xl overflow-hidden">
+                                            <textarea
+                                                value={query}
+                                                onChange={e => setQuery(e.target.value)}
+                                                rows={Math.max(4, query.split('\n').length)}
+                                                className="w-full px-5 py-4 bg-transparent text-emerald-400 font-mono text-sm focus:outline-none resize-none leading-relaxed"
+                                                placeholder="SELECT * FROM users LIMIT 1000"
+                                                spellCheck={false}
+                                            />
+                                        </div>
+                                        <p className="text-xs text-slate-400 mt-2.5 flex items-center gap-1.5">
+                                            <ShieldCheck size={12} className="text-emerald-500" />
+                                            Read-only. Data is never modified by your query.
+                                        </p>
+                                    </div>
                                 </div>
-                                
+
+                                {/* Run Button */}
                                 <button
                                     onClick={async () => {
                                         if (!selectedConnection || !query) return;
@@ -402,15 +440,17 @@ const DataConnection = ({ onUploadSuccess, compact = false }) => {
                                             }, { headers });
                                             onUploadSuccess(response.data);
                                         } catch (err) {
-                                            setError(err.response?.data?.detail || "Error connecting to database.");
+                                            setError(err.response?.data?.detail || 'Error connecting to database.');
                                             setIsLoading(false);
                                         }
                                     }}
                                     disabled={!selectedConnection || !query || isLoading}
-                                    className="w-full py-4 bg-brand-dark hover:bg-slate-800 disabled:bg-slate-300 disabled:cursor-not-allowed text-white rounded-2xl font-black text-lg flex items-center justify-center gap-2"
+                                    className="w-full py-3.5 bg-brand-dark hover:bg-slate-700 disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed text-white rounded-2xl font-black text-base flex items-center justify-center gap-2.5 transition-all hover:-translate-y-0.5 hover:shadow-lg shadow-slate-900/20"
                                 >
-                                    {isLoading ? <Loader2 size={24} className="animate-spin" /> : <Play size={20} />}
-                                    {isLoading ? 'Ingesting Data...' : 'Run Query & Import'}
+                                    {isLoading
+                                        ? <><Loader2 size={20} className="animate-spin" /> Importing Data…</>
+                                        : <><Play size={18} fill="currentColor" /> Run Query &amp; Import</>
+                                    }
                                 </button>
                             </div>
                         )}

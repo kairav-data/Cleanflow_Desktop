@@ -16,7 +16,7 @@ import { HomePage, PricingPage, UserProfilePage } from './components/pages';
 import ChatBot from './components/ChatBot';
 
 // Feature Builders
-import { EnrichmentBuilder, ScraperBuilder, SchemaMapper, DataMatchingBuilder, PipelineBuilder, SchedulerBuilder, PipelineRuns } from './features';
+import { EnrichmentBuilder, ScraperBuilder, SchemaMapper, DataMatchingBuilder, PipelineBuilder, SchedulerBuilder, PipelineRuns, DataVisualizer } from './features';
 
 // Assets
 import Logo from './assets/logo.png';
@@ -337,6 +337,15 @@ function App() {
                                     action: () => setActiveTab('matching'),
                                 },
                                 {
+                                    title: 'AI Visualizer',
+                                    description: 'Upload a dataset and get an instant AI-generated chart dashboard.',
+                                    tutorial: '1. Upload your CSV or TSV file.\n2. AI analyzes column types & distributions.\n3. A beautiful dashboard of charts is auto-generated.',
+                                    icon: BarChart3,
+                                    color: 'text-violet-600',
+                                    bg: 'bg-violet-50',
+                                    action: () => setActiveTab('visualizer'),
+                                },
+                                {
                                     title: 'Pipeline Builder',
                                     description: 'Design orchestrated flows across multiple data operations.',
                                     tutorial: '1. Drag Data Sources to the canvas.\n2. Connect them to Cleaning/Validation nodes.\n3. Route the output to an Export node, then click Run.',
@@ -346,6 +355,7 @@ function App() {
                                     action: () => setActiveTab('pipeline'),
                                 }
                             ].map((item) => (
+
                                 <div key={item.title} className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all group flex flex-col h-full">
                                     <div className="p-6 flex-1">
                                         <div className={`w-12 h-12 rounded-xl flex items-center justify-center mb-6 ${item.bg}`}>
@@ -631,6 +641,13 @@ function App() {
                 </motion.div>
             )}
 
+            {/* 7. AI VISUALIZER VIEW */}
+            {activeTab === 'visualizer' && (
+                <motion.div key="visualizer-tab" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="w-full h-full">
+                    <DataVisualizer />
+                </motion.div>
+            )}
+
             {/* 7. PIPELINE ORCHESTRATOR VIEW */}
             {activeTab === 'pipeline' && (
                 <motion.div key="pipeline-tab" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="w-full h-full">
@@ -805,7 +822,8 @@ function App() {
                                 { id: 'enrichment', label: 'Data Cleaning', icon: Sparkles },
                                 { id: 'mapper', label: 'Schema Mapping', icon: GitMerge },
                                 { id: 'scraper', label: 'Web Scraping', icon: Globe },
-                                { id: 'matching', label: 'Data Matching', icon: Shuffle }
+                                { id: 'matching', label: 'Data Matching', icon: Shuffle },
+                                { id: 'visualizer', label: 'AI Visualizer', icon: BarChart3 }
                             ].map(feat => (
                                 <li key={feat.id}>
                                     <button onClick={() => handleFeatureAccess(feat.id)} className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-semibold transition-all group ${activeTab === feat.id ? 'bg-emerald-600/10 text-emerald-400 border border-emerald-900/50' : 'text-gray-400 hover:text-gray-100 hover:bg-[#1f2937]'}`}>
@@ -881,7 +899,7 @@ function App() {
 
             {/* Main Central Content Area */}
             <main className="flex-1 flex flex-col bg-slate-50 relative h-screen pt-16 lg:pt-0 overflow-hidden">
-                <div className={`flex-1 w-full max-w-full h-full overflow-y-auto ${activeTab === 'pipeline' ? 'p-0' : activeTab === 'validate' || activeTab === 'enrichment' || activeTab === 'scraper' || activeTab === 'mapper' || activeTab === 'matching' ? 'p-0' : 'p-6 md:p-8'}`}>
+                <div className={`flex-1 w-full max-w-full h-full overflow-y-auto ${activeTab === 'pipeline' ? 'p-0' : activeTab === 'validate' || activeTab === 'enrichment' || activeTab === 'scraper' || activeTab === 'mapper' || activeTab === 'matching' || activeTab === 'visualizer' ? 'p-0' : 'p-6 md:p-8'}`}>
                     {renderWorkspaceContent()}
                 </div>
             </main>

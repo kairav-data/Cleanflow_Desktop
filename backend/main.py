@@ -651,6 +651,54 @@ async def download_matching_results(session_id: str):
         logger.exception("Error executing download_matching_results")
         raise HTTPException(status_code=500, detail=str(e))
 
+# --- AI Visualizer Feature ---
+
+@app.post("/features/visualizer/upload")
+async def visualizer_upload(file: UploadFile = File(...), delimiter: str = Form(",")):
+    """Upload a file and create a session for AI visualization analysis."""
+    try:
+        os.makedirs(UPLOAD_DIR, exist_ok=True)
+        file_path = os.path.join(UPLOAD_DIR, file.filename)
+        contents = await file.read()
+        with open(file_path, "wb") as buf:
+            buf.write(contents)
+
+        loop = asyncio.get_event_loop()
+        engine = ValidationEngine()
+        columns = await loop.run_in_executor(
+            None, lambda: engine.load_data(file_path=file_path, sep=delimiter)
+        )
+        sessions[engine.session_id] = engine
+
+        return {
+            "session_id": engine.session_id,
+            "filename": file.filename,
+            "columns": columns,
+            "rows": len(engine.df) if engine.df is not None else 0,
+        }
+    except Exception as e:
+        logger.error(f"Visualizer upload error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/features/visualizer/analyze/{session_id}")
+async def visualizer_analyze(session_id: str):
+    """Run AI analysis on the uploaded dataset and return chart configurations."""
+    if session_id not in sessions:
+        raise HTTPException(status_code=404, detail="Session not found")
+    engine = sessions[session_id]
+    if engine.df is None:
+        raise HTTPException(status_code=400, detail="No data loaded in session")
+    try:
+        from features.visualizer import analyze
+        loop = asyncio.get_event_loop()
+        result = await loop.run_in_executor(None, lambda: analyze(engine.df))
+        return result
+    except Exception as e:
+        logger.error(f"Visualizer analyze error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 # --- Pipeline Feature ---
 
 @app.post("/features/pipeline/execute/{session_id}")

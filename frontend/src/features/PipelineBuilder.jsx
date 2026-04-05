@@ -9,11 +9,18 @@ import {
   Background,
   Handle,
   Position,
+  ConnectionLineType,
+  MarkerType,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import { Database, Sparkles, ShieldCheck, Download, Play, CheckCircle, X, Plus, Trash2, AlertCircle, Globe, GitMerge, Shuffle } from 'lucide-react';
+import { Database, Sparkles, ShieldCheck, Download, Play, CheckCircle, X, Plus, Trash2, AlertCircle, Globe, GitMerge, Shuffle, BarChart3, Activity, TrendingUp, PieChart as PieIcon, RefreshCw, ChevronDown, ChevronUp, Zap, Settings } from 'lucide-react';
 import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
+import {
+  BarChart, Bar, LineChart, Line, AreaChart, Area,
+  PieChart, Pie, Cell, ScatterChart, Scatter,
+  XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
+} from 'recharts';
 
 // Component Imports
 import { DataConnection, RuleBuilder } from '../components';
@@ -104,9 +111,17 @@ const PipelineNode = ({ id: nodeId, data, selected }) => {
         transition: 'all 0.2s',
       }}
     >
-      {/* Source / Target handles */}
-      <Handle type="target" position={Position.Left}  style={{ background: borderColor, width: 10, height: 10 }} />
-      <Handle type="source" position={Position.Right} style={{ background: borderColor, width: 10, height: 10 }} />
+      {/* Handles — wired per node role */}
+      {/* Sources only emit (right handle) */}
+      {(kind !== 'dataset' && kind !== 'scraper') && (
+        <Handle type="target" position={Position.Left}
+          style={{ background: borderColor, width: 10, height: 10, border: '2px solid white', boxShadow: '0 0 0 2px ' + borderColor }} />
+      )}
+      {/* Export only receives (left handle) */}
+      {kind !== 'export' && (
+        <Handle type="source" position={Position.Right}
+          style={{ background: borderColor, width: 10, height: 10, border: '2px solid white', boxShadow: '0 0 0 2px ' + borderColor }} />
+      )}
 
       {/* Delete button */}
       <button
@@ -159,6 +174,109 @@ export const PipelineBuilder = ({ onComplete }) => {
   const [isExecuting, setIsExecuting] = useState(false);
   const [executionLogs, setExecutionLogs] = useState([]);
   const [downloadUrl, setDownloadUrl] = useState(null);
+  const [logsExpanded, setLogsExpanded] = useState(true);
+
+  // AI Visualizer state
+  const [vizAnalysis, setVizAnalysis] = useState(null);
+  const [vizLoading, setVizLoading] = useState(false);
+  const [vizError, setVizError] = useState('');
+  const [showViz, setShowViz] = useState(false);
+
+  const CHART_COLORS = ['#6366f1','#10b981','#f59e0b','#ef4444','#8b5cf6','#06b6d4','#f97316','#84cc16'];
+  const GRADIENT_PAIRS = [['#6366f1','#818cf8'],['#10b981','#34d399'],['#f59e0b','#fbbf24'],['#ef4444','#f87171'],['#8b5cf6','#a78bfa'],['#06b6d4','#22d3ee']];
+
+  const VizTooltip = ({ active, payload, label }) => {
+    if (!active || !payload?.length) return null;
+    return (
+      <div className="bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 shadow-2xl">
+        {label !== undefined && <p className="text-slate-400 text-xs mb-0.5 font-medium">{label}</p>}
+        {payload.map((p, i) => (
+          <p key={i} className="text-sm font-bold" style={{ color: p.color || p.fill || '#fff' }}>
+            {typeof p.value === 'number' ? Number(p.value).toLocaleString() : p.value}
+          </p>
+        ))}
+      </div>
+    );
+  };
+
+  const renderVizChart = (chart, idx) => {
+    const grad = GRADIENT_PAIRS[idx % GRADIENT_PAIRS.length];
+    const col  = CHART_COLORS[idx % CHART_COLORS.length];
+    const common = { data: chart.data, margin: { top: 4, right: 8, left: 0, bottom: 4 } };
+    if (chart.type === 'bar') return (
+      <ResponsiveContainer width="100%" height={200}>
+        <BarChart {...common}>
+          <defs><linearGradient id={`bg-${idx}`} x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={grad[0]} stopOpacity={0.9}/><stop offset="100%" stopColor={grad[1]} stopOpacity={0.6}/></linearGradient></defs>
+          <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+          <XAxis dataKey={chart.xKey} tick={{ fontSize: 10, fill: '#94a3b8' }} tickLine={false} axisLine={false} />
+          <YAxis tick={{ fontSize: 10, fill: '#94a3b8' }} tickLine={false} axisLine={false} width={42} />
+          <Tooltip content={<VizTooltip />} cursor={{ fill: 'rgba(99,102,241,0.05)' }} />
+          <Bar dataKey={chart.dataKey} fill={`url(#bg-${idx})`} radius={[5,5,0,0]} maxBarSize={44} />
+        </BarChart>
+      </ResponsiveContainer>
+    );
+    if (chart.type === 'area') return (
+      <ResponsiveContainer width="100%" height={200}>
+        <AreaChart {...common}>
+          <defs><linearGradient id={`ag-${idx}`} x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor={col} stopOpacity={0.3}/><stop offset="95%" stopColor={col} stopOpacity={0}/></linearGradient></defs>
+          <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+          <XAxis dataKey={chart.xKey} tick={{ fontSize: 10, fill: '#94a3b8' }} tickLine={false} axisLine={false} />
+          <YAxis tick={{ fontSize: 10, fill: '#94a3b8' }} tickLine={false} axisLine={false} width={42} />
+          <Tooltip content={<VizTooltip />} />
+          <Area type="monotone" dataKey={chart.dataKey} stroke={col} strokeWidth={2} fill={`url(#ag-${idx})`} dot={false} />
+        </AreaChart>
+      </ResponsiveContainer>
+    );
+    if (chart.type === 'line') return (
+      <ResponsiveContainer width="100%" height={200}>
+        <LineChart {...common}>
+          <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+          <XAxis dataKey={chart.xKey} tick={{ fontSize: 10, fill: '#94a3b8' }} tickLine={false} axisLine={false} />
+          <YAxis tick={{ fontSize: 10, fill: '#94a3b8' }} tickLine={false} axisLine={false} width={42} />
+          <Tooltip content={<VizTooltip />} />
+          <Line type="monotone" dataKey={chart.dataKey} stroke={col} strokeWidth={2} dot={false} activeDot={{ r: 4, fill: col }} />
+        </LineChart>
+      </ResponsiveContainer>
+    );
+    if (chart.type === 'pie') return (
+      <ResponsiveContainer width="100%" height={200}>
+        <PieChart>
+          <Pie data={chart.data} cx="50%" cy="50%" innerRadius={45} outerRadius={80} paddingAngle={3} dataKey="value">
+            {chart.data.map((entry, i) => <Cell key={i} fill={entry.color || CHART_COLORS[i % CHART_COLORS.length]} />)}
+          </Pie>
+          <Tooltip content={<VizTooltip />} />
+          <Legend formatter={(v) => <span style={{ color: '#64748b', fontSize: 10 }}>{v}</span>} />
+        </PieChart>
+      </ResponsiveContainer>
+    );
+    if (chart.type === 'scatter') return (
+      <ResponsiveContainer width="100%" height={200}>
+        <ScatterChart {...common}>
+          <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+          <XAxis dataKey="x" tick={{ fontSize: 10, fill: '#94a3b8' }} tickLine={false} axisLine={false} />
+          <YAxis dataKey="y" tick={{ fontSize: 10, fill: '#94a3b8' }} tickLine={false} axisLine={false} width={42} />
+          <Tooltip content={<VizTooltip />} cursor={{ strokeDasharray: '3 3' }} />
+          <Scatter data={chart.data} fill={col} fillOpacity={0.65} />
+        </ScatterChart>
+      </ResponsiveContainer>
+    );
+    return null;
+  };
+
+  const runVisualizerAnalysis = async () => {
+    if (!activeSessionId) return;
+    setVizLoading(true);
+    setVizError('');
+    setShowViz(true);
+    try {
+      const res = await axios.post(`${API_BASE}/features/visualizer/analyze/${activeSessionId}`);
+      setVizAnalysis(res.data);
+    } catch (err) {
+      setVizError(err.response?.data?.detail || err.message || 'Visualization failed');
+    } finally {
+      setVizLoading(false);
+    }
+  };
 
   const onConnect = useCallback((params) => setEdges((eds) => addEdge(params, eds)), []);
 
@@ -281,6 +399,9 @@ export const PipelineBuilder = ({ onComplete }) => {
             const filename = res.data.output_file.split('/').pop().split('\\').pop();
             setDownloadUrl(`${API_BASE}/download/${filename}`);
         }
+        // Auto-trigger visualization on successful run
+        setVizAnalysis(null);
+        setShowViz(false);
 
         persistRun((currentRuns) => currentRuns.map((run) => (
           run.id === runRecord.id
@@ -313,84 +434,136 @@ export const PipelineBuilder = ({ onComplete }) => {
   };
 
   return (
-    <div className="flex flex-col h-full w-full relative bg-white overflow-hidden">
-      
-      {/* Top Header */}
-      <div className="h-16 shrink-0 border-b border-slate-200 bg-slate-50 flex items-center justify-between px-6 z-10">
+    <div className="flex flex-col h-full w-full relative overflow-hidden" style={{ background: '#f8fafc' }}>
+
+      {/* ── Premium Header ── */}
+      <div className="h-[60px] shrink-0 flex items-center justify-between px-6 z-10 bg-white border-b border-slate-100 shadow-sm">
           <div className="flex items-center gap-3">
-              <h1 className="text-xl font-bold text-slate-800">Pipeline Orchestrator</h1>
-              <span className="px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 text-xs font-bold uppercase tracking-wider">Beta</span>
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-md shadow-emerald-200">
+                  <GitMerge size={15} className="text-white" />
+              </div>
+              <div>
+                  <h1 className="text-sm font-black text-slate-900 leading-tight">Pipeline Orchestrator</h1>
+                  <p className="text-xs text-slate-400 font-medium leading-none mt-0.5">Drag • Connect • Run</p>
+              </div>
+              {nodes.length > 0 && (
+                  <span className="ml-2 px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 text-xs font-bold border border-slate-200">
+                      {nodes.length} node{nodes.length !== 1 ? 's' : ''}
+                  </span>
+              )}
           </div>
-          <button 
-              onClick={handleRunPipeline}
-              disabled={isExecuting || nodes.length === 0}
-              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-white shadow-lg transition-all ${isExecuting ? 'bg-slate-400 cursor-not-allowed' : 'bg-emerald-600 hover:bg-emerald-700 hover:-translate-y-0.5 shadow-emerald-500/30'}`}
-          >
-              <Play size={18} /> {isExecuting ? 'Running...' : 'Run Pipeline'}
-          </button>
+          <div className="flex items-center gap-3">
+              {isExecuting && (
+                  <span className="flex items-center gap-1.5 text-xs text-amber-600 font-bold animate-pulse">
+                      <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-ping" /> Executing…
+                  </span>
+              )}
+              <button
+                  onClick={handleRunPipeline}
+                  disabled={isExecuting || nodes.length === 0}
+                  className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-black text-sm transition-all ${
+                      isExecuting || nodes.length === 0
+                          ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                          : 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white hover:from-emerald-400 hover:to-teal-500 shadow-lg shadow-emerald-200 hover:scale-[1.02]'
+                  }`}
+              >
+                  <Play size={15} fill={isExecuting || nodes.length === 0 ? 'currentColor' : 'currentColor'} />
+                  {isExecuting ? 'Running…' : 'Run Pipeline'}
+              </button>
+          </div>
       </div>
 
       <div className="flex flex-1 overflow-hidden">
-        {/* Left Toolbar / Node Palette */}
-        <aside className="w-64 border-r border-slate-200 bg-white p-4 flex flex-col gap-6 overflow-y-auto z-10 shrink-0">
-          <div>
-              <h3 className="text-xs font-black text-slate-400 uppercase tracking-wider mb-3">Input Sources</h3>
-              <div 
-                  className="flex items-center gap-3 p-3 mb-2 rounded-xl border-2 border-dashed border-slate-300 bg-slate-50 text-slate-700 cursor-grab hover:border-emerald-500 hover:bg-emerald-50 transition-colors"
-                  onDragStart={(e) => onDragStart(e, 'dataset')} draggable
-              >
-                  <Database size={18} className="text-slate-400" /> <span className="text-sm font-bold">Dataset Input</span>
-              </div>
-              <div 
-                  className="flex items-center gap-3 p-3 mb-2 rounded-xl border border-slate-200 shadow-sm cursor-grab hover:border-emerald-500 hover:shadow-md transition-all"
-                  onDragStart={(e) => onDragStart(e, 'scraper')} draggable
-              >
-                  <Globe size={18} className="text-orange-500" /> <span className="text-sm font-bold text-slate-700">Web Scraping</span>
-              </div>
+        {/* ── Node Palette (white) ── */}
+        <aside className="w-[210px] shrink-0 z-10 flex flex-col overflow-hidden bg-white border-r border-slate-100">
+
+          {/* Palette header */}
+          <div className="px-4 py-3.5 border-b border-slate-100">
+              <p className="text-xs font-black uppercase tracking-widest text-slate-400">Node Library</p>
+              <p className="text-xs mt-0.5 text-slate-400">Drag nodes to canvas</p>
           </div>
 
-          <div>
-              <h3 className="text-xs font-black text-slate-400 uppercase tracking-wider mb-3">Transformations</h3>
-              <div 
-                  className="flex items-center gap-3 p-3 mb-2 rounded-xl border border-slate-200 shadow-sm cursor-grab hover:border-emerald-500 hover:shadow-md transition-all"
-                  onDragStart={(e) => onDragStart(e, 'cleaner')} draggable
-              >
-                  <Sparkles size={18} className="text-emerald-500" /> <span className="text-sm font-bold text-slate-700">Data Cleaner</span>
+          <div className="flex-1 overflow-y-auto px-3 py-4 space-y-5">
+
+            {/* Input Sources */}
+            <div>
+              <p className="text-xs font-black uppercase tracking-widest mb-2 px-1 text-slate-400">Sources</p>
+              <div className="space-y-1.5">
+                {[{ type: 'dataset', label: 'Dataset Input', icon: Database,  color: '#10b981', bg: '#10b98115' },
+                  { type: 'scraper', label: 'Web Scraping',  icon: Globe,     color: '#f97316', bg: '#f9731615' }]
+                .map(n => (
+                    <div key={n.type}
+                        draggable
+                        onDragStart={(e) => onDragStart(e, n.type)}
+                        className="flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-grab select-none transition-all border border-slate-100 hover:border-slate-200 hover:bg-slate-50"
+                    >
+                        <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style={{ background: n.bg }}>
+                            <n.icon size={14} style={{ color: n.color }} />
+                        </div>
+                        <span className="text-xs font-bold text-slate-600">{n.label}</span>
+                    </div>
+                ))}
               </div>
-              <div 
-                  className="flex items-center gap-3 p-3 mb-2 rounded-xl border border-slate-200 shadow-sm cursor-grab hover:border-emerald-500 hover:shadow-md transition-all"
-                  onDragStart={(e) => onDragStart(e, 'validation')} draggable
-              >
-                  <ShieldCheck size={18} className="text-blue-500" /> <span className="text-sm font-bold text-slate-700">Quality Validation</span>
+            </div>
+
+            {/* Transformations */}
+            <div>
+              <p className="text-xs font-black uppercase tracking-widest mb-2 px-1 text-slate-400">Transform</p>
+              <div className="space-y-1.5">
+                {[{ type: 'cleaner',    label: 'Data Cleaner',       icon: Sparkles,    color: '#10b981', bg: '#10b98115' },
+                  { type: 'validation', label: 'Quality Validation', icon: ShieldCheck, color: '#3b82f6', bg: '#3b82f615' },
+                  { type: 'mapper',     label: 'Schema Mapping',     icon: GitMerge,    color: '#6366f1', bg: '#6366f115' },
+                  { type: 'matching',   label: 'Data Matching',      icon: Shuffle,     color: '#8b5cf6', bg: '#8b5cf615' }]
+                .map(n => (
+                    <div key={n.type}
+                        draggable
+                        onDragStart={(e) => onDragStart(e, n.type)}
+                        className="flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-grab select-none transition-all border border-slate-100 hover:border-slate-200 hover:bg-slate-50"
+                    >
+                        <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style={{ background: n.bg }}>
+                            <n.icon size={14} style={{ color: n.color }} />
+                        </div>
+                        <span className="text-xs font-bold text-slate-600">{n.label}</span>
+                    </div>
+                ))}
               </div>
-              <div 
-                  className="flex items-center gap-3 p-3 mb-2 rounded-xl border border-slate-200 shadow-sm cursor-grab hover:border-emerald-500 hover:shadow-md transition-all"
-                  onDragStart={(e) => onDragStart(e, 'mapper')} draggable
+            </div>
+
+            {/* Output */}
+            <div>
+              <p className="text-xs font-black uppercase tracking-widest mb-2 px-1 text-slate-400">Output</p>
+              <div
+                  draggable
+                  onDragStart={(e) => onDragStart(e, 'export')}
+                  className="flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-grab select-none transition-all border border-emerald-100 bg-emerald-50 hover:bg-emerald-100"
               >
-                  <GitMerge size={18} className="text-indigo-500" /> <span className="text-sm font-bold text-slate-700">Schema Mapping</span>
+                  <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style={{ background: '#10b98120' }}>
+                      <Download size={14} style={{ color: '#10b981' }} />
+                  </div>
+                  <span className="text-xs font-bold text-emerald-700">File Export</span>
               </div>
-              <div 
-                  className="flex items-center gap-3 p-3 mb-2 rounded-xl border border-slate-200 shadow-sm cursor-grab hover:border-emerald-500 hover:shadow-md transition-all"
-                  onDragStart={(e) => onDragStart(e, 'matching')} draggable
-              >
-                  <Shuffle size={18} className="text-purple-500" /> <span className="text-sm font-bold text-slate-700">Data Matching</span>
-              </div>
+            </div>
+
           </div>
 
-          <div>
-              <h3 className="text-xs font-black text-slate-400 uppercase tracking-wider mb-3">Outputs</h3>
-              <div 
-                  className="flex items-center gap-3 p-3 rounded-xl border border-slate-200 shadow-sm cursor-grab hover:border-emerald-500 hover:shadow-md transition-all bg-slate-900 text-white"
-                  onDragStart={(e) => onDragStart(e, 'export')} draggable
-              >
-                  <Download size={18} className="text-emerald-400" /> <span className="text-sm font-bold">File Export</span>
-              </div>
+          {/* Keyboard hint */}
+          <div className="px-4 py-3 border-t border-slate-100">
+              <p className="text-xs text-slate-300">Del — remove selected node</p>
           </div>
-
         </aside>
 
         {/* Center Canvas */}
         <div className="flex-1 h-full relative" ref={reactFlowWrapper}>
+
+            {/* Hidden SVG — defines a small circle endpoint marker */}
+            <svg style={{ position: 'absolute', width: 0, height: 0, overflow: 'hidden' }}>
+                <defs>
+                    <marker id="cf-dot" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto">
+                        <circle cx="4" cy="4" r="2.5" fill="#94a3b8" />
+                    </marker>
+                </defs>
+            </svg>
+
             <ReactFlowProvider>
                 <ReactFlow
                 nodes={nodesWithHandlers}
@@ -405,31 +578,51 @@ export const PipelineBuilder = ({ onComplete }) => {
                 onPaneClick={onPaneClick}
                 nodeTypes={nodeTypes}
                 deleteKeyCode="Delete"
+                connectionLineType={ConnectionLineType.Step}
+                connectionLineStyle={{ stroke: '#cbd5e1', strokeWidth: 1.5, strokeDasharray: '4 3' }}
+                defaultEdgeOptions={{
+                  type: 'step',
+                  animated: false,
+                  style: { stroke: '#cbd5e1', strokeWidth: 1.5 },
+                  markerEnd: 'url(#cf-dot)',
+                }}
                 fitView
                 >
-                <Controls />
-                <Background variant="dots" gap={20} size={1.5} color="#cbd5e1" />
+                <Controls style={{ background: 'rgba(255,255,255,0.9)', borderRadius: 12, border: '1px solid #e2e8f0', boxShadow: '0 4px 16px rgba(0,0,0,0.08)' }} />
+                <Background variant="dots" gap={24} size={1.2} color="#94a3b8" style={{ background: '#f8fafc' }} />
                 </ReactFlow>
             </ReactFlowProvider>
+
 
             {/* Right Side Configuration Panel */}
             <AnimatePresence>
                 {activeNode && (
-                    <motion.div 
+                    <motion.div
                         initial={{ x: '100%', opacity: 0 }}
                         animate={{ x: 0, opacity: 1 }}
                         exit={{ x: '100%', opacity: 0 }}
-                        className="absolute right-0 top-0 h-full w-[500px] max-w-full bg-white shadow-2xl border-l border-slate-200 z-40 flex flex-col"
+                        transition={{ type: 'spring', damping: 28, stiffness: 300 }}
+                        className="absolute right-0 top-0 h-full w-[480px] max-w-full shadow-2xl z-40 flex flex-col"
+                        style={{ background: '#ffffff', borderLeft: '1px solid #e2e8f0' }}
                     >
-                        <div className="h-16 flex items-center justify-between px-6 border-b border-slate-200 shrink-0 bg-slate-50">
-                            <h2 className="text-lg font-bold text-slate-800">
-                                Configure: {activeNode.data.label}
-                            </h2>
-                            <button onClick={() => setActiveNode(null)} className="text-slate-400 hover:text-slate-600">
-                                <X size={20} />
+                        {/* Panel accent bar */}
+                        <div className="h-0.5 w-full" style={{ background: 'linear-gradient(90deg,#10b981,#6366f1,#8b5cf6)' }} />
+                        <div className="h-14 flex items-center justify-between px-5 border-b border-slate-100 shrink-0 bg-white">
+                            <div className="flex items-center gap-3">
+                                <div className="w-7 h-7 rounded-lg bg-slate-100 flex items-center justify-center">
+                                    <Settings size={13} className="text-slate-600" />
+                                </div>
+                                <div>
+                                    <p className="text-xs font-black text-slate-900">{activeNode.data.label}</p>
+                                    <p className="text-xs text-slate-400">Configuration</p>
+                                </div>
+                            </div>
+                            <button onClick={() => setActiveNode(null)}
+                                className="p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-all">
+                                <X size={16} />
                             </button>
                         </div>
-                        <div className="flex-1 overflow-y-auto p-6">
+                        <div className="flex-1 overflow-y-auto p-5">
                             {/* Validation Configuration */}
                             {activeNode.data.label.toLowerCase().includes('validation') && (
                                 <RuleBuilder 
@@ -520,27 +713,151 @@ export const PipelineBuilder = ({ onComplete }) => {
 
             {/* Floating Logs panel overlay if logs exist */}
             {executionLogs.length > 0 && (
-                <div className="absolute right-6 bottom-6 w-80 bg-slate-900 text-slate-100 p-5 rounded-2xl shadow-2xl z-50 animate-in fade-in slide-in-from-bottom-4">
-                    <h3 className="text-sm font-bold mb-4 flex items-center gap-2 border-b border-slate-800 pb-2">Execution Logs</h3>
-                    <div className="space-y-3 font-mono text-xs max-h-60 overflow-y-auto logs-scrollbar pr-2">
-                        {executionLogs.map((log, idx) => (
-                            <div key={idx} className="flex flex-col">
-                                <span className={log.status === 'success' ? 'text-emerald-400' : 'text-red-400'}>
-                                    [{log.type.toUpperCase()}] {log.status}
-                                </span>
-                                <span className="text-slate-400">{log.message || log.error}</span>
-                            </div>
-                        ))}
+                <div className="absolute right-6 bottom-6 w-96 bg-slate-900 text-slate-100 rounded-2xl shadow-2xl z-50" style={{ maxHeight: '80vh', display: 'flex', flexDirection: 'column' }}>
+                    {/* Log header */}
+                    <div className="flex items-center justify-between px-5 py-3 border-b border-slate-800 shrink-0">
+                        <h3 className="text-sm font-bold flex items-center gap-2">
+                            <CheckCircle size={14} className="text-emerald-400" /> Execution Complete
+                        </h3>
+                        <button onClick={() => setLogsExpanded(v => !v)} className="text-slate-400 hover:text-white p-1 rounded">
+                            {logsExpanded ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
+                        </button>
                     </div>
-                    {downloadUrl && (
-                        <a href={downloadUrl} target="_blank" rel="noreferrer" className="mt-4 w-full flex items-center justify-center gap-2 bg-emerald-500 hover:bg-emerald-400 text-slate-900 font-bold py-2 rounded-lg transition-colors">
-                            <Download size={16} /> Download Result Here
-                        </a>
+
+                    {logsExpanded && (
+                        <div className="space-y-2 font-mono text-xs max-h-40 overflow-y-auto px-5 py-3 shrink-0">
+                            {executionLogs.map((log, idx) => (
+                                <div key={idx} className="flex flex-col">
+                                    <span className={log.status === 'success' ? 'text-emerald-400' : 'text-red-400'}>
+                                        [{log.type.toUpperCase()}] {log.status}
+                                    </span>
+                                    <span className="text-slate-400">{log.message || log.error}</span>
+                                </div>
+                            ))}
+                        </div>
                     )}
+
+                    {/* Action buttons */}
+                    <div className="px-5 py-3 border-t border-slate-800 flex flex-col gap-2 shrink-0">
+                        {downloadUrl && (
+                            <a href={downloadUrl} target="_blank" rel="noreferrer"
+                               className="w-full flex items-center justify-center gap-2 bg-emerald-500 hover:bg-emerald-400 text-slate-900 font-bold py-2 rounded-xl transition-colors text-sm">
+                                <Download size={15} /> Download Result
+                            </a>
+                        )}
+                        <button
+                            onClick={runVisualizerAnalysis}
+                            disabled={vizLoading}
+                            className="w-full flex items-center justify-center gap-2 bg-violet-600 hover:bg-violet-500 disabled:opacity-60 text-white font-bold py-2 rounded-xl transition-colors text-sm"
+                        >
+                            {vizLoading
+                                ? <><RefreshCw size={14} className="animate-spin" /> Analyzing…</>
+                                : <><BarChart3 size={14} /> Visualize Output</>}
+                        </button>
+                    </div>
                 </div>
             )}
         </div>
       </div>
+
+      {/* ── AI Visualizer Results Panel (slides up below canvas) ── */}
+      <AnimatePresence>
+        {showViz && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.35, ease: 'easeInOut' }}
+            className="shrink-0 border-t border-slate-200 bg-slate-50 overflow-hidden"
+          >
+            <div className="p-6">
+              {/* Panel header */}
+              <div className="flex items-center justify-between mb-5">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-violet-200">
+                    <BarChart3 size={18} className="text-white" />
+                  </div>
+                  <div>
+                    <h2 className="text-base font-black text-slate-800 leading-tight">AI Visualizer — Pipeline Output</h2>
+                    <p className="text-xs text-slate-400 font-medium">Auto-generated charts from pipeline result dataset</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => { setShowViz(false); setVizAnalysis(null); }}
+                  className="p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-200 transition-colors"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+
+              {/* Loading */}
+              {vizLoading && (
+                <div className="flex items-center justify-center py-16 gap-3 text-violet-600">
+                  <RefreshCw size={22} className="animate-spin" />
+                  <span className="font-bold text-sm">AI is analyzing the pipeline output…</span>
+                </div>
+              )}
+
+              {/* Error */}
+              {vizError && !vizLoading && (
+                <div className="flex items-center gap-2 p-4 bg-red-50 border border-red-100 rounded-xl text-sm text-red-700">
+                  <AlertCircle size={16} /> {vizError}
+                </div>
+              )}
+
+              {/* Results */}
+              {vizAnalysis && !vizLoading && (
+                <>
+                  {/* KPI tiles */}
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                    {vizAnalysis.kpis?.map((kpi, i) => (
+                      <div key={i} className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: kpi.color + '18' }}>
+                          <BarChart3 size={18} style={{ color: kpi.color }} />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-xl font-black text-slate-900 leading-none truncate">{kpi.value}</p>
+                          <p className="text-xs text-slate-400 font-semibold mt-0.5">{kpi.label}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Chart grid */}
+                  {vizAnalysis.charts?.length > 0 ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                      {vizAnalysis.charts.map((chart, i) => (
+                        <motion.div
+                          key={i}
+                          initial={{ opacity: 0, y: 16 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: i * 0.06 }}
+                          className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden"
+                        >
+                          <div className="h-0.5 w-full" style={{ background: `linear-gradient(90deg, ${(GRADIENT_PAIRS[i % GRADIENT_PAIRS.length])[0]}, ${(GRADIENT_PAIRS[i % GRADIENT_PAIRS.length])[1]})` }} />
+                          <div className="p-4 pb-1">
+                            <p className="text-sm font-black text-slate-800 truncate">{chart.title}</p>
+                            <p className="text-xs text-slate-400 truncate">{chart.description}</p>
+                          </div>
+                          <div className="px-2 pb-4">
+                            {renderVizChart(chart, i)}
+                          </div>
+                        </motion.div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center py-10 text-center">
+                      <BarChart3 size={28} className="text-slate-300 mb-2" />
+                      <p className="text-slate-500 font-bold text-sm">No charts could be generated from this dataset.</p>
+                      <p className="text-slate-400 text-xs mt-1">Try a dataset with mixed numeric and categorical columns.</p>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

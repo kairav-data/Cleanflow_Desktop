@@ -133,13 +133,41 @@ export default function EnrichmentBuilder({ sessionId: initialSessionId, columns
     };
 
     return (
-        <div className="bg-white p-6 md:p-8 rounded-[32px] shadow-xl border border-slate-200 max-w-4xl mx-auto">
-            <div className="mb-10 text-center flex flex-col items-center">
-                <div className="bg-emerald-100 text-emerald-700 w-12 h-12 rounded-2xl flex items-center justify-center mb-4">
-                    <Sparkles size={24} />
+        <div className="bg-white p-6 md:p-10 rounded-[32px] shadow-2xl border border-slate-200/60 max-w-5xl mx-auto">
+            <div className="mb-8 p-8 bg-gradient-to-r from-slate-900 to-slate-800 rounded-3xl text-white shadow-lg relative overflow-hidden flex flex-col md:flex-row items-center gap-6">
+                <div className="bg-white/10 w-16 h-16 rounded-2xl flex items-center justify-center shrink-0 backdrop-blur-md border border-white/20">
+                    <Sparkles size={32} className="text-emerald-400" />
                 </div>
-                <h2 className="text-2xl md:text-3xl font-black text-slate-900 mb-2">Data Cleaner Builder</h2>
-                <p className="text-slate-500 font-medium max-w-xl mx-auto text-sm md:text-base">Build a compact sequence of cleaning steps to fix blanks, text formatting, and bad values.</p>
+                <div className="text-center md:text-left relative z-10">
+                    <h2 className="text-3xl font-black mb-2 tracking-tight">Data Cleaner Pipeline</h2>
+                    <p className="text-slate-300 font-medium max-w-xl text-sm md:text-base">Construct an automated sequence of cleaning steps to fix nulls, standardize formatting, and replace anomalies.</p>
+                </div>
+                <Sparkles size={120} className="absolute -right-6 -bottom-8 text-white/5 rotate-12" />
+            </div>
+
+            {/* Visual Stepper */}
+            <div className="flex items-center justify-center mb-10 px-4">
+                {[
+                    { id: 1, label: 'Upload Data' },
+                    { id: 2, label: 'Review Sample' },
+                    { id: 3, label: 'Export' }
+                ].map((s, i) => (
+                    <React.Fragment key={s.id}>
+                        <div className="flex flex-col items-center gap-2">
+                            <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm border-2 transition-all duration-500
+                                ${step === s.id ? 'bg-emerald-500 border-emerald-500 text-white shadow-lg shadow-emerald-500/30' 
+                                : step > s.id ? 'bg-slate-900 border-slate-900 text-white' 
+                                : 'bg-white border-slate-200 text-slate-400'}
+                            `}>
+                                {step > s.id ? <CheckCircle size={18} /> : s.id}
+                            </div>
+                            <span className={`text-xs font-bold uppercase tracking-wider ${step >= s.id ? 'text-slate-700' : 'text-slate-400'}`}>{s.label}</span>
+                        </div>
+                        {i < 2 && (
+                            <div className={`flex-1 h-1 mx-4 rounded-full transition-colors duration-500 max-w-[100px] ${step > s.id ? 'bg-slate-900' : 'bg-slate-100'}`} />
+                        )}
+                    </React.Fragment>
+                ))}
             </div>
 
             {!sessionId && (
@@ -178,11 +206,12 @@ export default function EnrichmentBuilder({ sessionId: initialSessionId, columns
                                     initial={{ opacity: 0, height: 0 }}
                                     animate={{ opacity: 1, height: 'auto' }}
                                     exit={{ opacity: 0, height: 0 }}
-                                    className="p-4 md:p-5 rounded-2xl bg-white border border-slate-200 flex flex-col gap-4 relative shadow-sm hover:shadow-md transition-shadow group"
+                                    className="p-5 md:p-6 rounded-2xl bg-white border border-slate-200 flex flex-col gap-4 relative shadow-sm hover:shadow-lg transition-all group group/node"
                                 >
-                                    <div className="absolute -left-2 -top-2 bg-slate-900 text-white w-7 h-7 rounded-full flex items-center justify-center font-black text-xs border-4 border-white shadow-sm">
+                                    <div className="absolute -left-3 top-1/2 -translate-y-1/2 bg-slate-900 text-white w-8 h-8 rounded-full flex items-center justify-center font-black text-xs border-4 border-white shadow-md z-10 transition-transform group-hover/node:scale-110">
                                         {idx + 1}
                                     </div>
+                                    <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-gradient-to-b from-emerald-400 to-emerald-600 rounded-l-2xl opacity-0 group-hover/node:opacity-100 transition-opacity" />
                                     
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full pt-2">
                                         <div>
@@ -279,7 +308,8 @@ export default function EnrichmentBuilder({ sessionId: initialSessionId, columns
 
                                     <button
                                         onClick={() => removeRule(rule.id)}
-                                        className="text-slate-300 hover:text-red-500 hover:bg-red-50 p-2.5 rounded-lg transition-colors self-end border border-transparent hover:border-red-100"
+                                        className="text-slate-400 hover:text-white hover:bg-red-500 p-2.5 rounded-xl transition-all self-end border border-slate-200 hover:border-red-500 hover:shadow-md"
+                                        title="Remove Node"
                                     >
                                         <Trash2 size={18} />
                                     </button>
@@ -302,9 +332,10 @@ export default function EnrichmentBuilder({ sessionId: initialSessionId, columns
                     <button
                         onClick={handlePreview}
                         disabled={rules.length === 0 || loading}
-                        className="w-full py-3.5 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-200 disabled:text-slate-400 text-white rounded-xl font-bold text-base flex items-center justify-center gap-3 transition-all shadow-lg shadow-emerald-600/20 disabled:shadow-none"
+                        className="w-full mt-6 py-4 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-100 disabled:text-slate-400 disabled:border disabled:border-slate-200 text-white rounded-2xl font-black text-base flex items-center justify-center gap-3 transition-all shadow-xl shadow-emerald-600/30 disabled:shadow-none pointer-events-auto hover:-translate-y-0.5"
                     >
-                        <Eye size={20} /> {loading ? 'Computing Sample...' : 'Preview Transformation'}
+                        {loading ? <Sparkles className="animate-pulse" size={20} /> : <Eye size={20} />} 
+                        {loading ? 'Compiling Pipeline...' : 'Generate Target Preview'}
                     </button>
                 </motion.div>
             )}
@@ -312,9 +343,14 @@ export default function EnrichmentBuilder({ sessionId: initialSessionId, columns
             {step === 2 && previewData && (
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
                     <div className="mb-8">
-                        <div className="flex items-center justify-between mb-4">
-                            <h3 className="text-2xl font-black text-slate-900">Preview Results</h3>
-                            <span className="text-sm font-bold bg-slate-100 text-slate-600 px-3 py-1 rounded-full">Top 5 Records</span>
+                        <div className="flex items-center justify-between mb-6">
+                            <div>
+                                <h3 className="text-2xl font-black text-slate-900 tracking-tight">Data Preview</h3>
+                                <p className="text-sm font-medium text-slate-500 mt-1">Verify that your pipeline performs perfectly before full execution.</p>
+                            </div>
+                            <span className="text-xs font-black uppercase tracking-wider bg-slate-900 text-white px-4 py-2 rounded-xl shadow-md flex items-center gap-2">
+                                <FileJson size={14} /> Top 5 Records
+                            </span>
                         </div>
                         <div className="overflow-x-auto rounded-2xl border-2 border-slate-200 shadow-sm">
                             <table className="w-full border-collapse bg-white">
@@ -338,19 +374,20 @@ export default function EnrichmentBuilder({ sessionId: initialSessionId, columns
                         </div>
                     </div>
 
-                    <div className="flex flex-col sm:flex-row gap-4 mt-8">
+                    <div className="flex flex-col sm:flex-row gap-4 mt-8 pt-6 border-t border-slate-100">
                         <button
                             onClick={() => setStep(1)}
-                            className="flex-1 py-4 bg-white border-2 border-slate-200 hover:border-slate-300 hover:bg-slate-50 rounded-2xl font-black text-slate-700 transition-colors"
+                            className="flex-1 py-4 bg-white border-2 border-slate-200 hover:border-slate-300 hover:bg-slate-50 rounded-2xl font-black text-slate-700 transition-all shadow-sm flex items-center justify-center gap-2"
                         >
-                            Modify Pipeline
+                            <Trash2 size={18} /> Modify Pipeline
                         </button>
                         <button
                             onClick={handleExecute}
                             disabled={loading}
-                            className="flex-[2] py-4 bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-600/20 rounded-2xl font-black flex items-center justify-center gap-2 transition-colors"
+                            className={`flex-[2] py-4 rounded-2xl font-black flex items-center justify-center gap-3 transition-all shadow-xl text-white ${loading ? 'bg-slate-800 shadow-slate-900/30' : 'bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 shadow-emerald-600/30 hover:-translate-y-0.5'}`}
                         >
-                            <Play size={20} fill="currentColor"/> {loading ? 'Running Core Engine...' : 'Execute Entire Dataset'}
+                            {loading ? <Sparkles className="animate-spin" size={20} /> : <Play size={20} fill="currentColor"/>}
+                            {loading ? 'Executing on Full Dataset...' : 'Execute Entire Dataset'}
                         </button>
                     </div>
                 </motion.div>
@@ -363,23 +400,23 @@ export default function EnrichmentBuilder({ sessionId: initialSessionId, columns
                     <p className="text-slate-500 font-medium text-lg mb-12 max-w-md mx-auto">Your pipeline successfully ran across the dataset. Select your desired export format below.</p>
                     
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-12 max-w-2xl mx-auto">
-                        <button onClick={() => handleDownload('csv')} className="flex flex-col items-center justify-center p-8 bg-white border-2 border-slate-200 hover:border-emerald-500 rounded-[28px] hover:bg-emerald-50 transition-all group hover:-translate-y-1 hover:shadow-lg">
-                            <div className="w-16 h-16 bg-slate-50 group-hover:bg-emerald-100 rounded-2xl flex items-center justify-center mb-4 transition-colors">
+                        <button onClick={() => handleDownload('csv')} className="flex flex-col items-center justify-center p-8 bg-white border-2 border-slate-100 hover:border-emerald-500 rounded-[28px] hover:bg-emerald-50 transition-all group hover:-translate-y-2 hover:shadow-xl shadow-sm">
+                            <div className="w-16 h-16 bg-slate-50 group-hover:bg-white rounded-2xl flex items-center justify-center mb-4 transition-colors shadow-sm">
                                 <FileText className="text-slate-400 group-hover:text-emerald-600" size={32}/>
                             </div>
-                            <span className="font-bold text-slate-700 group-hover:text-emerald-700">CSV Export</span>
+                            <span className="font-bold text-slate-700 group-hover:text-emerald-700">CSV Formatted</span>
                         </button>
-                        <button onClick={() => handleDownload('xlsx')} className="flex flex-col items-center justify-center p-8 bg-white border-2 border-slate-200 hover:border-emerald-500 rounded-[28px] hover:bg-emerald-50 transition-all group hover:-translate-y-1 hover:shadow-lg">
-                            <div className="w-16 h-16 bg-slate-50 group-hover:bg-emerald-100 rounded-2xl flex items-center justify-center mb-4 transition-colors">
+                        <button onClick={() => handleDownload('xlsx')} className="flex flex-col items-center justify-center p-8 bg-white border-2 border-slate-100 hover:border-emerald-500 rounded-[28px] hover:bg-emerald-50 transition-all group hover:-translate-y-2 hover:shadow-xl shadow-sm">
+                            <div className="w-16 h-16 bg-slate-50 group-hover:bg-white rounded-2xl flex items-center justify-center mb-4 transition-colors shadow-sm">
                                 <FileSpreadsheet className="text-slate-400 group-hover:text-emerald-600" size={32}/>
                             </div>
-                            <span className="font-bold text-slate-700 group-hover:text-emerald-700">Excel Export</span>
+                            <span className="font-bold text-slate-700 group-hover:text-emerald-700">Excel Book</span>
                         </button>
-                        <button onClick={() => handleDownload('json')} className="flex flex-col items-center justify-center p-8 bg-white border-2 border-slate-200 hover:border-emerald-500 rounded-[28px] hover:bg-emerald-50 transition-all group hover:-translate-y-1 hover:shadow-lg">
-                            <div className="w-16 h-16 bg-slate-50 group-hover:bg-emerald-100 rounded-2xl flex items-center justify-center mb-4 transition-colors">
+                        <button onClick={() => handleDownload('json')} className="flex flex-col items-center justify-center p-8 bg-white border-2 border-slate-100 hover:border-emerald-500 rounded-[28px] hover:bg-emerald-50 transition-all group hover:-translate-y-2 hover:shadow-xl shadow-sm">
+                            <div className="w-16 h-16 bg-slate-50 group-hover:bg-white rounded-2xl flex items-center justify-center mb-4 transition-colors shadow-sm">
                                 <FileJson className="text-slate-400 group-hover:text-emerald-600" size={32}/>
                             </div>
-                            <span className="font-bold text-slate-700 group-hover:text-emerald-700">JSON Export</span>
+                            <span className="font-bold text-slate-700 group-hover:text-emerald-700">JSON Array</span>
                         </button>
                     </div>
 
@@ -389,9 +426,9 @@ export default function EnrichmentBuilder({ sessionId: initialSessionId, columns
                             setRules([]);
                             if(onComplete) onComplete();
                         }}
-                        className="px-10 py-4 bg-slate-900 border-2 border-slate-900 hover:bg-transparent hover:text-slate-900 text-white rounded-2xl font-black text-lg transition-colors"
+                        className="px-10 py-4 bg-slate-900 border-2 border-slate-900 hover:bg-slate-800 text-white rounded-2xl font-black text-lg transition-all shadow-lg hover:shadow-xl hover:-translate-y-1"
                     >
-                        Back to Dashboard
+                        Back to Dashboard Overview
                     </button>
                 </motion.div>
             )}

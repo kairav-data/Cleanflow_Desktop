@@ -209,14 +209,89 @@ function App() {
                     className="w-full max-w-7xl mx-auto pb-20"
                 >
                     {/* Hero Section */}
-                    <div className="mb-10 pt-4 bg-gradient-to-r from-slate-900 to-slate-800 rounded-3xl p-8 md:p-12 text-white shadow-xl relative overflow-hidden">
-                        <div className="relative z-10">
-                            <h1 className="text-4xl md:text-5xl font-black mb-4 tracking-tight">Active Workspace</h1>
-                            <p className="text-slate-300 text-lg max-w-2xl leading-relaxed">
-                                Welcome back, {user.full_name || 'User'}. Execute intelligent data workflows, manage your recent jobs, and read through how to leverage the toolset below.
-                            </p>
+                    <div className="mb-10 pt-4 relative overflow-hidden rounded-3xl
+                                    bg-[#0d1424] border border-white/[0.06]
+                                    shadow-[0_0_60px_rgba(0,0,0,0.5)]">
+                        {/* Background decoration */}
+                        <div className="absolute inset-0 pointer-events-none">
+                            <div className="absolute -top-20 -right-20 w-72 h-72 rounded-full bg-indigo-600/10 blur-3xl" />
+                            <div className="absolute bottom-0 left-1/3 w-48 h-32 rounded-full bg-emerald-500/8 blur-3xl" />
+                            {/* Subtle grid */}
+                            <div className="absolute inset-0 opacity-[0.025]"
+                                style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,0.5) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.5) 1px,transparent 1px)', backgroundSize: '40px 40px' }} />
                         </div>
-                        <Sparkles size={160} className="absolute -bottom-10 -right-10 text-white/5 rotate-12" />
+
+                        <div className="relative z-10 p-8 md:p-10">
+                            <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-8">
+
+                                {/* Left — Text */}
+                                <div className="flex-1 min-w-0">
+                                    {/* Label */}
+                                    <div className="flex items-center gap-2 mb-4">
+                                        <span className="relative flex h-2 w-2">
+                                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-60" />
+                                            <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+                                        </span>
+                                        <span className="text-[10px] font-black text-emerald-400 uppercase tracking-[0.2em]">
+                                            Active Workspace
+                                        </span>
+                                    </div>
+
+                                    {/* Heading */}
+                                    <h1 className="text-4xl md:text-5xl font-black tracking-tight leading-[1.1] mb-3">
+                                        <span className="text-white">Welcome back,</span>
+                                        <br />
+                                        <span className="text-transparent bg-clip-text bg-gradient-to-r from-sky-400 via-indigo-400 to-purple-400">
+                                            {user.full_name || 'User'}
+                                        </span>
+                                    </h1>
+
+                                    <p className="text-slate-400 text-sm md:text-base max-w-xl leading-relaxed font-medium mb-7">
+                                        Execute intelligent data workflows, manage your recent jobs, and read through how to leverage the toolset below.
+                                    </p>
+
+                                    {/* Action Buttons */}
+                                    <div className="flex flex-wrap items-center gap-3">
+                                        <button
+                                            onClick={() => { setValidationResults(null); setColumns([]); setFilename(''); setSessionId(null); setStep(1); setActiveTab('validate'); }}
+                                            className="flex items-center gap-2 px-5 py-2.5 bg-white text-slate-950
+                                                       rounded-xl font-bold text-sm
+                                                       hover:bg-slate-100 hover:-translate-y-0.5
+                                                       transition-all duration-200 shadow-md"
+                                        >
+                                            <Zap size={14} fill="currentColor" className="text-emerald-600" />
+                                            New Workflow
+                                        </button>
+                                        <button
+                                            onClick={() => document.getElementById('job-history-section')?.scrollIntoView({ behavior: 'smooth' })}
+                                            className="flex items-center gap-2 px-5 py-2.5
+                                                       bg-indigo-500/10 border border-indigo-500/30 text-indigo-300
+                                                       rounded-xl font-bold text-sm
+                                                       hover:bg-indigo-500/20 hover:-translate-y-0.5
+                                                       transition-all duration-200"
+                                        >
+                                            <BarChart3 size={14} />
+                                            View Recent Jobs
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {/* Right — Stats */}
+                                <div className="flex md:flex-col gap-6 md:gap-5 shrink-0">
+                                    {[
+                                        { value: recentJobs.length, label: 'active jobs' },
+                                        { value: recentJobs.length > 0 ? '100%' : '—', label: 'success rate' },
+                                        { value: recentJobs.reduce((acc, j) => acc + (j.total_rows || 0), 0).toLocaleString('en-IN') || '0', label: 'rows processed' },
+                                    ].map(({ value, label }) => (
+                                        <div key={label} className="text-left md:text-right">
+                                            <p className="text-2xl md:text-3xl font-black text-white leading-none">{value}</p>
+                                            <p className="text-[11px] text-slate-500 font-semibold mt-1 uppercase tracking-wider">{label}</p>
+                                        </div>
+                                    ))}
+                                </div>
+
+                            </div>
+                        </div>
                     </div>
 
                     {/* Section: Tutorials & Tools */}
@@ -224,7 +299,7 @@ function App() {
                         <h2 className="text-2xl font-bold text-slate-900 mb-6 flex items-center gap-2">
                             <Database className="text-emerald-500" /> Data Services & Tutorials
                         </h2>
-                        
+
                         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                             {[
                                 {
@@ -296,7 +371,7 @@ function App() {
                                         </div>
                                         <h3 className="text-xl font-bold text-slate-900 mb-2">{item.title}</h3>
                                         <p className="text-sm font-medium text-slate-500 mb-6">{item.description}</p>
-                                        
+
                                         <div className="bg-slate-50 rounded-xl p-4 border border-slate-100 relative overflow-hidden group-hover:border-slate-300 transition-colors">
                                             <h4 className="text-xs font-black uppercase text-slate-400 tracking-wider mb-3">How it works</h4>
                                             <ul className="space-y-2">
@@ -323,7 +398,7 @@ function App() {
                     </div>
 
                     {/* Section: Job History & Orchestration */}
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-12">
+                    <div id="job-history-section" className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-12">
                         <div className="lg:col-span-3">
                             <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden flex flex-col">
                                 <div className="p-6 border-b border-slate-100 bg-slate-50 flex items-center justify-between">
@@ -340,7 +415,7 @@ function App() {
                                         </button>
                                     </div>
                                 </div>
-                                
+
                                 <div className="p-4 flex flex-wrap gap-2 border-b border-slate-100 bg-white">
                                     {[
                                         { id: 'validation', label: 'Quality Validation' },
@@ -443,16 +518,16 @@ function App() {
             )}
 
             {/* 2. QUALITY VALIDATION VIEW */}
-        {activeTab === 'validate' && (
-            <motion.div key="validate-tab" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="w-full max-w-4xl mx-auto pb-16 pt-2">
-                <div className="flex items-center justify-between gap-4 mb-6">
-                <div>
-                    <h2 className="text-2xl md:text-3xl font-black text-slate-900">Quality Validation</h2>
-                    <p className="text-sm md:text-base text-slate-500 mt-1">Upload, define rules, and review quality issues without leaving the workspace.</p>
-                </div>
-                <div className="flex items-center gap-2">
-                    {[1, 2, 3].map((s) => (
-                    <div key={s} className="flex items-center">
+            {activeTab === 'validate' && (
+                <motion.div key="validate-tab" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="w-full max-w-4xl mx-auto pb-16 pt-2">
+                    <div className="flex items-center justify-between gap-4 mb-6">
+                        <div>
+                            <h2 className="text-2xl md:text-3xl font-black text-slate-900">Quality Validation</h2>
+                            <p className="text-sm md:text-base text-slate-500 mt-1">Upload, define rules, and review quality issues without leaving the workspace.</p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            {[1, 2, 3].map((s) => (
+                                <div key={s} className="flex items-center">
                                     <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${step === s ? 'bg-slate-900 text-white shadow-md' : step > s ? 'bg-slate-300 text-white' : 'bg-slate-200 text-slate-500'}`}>
                                         {step > s ? '✓' : s}
                                     </div>
@@ -462,21 +537,21 @@ function App() {
                         </div>
                     </div>
 
-                {step === 1 && (
-                <div className="bg-white p-5 md:p-6 rounded-[28px] border border-slate-200 shadow-sm">
-                    <h3 className="text-xl font-bold text-slate-900 mb-2">Upload Dataset</h3>
-                    <p className="text-slate-500 font-medium mb-5 text-sm md:text-base">Provide data via CSV, Excel, or direct database connection.</p>
-                    <DataConnection compact={true} onUploadSuccess={(data) => { setSessionId(data.session_id); setFilename(data.filename || `Dataset_${new Date().getTime()}`); setColumns(data.columns); setStep(2); }} />
-                </div>
-                )}
+                    {step === 1 && (
+                        <div className="bg-white p-5 md:p-6 rounded-[28px] border border-slate-200 shadow-sm">
+                            <h3 className="text-xl font-bold text-slate-900 mb-2">Upload Dataset</h3>
+                            <p className="text-slate-500 font-medium mb-5 text-sm md:text-base">Provide data via CSV, Excel, or direct database connection.</p>
+                            <DataConnection compact={true} onUploadSuccess={(data) => { setSessionId(data.session_id); setFilename(data.filename || `Dataset_${new Date().getTime()}`); setColumns(data.columns); setStep(2); }} />
+                        </div>
+                    )}
 
-                {step === 2 && (
-                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
-                    <RuleBuilder
-                    compact={true}
-                    columns={columns}
-                    initialRules={validationResults?.rules || []}
-                    onRunValidation={async (rules) => {
+                    {step === 2 && (
+                        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+                            <RuleBuilder
+                                compact={true}
+                                columns={columns}
+                                initialRules={validationResults?.rules || []}
+                                onRunValidation={async (rules) => {
                                     try {
                                         const token = localStorage.getItem('token');
                                         const headers = token ? { Authorization: `Bearer ${token}` } : {};
@@ -597,13 +672,13 @@ function App() {
     // Unauthenticated / Landing Page Render
     if (!user) {
         return (
-            <div className="min-h-screen bg-white font-sans text-slate-900 overflow-x-hidden">
+            <div className={`min-h-screen font-sans overflow-x-hidden transition-colors duration-500 ${(activeTab === 'home' || activeTab === 'pricing') ? 'bg-slate-950 text-slate-50' : 'bg-white text-slate-900'}`}>
                 {/* Navigation */}
-                <nav className="fixed top-0 w-full bg-white/80 backdrop-blur-md border-b border-slate-200 z-50">
-                    <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+                <nav className={`fixed top-0 w-full backdrop-blur-md border-b z-50 transition-colors duration-500 ${(activeTab === 'home' || activeTab === 'pricing') ? 'bg-slate-950/80 border-slate-800' : 'bg-white/80 border-slate-200'}`}>
+                    <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
                         <div className="flex items-center gap-8">
                             <div className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity" onClick={goToLanding}>
-                                <img src={Logo} alt="CleanFlow" className="h-10 w-auto" style={{ filter: 'brightness(0)' }} />
+                                <img src={Logo} alt="CleanFlow" className={`h-10 w-auto transition-all ${(activeTab === 'home' || activeTab === 'pricing') ? 'brightness-0 invert' : 'brightness-0'}`} />
                             </div>
                             <div className="hidden md:flex items-center gap-6">
                                 {['Solutions', 'Resources', 'Pricing'].map((item) => (
@@ -612,23 +687,23 @@ function App() {
                                         onClick={() => {
                                             if (item === 'Pricing') setActiveTab('pricing');
                                         }}
-                                        className="text-sm text-slate-600 hover:text-slate-900 font-medium transition-colors"
+                                        className={`text-sm font-medium transition-colors ${(activeTab === 'home' || activeTab === 'pricing') ? 'text-slate-300 hover:text-white' : 'text-slate-600 hover:text-slate-900'}`}
                                     >
                                         {item}
                                     </button>
                                 ))}
                             </div>
                         </div>
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-4">
                             <button
                                 onClick={() => { setAuthDefaultMode('login'); setIsAuthOpen(true); }}
-                                className="px-4 py-2 text-sm text-slate-600 hover:text-slate-900 font-bold"
+                                className={`px-4 py-2 text-sm font-bold transition-colors ${(activeTab === 'home' || activeTab === 'pricing') ? 'text-slate-300 hover:text-white' : 'text-slate-600 hover:text-slate-900'}`}
                             >
                                 Log in
                             </button>
                             <button
                                 onClick={() => { setAuthDefaultMode('signup'); setIsAuthOpen(true); }}
-                                className="px-5 py-2.5 text-sm bg-slate-900 text-white rounded-xl hover:bg-slate-800 font-bold shadow-lg shadow-slate-900/20 transition-all hover:-translate-y-0.5"
+                                className={`px-6 py-2.5 text-sm rounded-xl font-bold transition-all hover:-translate-y-0.5 ${(activeTab === 'home' || activeTab === 'pricing') ? 'bg-emerald-500 text-slate-950 hover:bg-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.3)]' : 'bg-slate-900 text-white hover:bg-slate-800 shadow-lg shadow-slate-900/20'}`}
                             >
                                 Get Started
                             </button>
@@ -636,7 +711,7 @@ function App() {
                     </div>
                 </nav>
 
-                <main className={`${activeTab === 'home' ? 'pt-0 pb-20 relative' : 'pt-24 pb-20 px-6 max-w-7xl mx-auto relative'}`}>
+                <main className={`${activeTab === 'home' ? 'pt-20 pb-20 relative min-h-screen flex flex-col' : activeTab === 'pricing' ? 'pt-28 pb-20 relative' : 'pt-28 pb-20 px-6 max-w-7xl mx-auto relative'}`}>
                     <AnimatePresence mode='wait'>
                         {activeTab === 'home' && (
                             <motion.div
@@ -712,7 +787,7 @@ function App() {
                         <ul className="space-y-1">
                             <li>
                                 <button onClick={() => handleFeatureAccess('dashboard')} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all ${activeTab === 'dashboard' ? 'bg-[#1f2937] text-white shadow-xl border border-gray-700' : 'text-gray-400 hover:text-gray-100 hover:bg-[#1f2937]'}`}>
-                                    <Home size={18} /> Dashboard Home
+                                    <Home size={18} /> Home
                                 </button>
                             </li>
                         </ul>

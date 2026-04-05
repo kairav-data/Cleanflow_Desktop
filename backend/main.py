@@ -689,7 +689,7 @@ async def visualizer_upload(file: UploadFile = File(...), delimiter: str = Form(
 
 @app.post("/features/visualizer/analyze/{session_id}")
 async def visualizer_analyze(session_id: str):
-    """Run AI analysis on the uploaded dataset and return chart configurations."""
+    """Rule-based analysis — backward compatible, no external API."""
     if session_id not in sessions:
         raise HTTPException(status_code=404, detail="Session not found")
     engine = sessions[session_id]
@@ -703,6 +703,41 @@ async def visualizer_analyze(session_id: str):
     except Exception as e:
         logger.error(f"Visualizer analyze error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/features/visualizer/analyze-ai/{session_id}")
+async def visualizer_analyze_ai(session_id: str, body: dict = Body(default={})):
+    """
+    AI-powered analysis using Qwen/Qwen2.5-72B-Instruct via HuggingFace.
+    Body: { "prompt": str, "hf_api_key": str (optional — falls back to HF_API_KEY env var) }
+    Falls back to rule-based analysis if the HF call fails.
+    """
+    if session_id not in sessions:
+        raise HTTPException(status_code=404, detail="Session not found")
+    engine = sessions[session_id]
+    if engine.df is None:
+        raise HTTPException(status_code=400, detail="No data loaded in session")
+
+    user_prompt = body.get("prompt", "")
+
+    # Resolve HF API key: prefer what the client sends, then env vars (same as chatbot.py)
+    hf_api_key = (
+        body.get("hf_api_key", "")
+        or os.getenv("HF_API_KEY", "")
+        or os.getenv("VITE_HF_API_KEY", "")
+    )
+
+    try:
+        from features.visualizer import analyze_with_ai
+        loop = asyncio.get_event_loop()
+        result = await loop.run_in_executor(
+            None, lambda: analyze_with_ai(engine.df, user_prompt, hf_api_key)
+        )
+        return result
+    except Exception as e:
+        logger.error(f"Visualizer AI analyze error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 
 
 # --- Pipeline Feature ---

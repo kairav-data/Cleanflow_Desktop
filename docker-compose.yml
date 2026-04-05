@@ -19,10 +19,8 @@ services:
   #   environment:
   #     PGADMIN_DEFAULT_EMAIL: admin@admin.com
   #     PGADMIN_DEFAULT_PASSWORD: admin
-  #     # Disables the login screen for local dev if desired, or keep as is
-  #     PGADMIN_CONFIG_SERVER_MODE: 'False' 
+  #     PGADMIN_CONFIG_SERVER_MODE: 'False'
   #   volumes:
-  #     # This maps the automatic server connection file we discussed
   #     - ./pgadmin/servers.json:/pgadmin4/servers.json
   #   ports:
   #     - "5050:80"
@@ -37,6 +35,13 @@ services:
     restart: always
     env_file:
       - ./backend/.env
+    # Extra env vars that override what's in backend/.env for Docker context.
+    # HF_API_KEY is read directly by the backend (chatbot + visualizer).
+    environment:
+      - HF_API_KEY=${VITE_HF_API_KEY:-}
+      # Tells CORS to allow the frontend container.
+      # Inside Docker network the frontend is accessed via its published port on the host.
+      - FRONTEND_URL=http://localhost:${FRONTEND_PORT:-5173}
     ports:
       - "${BACKEND_PORT:-8000}:8000"
     volumes:
@@ -47,7 +52,14 @@ services:
       - cleanflow-net
 
   frontend:
-    build: ./frontend
+    build:
+      context: ./frontend
+      # VITE_ vars must be passed as build args so Vite bakes them into the bundle.
+      # The frontend container talks to backend over the Docker internal network
+      # using the service name "backend".
+      args:
+        - VITE_API_BASE_URL=http://backend:8000
+        - VITE_HF_API_KEY=${VITE_HF_API_KEY:-}
     container_name: cleanflow_frontend
     restart: always
     ports:

@@ -1,18 +1,31 @@
 """
 AI Visualizer Engine  –  CleanFlow
-Intelligently analyzes a dataset and returns a set of
-ready-to-render chart configurations + KPI tiles.
-No external LLM API is needed. The "AI" is fast, rule-based
-column-type inference + statistical analysis using Polars.
+=====================================
+Two analysis paths share the same chart-builder library:
+
+  1. [AI path]   analyze_with_ai(df, user_prompt, hf_api_key)
+     - Builds a compact schema summary from the dataset
+     - Sends schema + user prompt to Qwen/Qwen2.5-72B-Instruct via HF InferenceClient
+     - Qwen returns chart *specifications* (which columns, which type, title, description)
+     - Backend resolves each spec into real aggregated data using Polars
+     - Falls back to rule-based if HF call fails
+
+  2. [Rule-based path]   analyze(df)
+     - Fast heuristic column-type-inference + statistics (no external API)
+     - Used when no prompt is supplied or when HF is unavailable
 """
 
 from __future__ import annotations
+import json
+import logging
 import math
+import re
 import polars as pl
-from typing import Any
+from typing import Any, Optional
 
+logger = logging.getLogger(__name__)
 
-# ── helpers ────────────────────────────────────────────────────────────────
+# ── Palette ────────────────────────────────────────────────────────────────
 
 CHART_COLORS = [
     "#6366f1", "#10b981", "#f59e0b", "#ef4444",
@@ -30,6 +43,8 @@ GRADIENT_PAIRS = [
 ]
 
 
+# ── Utility helpers ────────────────────────────────────────────────────────
+
 def _safe_float(v) -> float:
     try:
         return float(v)
@@ -42,14 +57,13 @@ def _truncate_label(s: str, max_len: int = 18) -> str:
     return s if len(s) <= max_len else s[:max_len - 1] + "…"
 
 
-# ── column-type detection ──────────────────────────────────────────────────
+# ── Column-type detection ──────────────────────────────────────────────────
 
 def _detect_column_types(df: pl.DataFrame) -> dict[str, str]:
-    """Returns a dict col_name -> 'numeric' | 'categorical' | 'datetime' | 'boolean'"""
+    """Returns {col_name: 'numeric' | 'categorical' | 'datetime' | 'boolean'}"""
     result: dict[str, str] = {}
     for col in df.columns:
         dtype = df[col].dtype
-
         if dtype in (pl.Boolean,):
             result[col] = "boolean"
         elif dtype in (
@@ -61,7 +75,6 @@ def _detect_column_types(df: pl.DataFrame) -> dict[str, str]:
         elif dtype in (pl.Date, pl.Datetime, pl.Time):
             result[col] = "datetime"
         elif dtype == pl.Utf8:
-            # Heuristic: try casting to float on a sample
             sample = df[col].drop_nulls().head(20)
             try:
                 sample.cast(pl.Float64)
@@ -73,12 +86,9 @@ def _detect_column_types(df: pl.DataFrame) -> dict[str, str]:
     return result
 
 
-# ── chart builders ─────────────────────────────────────────────────────────
+# ── Chart builders (shared by both paths) ──────────────────────────────────
 
-def _build_bar_chart(
-    df: pl.DataFrame, cat_col: str, num_col: str, color_idx: int
-) -> dict[str, Any]:
-    """Categorical × Numeric → Bar chart"""
+def _build_bar_chart(df: pl.DataFrame, cat_col: str, num_col: str, color_idx: int) -> dict[str, Any] | None:
     try:
         grouped = (
             df.select([cat_col, num_col])
@@ -89,10 +99,7 @@ def _build_bar_chart(
             .head(12)
         )
         data = [
-            {
-                "name": _truncate_label(row[cat_col]),
-                "value": round(_safe_float(row["value"]), 2),
-            }
+            {"name": _truncate_label(row[cat_col]), "value": round(_safe_float(row["value"]), 2)}
             for row in grouped.to_dicts()
         ]
         if not data:
@@ -101,8 +108,7 @@ def _build_bar_chart(
             "type": "bar",
             "title": f"{num_col} by {cat_col}",
             "description": f"Average {num_col} grouped by {cat_col}",
-            "xKey": "name",
-            "dataKey": "value",
+            "xKey": "name", "dataKey": "value",
             "color": CHART_COLORS[color_idx % len(CHART_COLORS)],
             "gradient": GRADIENT_PAIRS[color_idx % len(GRADIENT_PAIRS)],
             "data": data,
@@ -111,29 +117,17 @@ def _build_bar_chart(
         return None
 
 
-def _build_area_chart(
-    df: pl.DataFrame, num_col: str, color_idx: int
-) -> dict[str, Any]:
-    """Numeric distribution → Area chart (row-indexed)"""
+def _build_area_chart(df: pl.DataFrame, num_col: str, color_idx: int) -> dict[str, Any] | None:
     try:
-        series = (
-            df.select(num_col)
-            .drop_nulls()
-            .head(60)
-            .with_row_index("idx")
-        )
-        data = [
-            {"idx": row["idx"], "value": round(_safe_float(row[num_col]), 3)}
-            for row in series.to_dicts()
-        ]
+        series = df.select(num_col).drop_nulls().head(60).with_row_index("idx")
+        data = [{"idx": r["idx"], "value": round(_safe_float(r[num_col]), 3)} for r in series.to_dicts()]
         if len(data) < 3:
             return None
         return {
             "type": "area",
             "title": f"{num_col} Trend",
             "description": f"Distribution of {num_col} across rows",
-            "xKey": "idx",
-            "dataKey": "value",
+            "xKey": "idx", "dataKey": "value",
             "color": CHART_COLORS[color_idx % len(CHART_COLORS)],
             "gradient": GRADIENT_PAIRS[color_idx % len(GRADIENT_PAIRS)],
             "data": data,
@@ -142,25 +136,16 @@ def _build_area_chart(
         return None
 
 
-def _build_pie_chart(
-    df: pl.DataFrame, cat_col: str, color_idx: int
-) -> dict[str, Any]:
-    """Low-cardinality categorical → Pie chart"""
+def _build_pie_chart(df: pl.DataFrame, cat_col: str, color_idx: int) -> dict[str, Any] | None:
     try:
         counts = (
-            df.select(cat_col)
-            .drop_nulls()
-            .group_by(cat_col)
-            .count()
-            .sort("count", descending=True)
-            .head(8)
+            df.select(cat_col).drop_nulls()
+            .group_by(cat_col).count()
+            .sort("count", descending=True).head(8)
         )
         data = [
-            {
-                "name": _truncate_label(row[cat_col]),
-                "value": int(row["count"]),
-                "color": CHART_COLORS[(color_idx + i) % len(CHART_COLORS)],
-            }
+            {"name": _truncate_label(row[cat_col]), "value": int(row["count"]),
+             "color": CHART_COLORS[(color_idx + i) % len(CHART_COLORS)]}
             for i, row in enumerate(counts.to_dicts())
         ]
         if not data:
@@ -177,30 +162,18 @@ def _build_pie_chart(
         return None
 
 
-def _build_scatter_chart(
-    df: pl.DataFrame, x_col: str, y_col: str, color_idx: int
-) -> dict[str, Any]:
-    """Numeric × Numeric → Scatter chart"""
+def _build_scatter_chart(df: pl.DataFrame, x_col: str, y_col: str, color_idx: int) -> dict[str, Any] | None:
     try:
-        sample = (
-            df.select([x_col, y_col])
-            .drop_nulls()
-            .sample(n=min(200, len(df)), seed=42)
-        )
-        data = [
-            {"x": round(_safe_float(r[x_col]), 3), "y": round(_safe_float(r[y_col]), 3)}
-            for r in sample.to_dicts()
-        ]
+        sample = df.select([x_col, y_col]).drop_nulls().sample(n=min(200, len(df)), seed=42)
+        data = [{"x": round(_safe_float(r[x_col]), 3), "y": round(_safe_float(r[y_col]), 3)} for r in sample.to_dicts()]
         if len(data) < 5:
             return None
         return {
             "type": "scatter",
             "title": f"{x_col} vs {y_col}",
             "description": f"Correlation between {x_col} and {y_col}",
-            "xKey": "x",
-            "dataKey": "y",
-            "xAxisLabel": x_col,
-            "yAxisLabel": y_col,
+            "xKey": "x", "dataKey": "y",
+            "xAxisLabel": x_col, "yAxisLabel": y_col,
             "color": CHART_COLORS[color_idx % len(CHART_COLORS)],
             "gradient": GRADIENT_PAIRS[color_idx % len(GRADIENT_PAIRS)],
             "data": data,
@@ -209,32 +182,17 @@ def _build_scatter_chart(
         return None
 
 
-def _build_line_chart(
-    df: pl.DataFrame, date_col: str, num_col: str, color_idx: int
-) -> dict[str, Any]:
-    """Datetime × Numeric → Line chart"""
+def _build_line_chart(df: pl.DataFrame, date_col: str, num_col: str, color_idx: int) -> dict[str, Any] | None:
     try:
-        series = (
-            df.select([date_col, num_col])
-            .drop_nulls()
-            .sort(date_col)
-            .head(60)
-        )
-        data = [
-            {
-                "name": str(row[date_col])[:10],
-                "value": round(_safe_float(row[num_col]), 3),
-            }
-            for row in series.to_dicts()
-        ]
+        series = df.select([date_col, num_col]).drop_nulls().sort(date_col).head(60)
+        data = [{"name": str(r[date_col])[:10], "value": round(_safe_float(r[num_col]), 3)} for r in series.to_dicts()]
         if len(data) < 3:
             return None
         return {
             "type": "line",
             "title": f"{num_col} over Time",
             "description": f"{num_col} trend along {date_col}",
-            "xKey": "name",
-            "dataKey": "value",
+            "xKey": "name", "dataKey": "value",
             "color": CHART_COLORS[color_idx % len(CHART_COLORS)],
             "gradient": GRADIENT_PAIRS[color_idx % len(GRADIENT_PAIRS)],
             "data": data,
@@ -243,61 +201,280 @@ def _build_line_chart(
         return None
 
 
-# ── KPI tile builder ───────────────────────────────────────────────────────
+# ── KPI builder ─────────────────────────────────────────────────────────────
 
 def _build_kpis(df: pl.DataFrame, col_types: dict[str, str]) -> list[dict]:
-    kpis = []
     numeric_cols = [c for c, t in col_types.items() if t == "numeric"]
     total_rows = len(df)
     null_count = sum(df[c].null_count() for c in df.columns)
     total_cells = total_rows * len(df.columns)
-
-    kpis.append({
-        "label": "Total Rows",
-        "value": f"{total_rows:,}",
-        "icon": "rows",
-        "color": "#6366f1",
-    })
-    kpis.append({
-        "label": "Columns",
-        "value": str(len(df.columns)),
-        "icon": "columns",
-        "color": "#10b981",
-    })
     completeness = round((1 - null_count / max(total_cells, 1)) * 100, 1)
-    kpis.append({
-        "label": "Data Completeness",
-        "value": f"{completeness}%",
-        "icon": "check",
-        "color": "#f59e0b",
-    })
+    kpis = [
+        {"label": "Total Rows",        "value": f"{total_rows:,}", "icon": "rows",    "color": "#6366f1"},
+        {"label": "Columns",           "value": str(len(df.columns)), "icon": "columns", "color": "#10b981"},
+        {"label": "Data Completeness", "value": f"{completeness}%",  "icon": "check",   "color": "#f59e0b"},
+    ]
     if numeric_cols:
         col = numeric_cols[0]
         try:
             mean_val = df[col].mean()
-            kpis.append({
-                "label": f"Avg {col[:14]}",
-                "value": f"{mean_val:,.2f}" if mean_val is not None else "—",
-                "icon": "stats",
-                "color": "#8b5cf6",
-            })
+            kpis.append({"label": f"Avg {col[:14]}", "value": f"{mean_val:,.2f}" if mean_val is not None else "—", "icon": "stats", "color": "#8b5cf6"})
         except Exception:
             pass
     return kpis
 
 
-# ── main analysis function ─────────────────────────────────────────────────
+# ── Column summary ───────────────────────────────────────────────────────────
+
+def _build_column_summary(df: pl.DataFrame, col_types: dict[str, str]) -> list[dict]:
+    summary = []
+    for col in df.columns:
+        col_type = col_types.get(col, "unknown")
+        null_pct = round(df[col].null_count() / max(len(df), 1) * 100, 1)
+        entry = {"name": col, "type": col_type, "nullPct": null_pct, "unique": df[col].n_unique()}
+        if col_type == "numeric":
+            try:
+                entry["min"]  = round(_safe_float(df[col].min()),  3)
+                entry["max"]  = round(_safe_float(df[col].max()),  3)
+                entry["mean"] = round(_safe_float(df[col].mean()), 3)
+            except Exception:
+                pass
+        summary.append(entry)
+    return summary
+
+
+# ── Dataset schema text (fed to Qwen) ──────────────────────────────────────
+
+def _build_dataset_schema(df: pl.DataFrame, col_types: dict[str, str]) -> str:
+    """
+    Produces a compact plain-text description of the dataset so the AI
+    can understand it without seeing every row.
+    """
+    lines = [f"Dataset: {len(df):,} rows × {len(df.columns)} columns\n"]
+    for col in df.columns:
+        ctype = col_types.get(col, "unknown")
+        n_unique = df[col].n_unique()
+        null_pct = round(df[col].null_count() / max(len(df), 1) * 100, 1)
+
+        info = f"  [{ctype}] {col}  |  unique={n_unique}  null={null_pct}%"
+
+        if ctype == "numeric":
+            try:
+                mn = round(_safe_float(df[col].min()), 3)
+                mx = round(_safe_float(df[col].max()), 3)
+                mean = round(_safe_float(df[col].mean()), 3)
+                info += f"  |  min={mn}  max={mx}  mean={mean}"
+            except Exception:
+                pass
+        elif ctype == "categorical":
+            try:
+                top_vals = (
+                    df.select(col).drop_nulls()
+                    .group_by(col).count()
+                    .sort("count", descending=True).head(5)
+                    .to_dicts()
+                )
+                sample_str = ", ".join(f'"{r[col]}"({r["count"]})' for r in top_vals)
+                info += f"  |  top values: {sample_str}"
+            except Exception:
+                pass
+        elif ctype == "datetime":
+            try:
+                info += f"  |  range: {df[col].min()} → {df[col].max()}"
+            except Exception:
+                pass
+
+        lines.append(info)
+
+    return "\n".join(lines)
+
+
+# ── Qwen AI call ───────────────────────────────────────────────────────────
+
+_SYSTEM_PROMPT = """\
+You are a data visualization expert for the CleanFlow platform.
+Given a dataset schema and a user request, return a JSON array of chart specifications.
+
+Each specification must be a JSON object with these fields:
+{
+  "chart_type": "bar" | "line" | "area" | "pie" | "scatter",
+  "title": "Human-readable chart title",
+  "description": "One-line description",
+  "params": {
+    // For bar:     {"cat_col": "<column>", "num_col": "<column>"}
+    // For line:    {"date_col": "<column>", "num_col": "<column>"}
+    // For area:    {"num_col": "<column>"}
+    // For pie:     {"cat_col": "<column>"}
+    // For scatter: {"x_col": "<column>", "y_col": "<column>"}
+  }
+}
+
+Rules:
+- Use ONLY column names that exist in the schema.
+- For bar/pie: cat_col must be categorical; for bar/line/area/scatter: num_col/x_col/y_col must be numeric.
+- For line: date_col must be datetime.
+- Choose chart types that best answer the user's request.
+- Return 4–8 charts that give a comprehensive dashboard.
+- Return ONLY a valid JSON array. No markdown, no explanation, no backticks.
+"""
+
+
+def _call_qwen(schema_text: str, user_prompt: str, hf_api_key: str) -> list[dict]:
+    """
+    Calls Qwen/Qwen2.5-72B-Instruct with the dataset schema + user prompt.
+    Returns a list of parsed chart spec dicts.
+    Raises on failure so the caller can fall back.
+    """
+    from huggingface_hub import InferenceClient
+
+    client = InferenceClient(api_key=hf_api_key)
+    user_content = f"Dataset schema:\n{schema_text}\n\nUser request: {user_prompt or 'Generate a comprehensive dashboard with the most insightful charts for this dataset.'}"
+
+    response = client.chat_completion(
+        model="Qwen/Qwen2.5-72B-Instruct",
+        messages=[
+            {"role": "system", "content": _SYSTEM_PROMPT},
+            {"role": "user",   "content": user_content},
+        ],
+        max_tokens=2000,
+        temperature=0.2,
+    )
+
+    raw = response.choices[0].message.content.strip()
+    logger.info(f"[Visualizer] Qwen raw response length: {len(raw)}")
+
+    # Try to extract JSON array even if the model wraps it in markdown
+    json_match = re.search(r"\[.*\]", raw, re.DOTALL)
+    if json_match:
+        raw = json_match.group(0)
+
+    specs = json.loads(raw)
+    if not isinstance(specs, list):
+        raise ValueError("Qwen did not return a JSON array")
+    return specs
+
+
+# ── Resolve AI specs → real chart data ─────────────────────────────────────
+
+def _resolve_specs(
+    df: pl.DataFrame,
+    col_types: dict[str, str],
+    specs: list[dict],
+) -> list[dict]:
+    """
+    Takes Qwen's chart specifications and builds real chart config dicts
+    (with actual aggregated data) using the existing builder functions.
+    """
+    charts: list[dict] = []
+    color_idx = 0
+
+    for spec in specs:
+        chart_type = spec.get("chart_type", "").lower()
+        params = spec.get("params", {})
+        ai_title = spec.get("title", "")
+        ai_desc  = spec.get("description", "")
+
+        chart = None
+
+        try:
+            if chart_type == "bar":
+                cat_col = params.get("cat_col", "")
+                num_col = params.get("num_col", "")
+                if cat_col in df.columns and num_col in df.columns:
+                    chart = _build_bar_chart(df, cat_col, num_col, color_idx)
+
+            elif chart_type == "pie":
+                cat_col = params.get("cat_col", "")
+                if cat_col in df.columns:
+                    chart = _build_pie_chart(df, cat_col, color_idx)
+
+            elif chart_type == "area":
+                num_col = params.get("num_col", "")
+                if num_col in df.columns:
+                    chart = _build_area_chart(df, num_col, color_idx)
+
+            elif chart_type == "line":
+                date_col = params.get("date_col", "")
+                num_col  = params.get("num_col", "")
+                if date_col in df.columns and num_col in df.columns:
+                    chart = _build_line_chart(df, date_col, num_col, color_idx)
+
+            elif chart_type == "scatter":
+                x_col = params.get("x_col", "")
+                y_col = params.get("y_col", "")
+                if x_col in df.columns and y_col in df.columns:
+                    chart = _build_scatter_chart(df, x_col, y_col, color_idx)
+
+        except Exception as e:
+            logger.warning(f"[Visualizer] Failed to build spec {spec}: {e}")
+
+        if chart:
+            # Override title/description with what the AI returned if available
+            if ai_title:
+                chart["title"] = ai_title
+            if ai_desc:
+                chart["description"] = ai_desc
+            charts.append(chart)
+            color_idx += 1
+
+    return charts
+
+
+# ── Public API ─────────────────────────────────────────────────────────────
+
+def analyze_with_ai(
+    df: pl.DataFrame,
+    user_prompt: str = "",
+    hf_api_key: str = "",
+) -> dict[str, Any]:
+    """
+    AI-powered analysis entry point.
+    Falls back to rule-based `analyze()` if the HF call fails.
+    """
+    col_types = _detect_column_types(df)
+    schema_text = _build_dataset_schema(df, col_types)
+    ai_used = False
+    charts: list[dict] = []
+
+    if hf_api_key:
+        try:
+            logger.info("[Visualizer] Calling Qwen via HF InferenceClient…")
+            specs = _call_qwen(schema_text, user_prompt, hf_api_key)
+            charts = _resolve_specs(df, col_types, specs)
+            ai_used = True
+            logger.info(f"[Visualizer] AI generated {len(charts)} charts successfully.")
+        except Exception as e:
+            logger.warning(f"[Visualizer] AI path failed, falling back to rule-based: {e}")
+
+    if not charts:
+        # Fallback: full rule-based analysis
+        result = analyze(df)
+        result["aiUsed"] = False
+        result["schemaText"] = schema_text
+        return result
+
+    return {
+        "kpis":          _build_kpis(df, col_types),
+        "charts":        charts,
+        "columnSummary": _build_column_summary(df, col_types),
+        "totalRows":     len(df),
+        "totalColumns":  len(df.columns),
+        "aiUsed":        ai_used,
+        "prompt":        user_prompt,
+        "schemaText":    schema_text,
+    }
+
 
 def analyze(df: pl.DataFrame) -> dict[str, Any]:
     """
-    Entry-point called by the FastAPI endpoint.
-    Returns { kpis, charts, summary }
+    Rule-based analysis entry point (no external API).
+    Kept unchanged for backward compatibility.
     """
     col_types = _detect_column_types(df)
-    numeric_cols = [c for c, t in col_types.items() if t == "numeric"]
+    numeric_cols     = [c for c, t in col_types.items() if t == "numeric"]
     categorical_cols = [c for c, t in col_types.items() if t == "categorical"]
-    datetime_cols = [c for c, t in col_types.items() if t == "datetime"]
-    boolean_cols = [c for c, t in col_types.items() if t == "boolean"]
+    datetime_cols    = [c for c, t in col_types.items() if t == "datetime"]
+    boolean_cols     = [c for c, t in col_types.items() if t == "boolean"]
 
     charts: list[dict] = []
     color_idx = 0
@@ -316,10 +493,9 @@ def analyze(df: pl.DataFrame) -> dict[str, Any]:
         if color_idx >= 3:
             break
 
-    # 2. Pie charts (low-cardinality categorical, up to 2)
+    # 2. Pie (low-cardinality categorical, up to 2)
     for cat in categorical_cols:
-        cardinality = df[cat].n_unique()
-        if 2 <= cardinality <= 8:
+        if df[cat].n_unique() <= 8:
             chart = _build_pie_chart(df, cat, color_idx)
             if chart:
                 charts.append(chart)
@@ -327,7 +503,7 @@ def analyze(df: pl.DataFrame) -> dict[str, Any]:
             if color_idx >= 5:
                 break
 
-    # 3. Line charts (datetime × numeric, up to 2)
+    # 3. Line (datetime × numeric, up to 2)
     for dc in datetime_cols[:2]:
         for num in numeric_cols[:2]:
             chart = _build_line_chart(df, dc, num, color_idx)
@@ -335,31 +511,29 @@ def analyze(df: pl.DataFrame) -> dict[str, Any]:
                 charts.append(chart)
                 color_idx += 1
 
-    # 4. Area charts for numeric columns (up to 2)
+    # 4. Area for numeric (up to 2)
     for num in numeric_cols[:2]:
         chart = _build_area_chart(df, num, color_idx)
         if chart:
             charts.append(chart)
             color_idx += 1
 
-    # 5. Scatter chart (first two numeric columns)
+    # 5. Scatter (first two numerics)
     if len(numeric_cols) >= 2:
         chart = _build_scatter_chart(df, numeric_cols[0], numeric_cols[1], color_idx)
         if chart:
             charts.append(chart)
             color_idx += 1
 
-    # 6. Boolean distribution as bar
+    # 6. Boolean distribution
     for bc in boolean_cols[:2]:
         try:
             counts = df.select(bc).drop_nulls().group_by(bc).count().to_dicts()
             data = [{"name": str(r[bc]), "value": r["count"]} for r in counts]
             charts.append({
-                "type": "bar",
-                "title": f"{bc} Distribution",
+                "type": "bar", "title": f"{bc} Distribution",
                 "description": f"True/False breakdown of {bc}",
-                "xKey": "name",
-                "dataKey": "value",
+                "xKey": "name", "dataKey": "value",
                 "color": CHART_COLORS[color_idx % len(CHART_COLORS)],
                 "gradient": GRADIENT_PAIRS[color_idx % len(GRADIENT_PAIRS)],
                 "data": data,
@@ -368,30 +542,11 @@ def analyze(df: pl.DataFrame) -> dict[str, Any]:
         except Exception:
             pass
 
-    # Build column summary
-    col_summary = []
-    for col in df.columns:
-        col_type = col_types.get(col, "unknown")
-        null_pct = round(df[col].null_count() / max(len(df), 1) * 100, 1)
-        entry = {
-            "name": col,
-            "type": col_type,
-            "nullPct": null_pct,
-            "unique": df[col].n_unique(),
-        }
-        if col_type == "numeric":
-            try:
-                entry["min"] = round(_safe_float(df[col].min()), 3)
-                entry["max"] = round(_safe_float(df[col].max()), 3)
-                entry["mean"] = round(_safe_float(df[col].mean()), 3)
-            except Exception:
-                pass
-        col_summary.append(entry)
-
     return {
-        "kpis": _build_kpis(df, col_types),
-        "charts": charts,
-        "columnSummary": col_summary,
-        "totalRows": len(df),
-        "totalColumns": len(df.columns),
+        "kpis":          _build_kpis(df, col_types),
+        "charts":        charts,
+        "columnSummary": _build_column_summary(df, col_types),
+        "totalRows":     len(df),
+        "totalColumns":  len(df.columns),
+        "aiUsed":        False,
     }

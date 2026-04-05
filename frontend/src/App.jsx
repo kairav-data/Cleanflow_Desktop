@@ -209,15 +209,72 @@ function App() {
                     className="w-full max-w-7xl mx-auto pb-20"
                 >
                     {/* Hero Section */}
-                    <div className="mb-10 pt-4 bg-gradient-to-r from-slate-900 to-slate-800 rounded-3xl p-8 md:p-12 text-white shadow-xl relative overflow-hidden">
-                        <div className="relative z-10">
-                            <h1 className="text-4xl md:text-5xl font-black mb-4 tracking-tight">Active Workspace</h1>
-                            <p className="text-slate-300 text-lg max-w-2xl leading-relaxed">
-                                Welcome back, {user.full_name || 'User'}. Execute intelligent data workflows, manage your recent jobs, and read through how to leverage the toolset below.
-                            </p>
+                    <div className="mb-10 relative rounded-3xl overflow-hidden shadow-2xl" style={{background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%)'}}>
+                        {/* Ambient glow blobs */}
+                        <div className="absolute top-0 left-1/4 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
+                        <div className="absolute bottom-0 right-1/4 w-80 h-80 bg-sky-500/10 rounded-full blur-3xl pointer-events-none" />
+                        <div className="absolute -top-10 -right-10 opacity-5"><Sparkles size={200} className="text-white" /></div>
+
+                        <div className="relative z-10 px-8 md:px-12 py-10 md:py-12">
+                            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-8">
+                                {/* Left: Text + CTAs */}
+                                <div className="flex-1 min-w-0">
+                                    {/* Badge */}
+                                    <div className="inline-flex items-center gap-2 px-3 py-1.5 mb-5 rounded-full border border-emerald-500/30 bg-emerald-500/10 text-emerald-400 text-xs font-bold tracking-widest uppercase">
+                                        <span className="relative flex h-2 w-2">
+                                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                                            <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                                        </span>
+                                        Active Workspace
+                                    </div>
+
+                                    {/* Heading */}
+                                    <h1 className="text-4xl md:text-5xl font-black text-white mb-1 leading-tight tracking-tight">
+                                        Welcome back,
+                                    </h1>
+                                    <p className="text-4xl md:text-5xl font-black mb-5 leading-tight tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-sky-400 to-indigo-400">
+                                        {user.full_name || 'User'}
+                                    </p>
+
+                                    {/* Subtitle */}
+                                    <p className="text-slate-400 text-base leading-relaxed max-w-xl mb-8 font-medium">
+                                        Execute intelligent data workflows, manage your recent jobs, and read through how to leverage the toolset below.
+                                    </p>
+
+                                    {/* CTA Buttons */}
+                                    <div className="flex flex-wrap items-center gap-3">
+                                        <button
+                                            onClick={() => setActiveTab('pipeline')}
+                                            className="inline-flex items-center gap-2 px-6 py-3 bg-white text-slate-900 rounded-xl font-black text-sm hover:bg-slate-100 hover:scale-[1.02] transition-all shadow-lg"
+                                        >
+                                            <Zap size={16} className="text-emerald-600" /> New Workflow
+                                        </button>
+                                        <button
+                                            onClick={() => document.getElementById('job-history-section')?.scrollIntoView({ behavior: 'smooth' })}
+                                            className="inline-flex items-center gap-2 px-6 py-3 bg-white/10 hover:bg-white/20 border border-white/20 text-white rounded-xl font-bold text-sm transition-all"
+                                        >
+                                            <BarChart3 size={16} /> View Recent Jobs
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {/* Right: Stats */}
+                                <div className="flex flex-row lg:flex-col gap-6 lg:gap-5 shrink-0">
+                                    {[
+                                        { value: recentJobs.length, label: 'active jobs', color: 'text-white' },
+                                        { value: recentJobs.length > 0 ? '98%' : '—', label: 'success rate', color: 'text-emerald-400' },
+                                        { value: recentJobs.reduce((acc, j) => acc + (j.total_rows || 0), 0).toLocaleString() || '0', label: 'rows processed', color: 'text-sky-400' },
+                                    ].map(({ value, label, color }) => (
+                                        <div key={label} className="flex flex-col items-center lg:items-end">
+                                            <span className={`text-3xl font-black ${color} tracking-tight`}>{value}</span>
+                                            <span className="text-slate-500 text-xs font-semibold mt-0.5">{label}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
                         </div>
-                        <Sparkles size={160} className="absolute -bottom-10 -right-10 text-white/5 rotate-12" />
                     </div>
+
 
                     {/* Section: Tutorials & Tools */}
                     <div className="mb-12">
@@ -323,7 +380,7 @@ function App() {
                     </div>
 
                     {/* Section: Job History & Orchestration */}
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-12">
+                    <div id="job-history-section" className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-12">
                         <div className="lg:col-span-3">
                             <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden flex flex-col">
                                 <div className="p-6 border-b border-slate-100 bg-slate-50 flex items-center justify-between">

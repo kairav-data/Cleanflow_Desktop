@@ -58,21 +58,27 @@ app = FastAPI(
 )
 
 # --- CORS setup ---
+# FRONTEND_URL must be set as an env var on Render to match your Vercel production domain.
+# e.g.  FRONTEND_URL=https://cleanflow-one.vercel.app
 frontend_url = os.environ.get("FRONTEND_URL", "https://cleanflow.vercel.app")
+
 origins = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
-    "http://localhost:5173",   
+    "http://localhost:5173",
     "http://127.0.0.1:5173",
     "https://cleanflow-one.vercel.app",
     "https://www.cleanflow.one",
     "https://cleanflow.one",
-    frontend_url
+    frontend_url,
 ]
 
+# Also allow ALL Vercel preview deployment URLs (e.g. cleanflow-abc123-kairav.vercel.app)
+# so that PR previews and staging deploys work without updating the list each time.
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
+    allow_origin_regex=r"https://.*\.vercel\.app",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

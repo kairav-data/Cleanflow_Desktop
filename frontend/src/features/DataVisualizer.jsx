@@ -16,7 +16,14 @@ import {
 } from 'recharts';
 import html2canvas from 'html2canvas';
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+// Use the same env variable as every other feature in this app
+const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+
+// Axios instance with a 60-second timeout (Render cold starts can be slow)
+const api = axios.create({
+    baseURL: API_BASE,
+    timeout: 60000,
+});
 
 // ── Separator config (same as other features) ──────────────────────────────
 const SEPARATORS = [
@@ -241,11 +248,27 @@ export default function DataVisualizer() {
         setUploading(true);
 
         try {
+            // ── Step 1: Upload ────────────────────────────────────────────────
             const fd = new FormData();
             fd.append('file', file);
             fd.append('delimiter', effectiveDelim);
 
-            const uploadRes = await axios.post(`${API_BASE}/features/visualizer/upload`, fd);
+            let uploadRes;
+            try {
+                uploadRes = await api.post('/features/visualizer/upload', fd, {
+                    headers: { 'Content-Type': 'multipart/form-data' },
+                });
+            } catch (uploadErr) {
+                // Give a clear, specific message for upload failures
+                if (uploadErr.code === 'ECONNABORTED' || uploadErr.message?.includes('timeout')) {
+                    throw new Error('Upload timed out — the server may be starting up. Please wait 30 seconds and try again.');
+                }
+                if (!uploadErr.response) {
+                    throw new Error(`Cannot reach the server at ${API_BASE}. Check that the backend is running and VITE_API_BASE_URL is set correctly on Vercel.`);
+                }
+                throw uploadErr;
+            }
+
             const { session_id, filename: fn, rows } = uploadRes.data;
             setSessionId(session_id);
             setFilename(fn);
@@ -253,11 +276,25 @@ export default function DataVisualizer() {
             setUploading(false);
             setAnalyzing(true);
 
-            const analysisRes = await axios.post(`${API_BASE}/features/visualizer/analyze/${session_id}`);
+            // ── Step 2: Analyze ───────────────────────────────────────────────
+            let analysisRes;
+            try {
+                analysisRes = await api.post(`/features/visualizer/analyze/${session_id}`);
+            } catch (analyzeErr) {
+                if (analyzeErr.code === 'ECONNABORTED' || analyzeErr.message?.includes('timeout')) {
+                    throw new Error('Analysis timed out — your dataset may be too large. Try a smaller file (< 10 MB).');
+                }
+                if (!analyzeErr.response) {
+                    throw new Error('Lost connection to server during analysis. Please try again.');
+                }
+                throw analyzeErr;
+            }
+
             setAnalysis(analysisRes.data);
             setStep(2);
         } catch (err) {
-            setError(err.response?.data?.detail || err.message || 'Processing failed');
+            const msg = err.response?.data?.detail || err.message || 'Processing failed. Please try again.';
+            setError(msg);
         } finally {
             setUploading(false);
             setAnalyzing(false);

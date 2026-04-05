@@ -2,3 +2,4 @@
 export { default as HomePage } from './HomePage';
 export { default as PricingPage } from './PricingPage';
 export { default as UserProfilePage } from './UserProfilePage';
+export { default as UsagePage } from './UsagePage';

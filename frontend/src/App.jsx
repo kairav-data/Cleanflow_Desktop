@@ -5,14 +5,14 @@ import {
     LogOut, Search, Sparkles, Database,
     FileCheck, ArrowRight, Zap, Check,
     Globe, ChevronRight, Shuffle, GitMerge, RefreshCw, Trash2, ShieldCheck, AlertTriangle, BarChart3,
-    Menu, X, Home, LayoutDashboard, Settings, CreditCard, User, FolderClock, Clock3
+    Menu, X, Home, LayoutDashboard, Settings, User, FolderClock, Clock3, BarChart2
 } from 'lucide-react';
 
 // Components
 import { DataConnection, RuleBuilder, ResultsDashboard } from './components';
 import { AuthModal, PaymentModal } from './components/modals';
 import { Footer, PlatformDropdown } from './components/common';
-import { HomePage, PricingPage, UserProfilePage } from './components/pages';
+import { HomePage, PricingPage, UserProfilePage, UsagePage } from './components/pages';
 import ChatBot from './components/ChatBot';
 
 // Feature Builders
@@ -669,10 +669,10 @@ function App() {
                 </motion.div>
             )}
 
-            {/* PRICING VIEW */}
-            {activeTab === 'pricing' && (
-                <motion.div key="pricing-tab" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="w-full pb-20 pt-4">
-                    <PricingPage onClose={goToLanding} />
+            {/* USAGE VIEW */}
+            {activeTab === 'usage' && (
+                <motion.div key="usage-tab" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="w-full h-full">
+                    <UsagePage user={user} />
                 </motion.div>
             )}
 
@@ -859,13 +859,17 @@ function App() {
                         </ul>
                     </div>
 
-                    {/* Section: External */}
+                    {/* Section: Resources */}
                     <div>
                         <h4 className="px-3 mb-2 text-xs font-black uppercase tracking-wider text-gray-500">Resources</h4>
                         <ul className="space-y-1">
                             <li>
-                                <button onClick={() => handleFeatureAccess('pricing')} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all ${activeTab === 'pricing' ? 'bg-[#1f2937] text-white border border-gray-700' : 'text-gray-400 hover:text-gray-100 hover:bg-[#1f2937]'}`}>
-                                    <CreditCard size={18} className="text-gray-500" /> Billing & Pricing
+                                <button onClick={() => handleFeatureAccess('usage')} className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-semibold transition-all group ${activeTab === 'usage' ? 'bg-emerald-600/10 text-emerald-400 border border-emerald-900/50' : 'text-gray-400 hover:text-gray-100 hover:bg-[#1f2937]'}`}>
+                                    <div className="flex items-center gap-3">
+                                        <BarChart2 size={18} className={activeTab === 'usage' ? 'text-emerald-500' : 'text-gray-500 group-hover:text-gray-300'} />
+                                        Usage & Resources
+                                    </div>
+                                    {activeTab === 'usage' && <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]" />}
                                 </button>
                             </li>
                         </ul>

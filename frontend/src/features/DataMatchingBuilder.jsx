@@ -258,15 +258,25 @@ export default function DataMatchingBuilder({ onComplete }) {
 
                                     {datasetMode[dsId] === 'file' ? (
                                         <div className="flex flex-col items-center gap-4">
-                                            <div className="flex items-center gap-2 mb-1">
+                                            <div className="flex flex-col items-center gap-2 mb-1">
                                                 <span className="text-xs font-semibold text-slate-500">Separator:</span>
-                                                <div className="flex gap-1.5">
+                                                <div className="flex flex-wrap items-center justify-center gap-1.5">
                                                     {[',', ';', '|'].map(d => (
                                                         <button key={d} onClick={() => setSeparators(prev => ({ ...prev, [dsId]: d }))}
                                                             className={`w-7 h-7 rounded-lg flex items-center justify-center font-mono border text-xs transition-all ${separators[dsId] === d ? 'bg-violet-600 text-white border-violet-600' : 'bg-white text-slate-400 border-slate-200 hover:border-violet-400'}`}>
                                                             {d}
                                                         </button>
                                                     ))}
+                                                    <input type="text"
+                                                        placeholder="Custom"
+                                                        value={![',', ';', '|'].includes(separators[dsId]) ? separators[dsId] : ''}
+                                                        onChange={(e) => setSeparators(prev => ({ ...prev, [dsId]: e.target.value }))}
+                                                        className={`w-16 h-7 px-2 py-1 border rounded-lg text-xs font-mono focus:outline-none transition-all ${
+                                                            ![',', ';', '|'].includes(separators[dsId]) && separators[dsId]
+                                                                ? 'border-violet-600 bg-violet-50 text-violet-700'
+                                                                : 'border-slate-200 text-slate-600 focus:border-violet-400'
+                                                        }`}
+                                                    />
                                                 </div>
                                             </div>
 

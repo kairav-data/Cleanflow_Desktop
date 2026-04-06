@@ -513,11 +513,9 @@ class DataMatcher(BaseFeature):
             os.makedirs(upload_dir, exist_ok=True)
             file_path = os.path.join(upload_dir, f"matching_results_{self.session_id}.xlsx")
 
-            # Polars write_excel requires openpyxl (already in requirements via fastexcel / openpyxl)
             try:
                 df.write_excel(file_path)
             except Exception:
-                # Fallback: write CSV then convert with openpyxl
                 import openpyxl
                 wb = openpyxl.Workbook()
                 ws = wb.active

@@ -27,9 +27,7 @@ export default function Matching() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
             >
-                <DataMatchingBuilder
-                    onComplete={() => navigate('/')}
-                />
+                <DataMatchingBuilder />
             </motion.div>
         </motion.div>
     );

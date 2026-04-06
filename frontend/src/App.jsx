@@ -637,7 +637,7 @@ function App() {
             {activeTab === 'matching' && (
                 <motion.div key="matching-tab" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="w-full h-full">
 
-                    <DataMatchingBuilder onComplete={goToLanding} />
+                    <DataMatchingBuilder />
                 </motion.div>
             )}
 

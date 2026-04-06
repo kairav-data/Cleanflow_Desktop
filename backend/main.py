@@ -635,26 +635,38 @@ async def get_matching_results(session_id: str):
     return {"ready": True, "results": results[:100], "total_matches": len(results)}
 
 @app.get("/features/matching/download/{session_id}")
-async def download_matching_results(session_id: str):
-    """"Download matching results as CSV"""
+async def download_matching_results(session_id: str, fmt: str = "csv"):
+    """Download matching results as CSV or Excel.
+    Query param: ?fmt=csv (default) or ?fmt=excel
+    """
     try:
-        from features.matching import DataMatcher
         if session_id not in sessions:
             raise HTTPException(status_code=404, detail="Session not found")
-            
+
         matcher = sessions[session_id]
-        file_path = matcher.export_to_csv()
-        
-        if not file_path or not os.path.exists(file_path):
-            raise HTTPException(status_code=404, detail="Results not ready or export failed")
-            
-        return FileResponse(
-            path=file_path, 
-            filename=f"matching_results_{session_id}.csv",
-            media_type='text/csv'
-        )
+
+        if fmt == "excel":
+            file_path = matcher.export_to_excel()
+            if not file_path or not os.path.exists(file_path):
+                raise HTTPException(status_code=404, detail="Excel export failed")
+            return FileResponse(
+                path=file_path,
+                filename=f"matching_results_{session_id}.xlsx",
+                media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            )
+        else:
+            file_path = matcher.export_to_csv()
+            if not file_path or not os.path.exists(file_path):
+                raise HTTPException(status_code=404, detail="CSV export failed")
+            return FileResponse(
+                path=file_path,
+                filename=f"matching_results_{session_id}.csv",
+                media_type="text/csv",
+            )
+    except HTTPException:
+        raise
     except Exception as e:
-        logger.exception("Error executing download_matching_results")
+        logger.exception("Error in download_matching_results")
         raise HTTPException(status_code=500, detail=str(e))
 
 # --- AI Visualizer Feature ---

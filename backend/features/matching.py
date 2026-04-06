@@ -472,31 +472,65 @@ class DataMatcher(BaseFeature):
     def get_results(self):
         return self.results
     
+    def _flat_results(self) -> list:
+        """Return results with match_details stripped (safe for export)."""
+        if not self.results:
+            return []
+        flat = []
+        for r in self.results:
+            row = {k: v for k, v in r.items() if k != 'match_details'}
+            flat.append(row)
+        return flat
+
     def export_to_csv(self) -> Optional[str]:
-        """Export results to CSV file and return path"""
+        """Export results to CSV file and return path."""
         try:
-            # Flatten results for CSV
-            if not self.results:
-                 df = pl.DataFrame({"Message": ["No matches found"]})
+            flat = self._flat_results()
+            if flat:
+                df = pl.DataFrame(flat)
             else:
-                 flat_results = []
-                 for r in self.results:
-                     row = r.copy()
-                     if 'match_details' in row:
-                         del row['match_details']
-                     flat_results.append(row)
-                 import pandas as pd
-                 df = pl.from_pandas(pd.DataFrame(flat_results))
-            
+                df = pl.DataFrame({"Message": ["No matches found"]})
+
             upload_dir = os.path.join(os.getcwd(), "uploads")
             os.makedirs(upload_dir, exist_ok=True)
-            
             file_path = os.path.join(upload_dir, f"matching_results_{self.session_id}.csv")
             df.write_csv(file_path)
             return file_path
         except Exception as e:
             logger.exception(f"Error exporting CSV: {e}")
             raise ValueError(f"Failed to export CSV: {str(e)}")
+
+    def export_to_excel(self) -> Optional[str]:
+        """Export results to Excel (.xlsx) file and return path."""
+        try:
+            flat = self._flat_results()
+            if flat:
+                df = pl.DataFrame(flat)
+            else:
+                df = pl.DataFrame({"Message": ["No matches found"]})
+
+            upload_dir = os.path.join(os.getcwd(), "uploads")
+            os.makedirs(upload_dir, exist_ok=True)
+            file_path = os.path.join(upload_dir, f"matching_results_{self.session_id}.xlsx")
+
+            # Polars write_excel requires openpyxl (already in requirements via fastexcel / openpyxl)
+            try:
+                df.write_excel(file_path)
+            except Exception:
+                # Fallback: write CSV then convert with openpyxl
+                import openpyxl
+                wb = openpyxl.Workbook()
+                ws = wb.active
+                ws.title = "Matching Results"
+                ws.append(df.columns)
+                for row in df.rows():
+                    ws.append([str(v) if v is not None else '' for v in row])
+                wb.save(file_path)
+
+            return file_path
+        except Exception as e:
+            logger.exception(f"Error exporting Excel: {e}")
+            raise ValueError(f"Failed to export Excel: {str(e)}")
 
     def validate(self, config: Dict[str, Any]) -> tuple[bool, Optional[str]]:
         """Validate matching configuration"""

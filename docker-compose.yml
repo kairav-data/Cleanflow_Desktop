@@ -1,46 +1,16 @@
 services:
-  # postgres:
-  #   image: postgres:15
-  #   container_name: cleanflow_postgres
-  #   environment:
-  #     POSTGRES_USER: ${POSTGRES_USER}
-  #     POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-  #     POSTGRES_DB: ${POSTGRES_DB}
-  #   volumes:
-  #     - postgres_data:/var/lib/postgresql/data
-  #   ports:
-  #     - "${DB_PORT}:5432"
-  #   networks:
-  #     - cleanflow-net
-
-  # pgadmin:
-  #   image: dpage/pgadmin4
-  #   container_name: cleanflow_pgadmin
-  #   environment:
-  #     PGADMIN_DEFAULT_EMAIL: admin@admin.com
-  #     PGADMIN_DEFAULT_PASSWORD: admin
-  #     PGADMIN_CONFIG_SERVER_MODE: 'False'
-  #   volumes:
-  #     - ./pgadmin/servers.json:/pgadmin4/servers.json
-  #   ports:
-  #     - "5050:80"
-  #   depends_on:
-  #     - postgres
-  #   networks:
-  #     - cleanflow-net
-
   backend:
     build: ./backend
     container_name: cleanflow_backend
     restart: always
     env_file:
       - ./backend/.env
-    # Extra env vars that override what's in backend/.env for Docker context.
-    # HF_API_KEY is read directly by the backend (chatbot + visualizer).
     environment:
+      # HF_API_KEY is what backend code reads (chatbot.py + features/visualizer.py)
       - HF_API_KEY=${VITE_HF_API_KEY:-}
-      # Tells CORS to allow the frontend container.
-      # Inside Docker network the frontend is accessed via its published port on the host.
+      # CORS: browser hits the backend from localhost, so allow localhost origins.
+      # The static list in main.py already includes http://localhost:5173,
+      # so this override is only needed if you change FRONTEND_PORT.
       - FRONTEND_URL=http://localhost:${FRONTEND_PORT:-5173}
     ports:
       - "${BACKEND_PORT:-8000}:8000"
@@ -54,11 +24,17 @@ services:
   frontend:
     build:
       context: ./frontend
-      # VITE_ vars must be passed as build args so Vite bakes them into the bundle.
-      # The frontend container talks to backend over the Docker internal network
-      # using the service name "backend".
       args:
-        - VITE_API_BASE_URL=http://backend:8000
+        # ─────────────────────────────────────────────────────────────────────
+        # IMPORTANT: VITE_API_BASE_URL must be what the BROWSER can reach.
+        #
+        # The browser runs on your HOST machine (Windows), not inside Docker.
+        # "backend" is a Docker-internal hostname – the browser cannot resolve it.
+        #
+        # Docker maps backend container port 8000 → host port 8000, so the
+        # browser reaches it at http://localhost:8000.
+        # ─────────────────────────────────────────────────────────────────────
+        - VITE_API_BASE_URL=http://localhost:${BACKEND_PORT:-8000}
         - VITE_HF_API_KEY=${VITE_HF_API_KEY:-}
     container_name: cleanflow_frontend
     restart: always

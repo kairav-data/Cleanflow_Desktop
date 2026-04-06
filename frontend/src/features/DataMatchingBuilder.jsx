@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
-import { GitMerge, Upload, Play, CheckCircle, TrendingUp, Plus, Trash2, Database, File } from 'lucide-react';
+import { GitMerge, Upload, Play, CheckCircle, TrendingUp, Plus, Trash2, Database, File, FileSpreadsheet, FileText, AlertCircle } from 'lucide-react';
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'import.meta.env.VITE_API_URL';
+const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
 const STEPS = ['Upload', 'Configure', 'Results'];
 
 export default function DataMatchingBuilder({ onComplete }) {
@@ -91,39 +91,78 @@ export default function DataMatchingBuilder({ onComplete }) {
 
     const handleExecute = async () => {
         setLoading(true);
+        setProgress({ percent: 0, message: 'Starting…', status: 'running' });
+
         try {
             const validRules = matchRules.filter(r => r.column1 && r.column2);
-            await axios.post(`${API_BASE}/features/matching/start/${sessionId}`, { dataset1: 'dataset1', dataset2: 'dataset2', rules: validRules, output_columns: outputColumns });
+            await axios.post(
+                `${API_BASE}/features/matching/start/${sessionId}`,
+                { dataset1: 'dataset1', dataset2: 'dataset2', rules: validRules, output_columns: outputColumns }
+            );
+
+            // done flag prevents concurrent async callbacks from firing twice
+            let done = false;
 
             const interval = setInterval(async () => {
+                if (done) return;
                 try {
                     const res = await axios.get(`${API_BASE}/features/matching/status/${sessionId}`);
                     setProgress(res.data);
+
                     if (res.data.status === 'completed') {
+                        done = true;
                         clearInterval(interval);
-                        setLoading(false);
-                        const resultRes = await axios.get(`${API_BASE}/features/matching/results/${sessionId}`);
-                        setFinalResults(resultRes.data.results);
-                        setTotalMatches(resultRes.data.total_matches || resultRes.data.results.length);
+
                         try {
-                            await axios.post(`${API_BASE}/history/jobs`, {
-                                session_id: sessionId, file_name: `Data Matching Job`, rules: validRules,
-                                total_rows: resultRes.data.total_matches || resultRes.data.results.length,
-                                valid_rows: resultRes.data.total_matches || resultRes.data.results.length,
-                                invalid_rows: 0, module: 'matching'
-                            }, { headers });
-                        } catch (histErr) { console.error("Failed to save history:", histErr); }
-                        setStep(3);
-                        if (onComplete) onComplete(resultRes.data);
+                            const resultRes = await axios.get(`${API_BASE}/features/matching/results/${sessionId}`);
+                            const results = resultRes.data.results ?? [];
+                            const total   = resultRes.data.total_matches ?? results.length;
+
+                            // ─── Batch ALL state updates in one synchronous block ───
+                            // No awaits between these calls → React 18 batches them
+                            // into a single render so there is NO intermediate flash.
+                            setFinalResults(results);
+                            setTotalMatches(total);
+                            setStep(3);
+                            setLoading(false);
+                            // ────────────────────────────────────────────────────────
+
+                            // History save is fire-and-forget — never block the UI for this.
+                            axios.post(`${API_BASE}/history/jobs`, {
+                                session_id: sessionId,
+                                file_name:  'Data Matching Job',
+                                rules:      validRules,
+                                total_rows: total,
+                                valid_rows: total,
+                                invalid_rows: 0,
+                                module: 'matching',
+                            }, { headers }).catch(e => console.warn('History save skipped:', e.message));
+
+                            // Call onComplete AFTER React has painted step 3
+                            if (onComplete) setTimeout(() => onComplete(resultRes.data), 0);
+
+                        } catch (resultErr) {
+                            setLoading(false);
+                            alert('Failed to fetch results: ' + (resultErr.response?.data?.detail || resultErr.message));
+                        }
+
                     } else if (res.data.status === 'error') {
+                        done = true;
                         clearInterval(interval);
                         setLoading(false);
                         alert('Matching error: ' + res.data.message);
                     }
-                } catch (e) { console.error("Polling error", e); }
+                } catch (pollErr) {
+                    console.warn('Polling error (will retry):', pollErr.message);
+                }
             }, 1000);
-        } catch (e) { setLoading(false); alert('Matching start failed: ' + (e.response?.data?.detail || e.message)); }
+
+        } catch (e) {
+            setLoading(false);
+            alert('Matching start failed: ' + (e.response?.data?.detail || e.message));
+        }
     };
+
 
     return (
         <div className="w-full h-full flex flex-col">
@@ -368,7 +407,15 @@ export default function DataMatchingBuilder({ onComplete }) {
                             <div className="grid grid-cols-2 gap-6">
                                 {['dataset1', 'dataset2'].map((dsId, idx) => (
                                     <div key={dsId}>
-                                        <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Dataset {idx + 1}</p>
+                                        <div className="flex items-center justify-between mb-2">
+                                            <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Dataset {idx + 1}</p>
+                                            <button 
+                                                onClick={() => setOutputColumns(prev => ({ ...prev, [dsId]: prev[dsId].length === datasetColumns[dsId].length ? [] : [...datasetColumns[dsId]] }))}
+                                                className="text-[10px] uppercase font-black tracking-widest text-violet-600 hover:text-violet-700 bg-violet-50 hover:bg-violet-100 px-2 py-0.5 rounded-full transition-colors"
+                                            >
+                                                {outputColumns[dsId].length === datasetColumns[dsId].length ? 'Clear All' : 'Select All'}
+                                            </button>
+                                        </div>
                                         <div className="space-y-1.5 max-h-36 overflow-y-auto">
                                             {datasetColumns[dsId].map(col => (
                                                 <label key={col} className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 px-2 py-1 rounded-lg">
@@ -396,63 +443,145 @@ export default function DataMatchingBuilder({ onComplete }) {
                 )}
 
                 {/* ── Step 3: Results ── */}
-                {!loading && step === 3 && finalResults && (
+                {!loading && step === 3 && (
                     <motion.div initial={{ scale: 0.97, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}>
-                        <div className="flex items-center justify-between mb-6">
+
+                        {/* Header row */}
+                        <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
                             <div>
                                 <h3 className="text-xl font-black text-slate-900 tracking-tight">Matching Complete</h3>
-                                <p className="text-sm text-slate-500 mt-1">Found <span className="font-bold text-violet-600">{totalMatches}</span> matching records across both datasets.</p>
+                                <p className="text-sm text-slate-500 mt-1">
+                                    Found <span className="font-bold text-violet-600">{totalMatches}</span> matching record{totalMatches !== 1 ? 's' : ''} across both datasets.
+                                </p>
                             </div>
-                            <div className="flex items-center gap-3">
-                                <button onClick={async () => {
-                                    try {
-                                        const response = await axios.get(`${API_BASE}/features/matching/download/${sessionId}`, { responseType: 'blob' });
-                                        const url = window.URL.createObjectURL(new Blob([response.data]));
-                                        const link = document.createElement('a');
-                                        link.href = url;
-                                        link.setAttribute('download', `matching_results_${sessionId}.csv`);
-                                        document.body.appendChild(link);
-                                        link.click();
-                                        link.parentNode.removeChild(link);
-                                    } catch (e) { alert("Download failed: " + (e.response?.data?.detail || e.message)); }
-                                }} className="flex items-center gap-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-sm transition-all shadow-md shadow-emerald-600/20">
-                                    <TrendingUp size={16} /> Download Results
+                            <div className="flex items-center gap-2">
+                                {/* CSV Download */}
+                                <button
+                                    onClick={async () => {
+                                        try {
+                                            const res = await axios.get(
+                                                `${API_BASE}/features/matching/download/${sessionId}?fmt=csv`,
+                                                { responseType: 'blob' }
+                                            );
+                                            const url = window.URL.createObjectURL(new Blob([res.data], { type: 'text/csv' }));
+                                            const a = document.createElement('a');
+                                            a.href = url;
+                                            a.download = `matching_results_${sessionId}.csv`;
+                                            document.body.appendChild(a);
+                                            a.click();
+                                            a.remove();
+                                            window.URL.revokeObjectURL(url);
+                                        } catch (e) {
+                                            alert('CSV download failed: ' + (e.response?.data?.detail || e.message));
+                                        }
+                                    }}
+                                    className="flex items-center gap-2 px-4 py-2.5 bg-slate-700 hover:bg-slate-800 text-white rounded-xl font-bold text-sm transition-all shadow-md"
+                                >
+                                    <FileText size={15} /> Download CSV
                                 </button>
-                                <button onClick={() => { setStep(1); setDatasets({ dataset1: null, dataset2: null }); setMatchRules([{ id: 1, column1: '', column2: '', algorithm: 'fuzzy', threshold: 0.8 }]); setFinalResults(null); setProgress({ percent: 0, message: '', status: 'idle' }); }}
-                                    className="flex items-center gap-2 px-4 py-2.5 border border-slate-200 hover:border-slate-300 hover:bg-slate-50 text-slate-700 rounded-xl font-bold text-sm transition-all">
+
+                                {/* Excel Download */}
+                                <button
+                                    onClick={async () => {
+                                        try {
+                                            const res = await axios.get(
+                                                `${API_BASE}/features/matching/download/${sessionId}?fmt=excel`,
+                                                { responseType: 'blob' }
+                                            );
+                                            const url = window.URL.createObjectURL(
+                                                new Blob([res.data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
+                                            );
+                                            const a = document.createElement('a');
+                                            a.href = url;
+                                            a.download = `matching_results_${sessionId}.xlsx`;
+                                            document.body.appendChild(a);
+                                            a.click();
+                                            a.remove();
+                                            window.URL.revokeObjectURL(url);
+                                        } catch (e) {
+                                            alert('Excel download failed: ' + (e.response?.data?.detail || e.message));
+                                        }
+                                    }}
+                                    className="flex items-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-sm transition-all shadow-md shadow-emerald-600/20"
+                                >
+                                    <FileSpreadsheet size={15} /> Download Excel
+                                </button>
+
+                                <button
+                                    onClick={() => {
+                                        setStep(1);
+                                        setDatasets({ dataset1: null, dataset2: null });
+                                        setMatchRules([{ id: 1, column1: '', column2: '', algorithm: 'fuzzy', threshold: 0.8 }]);
+                                        setFinalResults(null);
+                                        setProgress({ percent: 0, message: '', status: 'idle' });
+                                    }}
+                                    className="flex items-center gap-2 px-4 py-2.5 border border-slate-200 hover:border-slate-300 hover:bg-slate-50 text-slate-700 rounded-xl font-bold text-sm transition-all"
+                                >
                                     New Matching Job
                                 </button>
                             </div>
                         </div>
 
-                        {finalResults.length > 0 && (
+                        {/* Sample data table */}
+                        {finalResults && finalResults.length > 0 ? (
                             <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
                                 <div className="px-5 py-3.5 border-b border-slate-100 flex items-center justify-between">
                                     <span className="text-sm font-bold text-slate-700">Sample Results</span>
-                                    <span className="text-xs text-slate-500">Showing top {Math.min(finalResults.length, 10)} of {totalMatches}</span>
+                                    <span className="text-xs text-slate-500">
+                                        Showing top {Math.min(finalResults.length, 10)} of {totalMatches}
+                                    </span>
                                 </div>
                                 <div className="overflow-x-auto max-h-[420px]">
                                     <table className="w-full text-sm text-left">
                                         <thead className="bg-slate-50 text-xs text-slate-500 uppercase sticky top-0 border-b border-slate-200">
                                             <tr>
-                                                {Object.keys(finalResults[0]).filter(k => k !== 'match_details').map(key => (
-                                                    <th key={key} className="px-5 py-3 whitespace-nowrap font-bold tracking-wider">{key}</th>
-                                                ))}
+                                                {Object.keys(finalResults[0])
+                                                    .filter(k => k !== 'match_details')
+                                                    .map(key => (
+                                                        <th key={key} className="px-5 py-3 whitespace-nowrap font-bold tracking-wider">
+                                                            {key.replace(/_/g, ' ')}
+                                                        </th>
+                                                    ))}
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-slate-100">
                                             {finalResults.slice(0, 10).map((row, idx) => (
-                                                <tr key={idx} className="hover:bg-slate-50/80 transition-colors">
-                                                    {Object.entries(row).filter(([k]) => k !== 'match_details').map(([key, value], i) => (
-                                                        <td key={i} className="px-5 py-3 text-slate-700 font-medium whitespace-nowrap">
-                                                            {typeof value === 'object' ? JSON.stringify(value) : String(value)}
-                                                        </td>
-                                                    ))}
+                                                <tr key={idx} className={`transition-colors ${idx % 2 === 0 ? 'bg-white hover:bg-slate-50/60' : 'bg-slate-50/40 hover:bg-slate-100/60'}`}>
+                                                    {Object.entries(row)
+                                                        .filter(([k]) => k !== 'match_details')
+                                                        .map(([key, value], i) => (
+                                                            <td key={i} className="px-5 py-3 text-slate-700 font-medium whitespace-nowrap">
+                                                                {key === 'similarity_score'
+                                                                    ? <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
+                                                                        Number(value) >= 0.9 ? 'bg-emerald-100 text-emerald-700' :
+                                                                        Number(value) >= 0.7 ? 'bg-amber-100 text-amber-700' :
+                                                                        'bg-red-100 text-red-600'
+                                                                    }`}>{(Number(value) * 100).toFixed(1)}%</span>
+                                                                    : key === 'match_confidence'
+                                                                    ? <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
+                                                                        value === 'High' ? 'bg-emerald-100 text-emerald-700' :
+                                                                        value === 'Medium' ? 'bg-amber-100 text-amber-700' :
+                                                                        'bg-red-100 text-red-600'
+                                                                    }`}>{String(value)}</span>
+                                                                    : typeof value === 'object' ? JSON.stringify(value) : String(value ?? '—')
+                                                                }
+                                                            </td>
+                                                        ))}
                                                 </tr>
                                             ))}
                                         </tbody>
                                     </table>
                                 </div>
+                            </div>
+                        ) : (
+                            <div className="flex flex-col items-center justify-center py-20 text-center bg-white border border-slate-200 rounded-2xl">
+                                <div className="w-14 h-14 rounded-2xl bg-slate-100 flex items-center justify-center mb-4">
+                                    <AlertCircle size={26} className="text-slate-300" />
+                                </div>
+                                <p className="font-bold text-slate-700 mb-1">No matches found</p>
+                                <p className="text-sm text-slate-400 max-w-sm">
+                                    Try lowering the similarity threshold or check that the selected columns contain comparable values.
+                                </p>
                             </div>
                         )}
                     </motion.div>

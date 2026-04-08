@@ -669,6 +669,235 @@ async def download_matching_results(session_id: str, fmt: str = "csv"):
         logger.exception("Error in download_matching_results")
         raise HTTPException(status_code=500, detail=str(e))
 
+# Pricing Intelligence Feature
+@app.get("/features/pricing/algorithms")
+async def get_pricing_algorithms():
+    """Get available product matching algorithms for pricing intelligence."""
+    from features.pricing import PricingIntelligence
+
+    return {"algorithms": PricingIntelligence.get_available_algorithms()}
+
+
+@app.get("/features/pricing/strategies")
+async def get_pricing_strategies():
+    """Get supported pricing strategies."""
+    from features.pricing import PricingIntelligence
+
+    return {"strategies": PricingIntelligence.get_available_strategies()}
+
+
+@app.post("/features/pricing/load-dataset")
+async def load_pricing_dataset(payload: dict):
+    """Load pricing dataset from JSON payload."""
+    from features.pricing import PricingIntelligence
+
+    session_id = payload.get("session_id")
+    dataset_id = payload.get("dataset_id")
+    data = payload.get("data", [])
+
+    if not session_id or not dataset_id or not data:
+        raise HTTPException(status_code=400, detail="session_id, dataset_id, and data are required")
+
+    if session_id not in sessions:
+        pricer = PricingIntelligence(session_id)
+        sessions[session_id] = pricer
+    else:
+        pricer = sessions[session_id]
+
+    df = pl.from_dicts(data)
+    pricer.load_dataset(dataset_id, df)
+
+    return {
+        "session_id": session_id,
+        "dataset_id": dataset_id,
+        "columns": df.columns,
+        "rows": len(df),
+    }
+
+
+@app.post("/features/pricing/upload-dataset")
+async def upload_pricing_dataset(
+    session_id: str = Form(...),
+    dataset_id: str = Form(...),
+    delimiter: str = Form(","),
+    file: UploadFile = File(...),
+):
+    """Load pricing dataset from CSV/Excel file."""
+    from features.pricing import PricingIntelligence
+
+    try:
+        if session_id not in sessions:
+            pricer = PricingIntelligence(session_id)
+            sessions[session_id] = pricer
+        else:
+            pricer = sessions[session_id]
+
+        os.makedirs(UPLOAD_DIR, exist_ok=True)
+        file_path = os.path.join(UPLOAD_DIR, f"{session_id}_{dataset_id}_{file.filename}")
+        contents = await file.read()
+        with open(file_path, "wb") as buffer:
+            buffer.write(contents)
+
+        loop = asyncio.get_event_loop()
+        columns, rows = await loop.run_in_executor(
+            None, lambda: pricer.load_dataset_from_file(dataset_id, file_path, sep=delimiter)
+        )
+
+        return {
+            "session_id": session_id,
+            "dataset_id": dataset_id,
+            "columns": columns,
+            "rows": rows,
+        }
+    except Exception as e:
+        logger.exception(f"Pricing dataset upload error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/features/pricing/ingest-database")
+async def ingest_database_pricing(request: dict, current_user: UserInDB = Depends(get_current_user)):
+    """Load a pricing dataset from a saved database connection."""
+    from features.pricing import PricingIntelligence
+    from history import _build_connection_string_from_dict
+
+    session_id = request.get("session_id")
+    dataset_id = request.get("dataset_id")
+    connection_id = request.get("connection_id")
+    query = request.get("query")
+
+    if not all([session_id, dataset_id, connection_id, query]):
+        raise HTTPException(
+            status_code=400,
+            detail="session_id, dataset_id, connection_id, and query are required",
+        )
+
+    conn_data = await db.get_connection(connection_id, current_user.email)
+    if not conn_data:
+        raise HTTPException(status_code=404, detail="Connection not found")
+
+    try:
+        conn_str = _build_connection_string_from_dict(conn_data)
+
+        try:
+            df = pl.read_database(query, conn_str)
+        except:
+            engine_db = create_engine(conn_str)
+            pdf = pd.read_sql(query, engine_db)
+            df = pl.from_pandas(pdf)
+
+        if session_id not in sessions:
+            pricer = PricingIntelligence(session_id)
+            sessions[session_id] = pricer
+        else:
+            pricer = sessions[session_id]
+
+        pricer.load_dataset(dataset_id, df)
+
+        return {
+            "session_id": session_id,
+            "dataset_id": dataset_id,
+            "columns": df.columns,
+            "rows": len(df),
+        }
+    except Exception as e:
+        logger.exception(f"Pricing database ingest error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/features/pricing/preview/{session_id}")
+async def preview_pricing(session_id: str, config: dict):
+    """Preview pricing recommendations for a sample set."""
+    if session_id not in sessions:
+        raise HTTPException(status_code=404, detail="Session not found")
+
+    pricer = sessions[session_id]
+    result = await pricer.preview(config, limit=10)
+
+    if not result.success:
+        raise HTTPException(status_code=400, detail=result.error)
+
+    return result.dict()
+
+
+@app.post("/features/pricing/start/{session_id}")
+async def start_pricing_execution(session_id: str, config: dict, background_tasks: fastapi.BackgroundTasks):
+    """Start pricing analysis in the background."""
+    if session_id not in sessions:
+        raise HTTPException(status_code=404, detail="Session not found")
+
+    pricer = sessions[session_id]
+
+    async def run_in_bg():
+        await pricer.execute(config)
+
+    background_tasks.add_task(run_in_bg)
+
+    return {"status": "started", "session_id": session_id}
+
+
+@app.get("/features/pricing/status/{session_id}")
+async def get_pricing_status(session_id: str):
+    """Get pricing analysis progress."""
+    if session_id not in sessions:
+        raise HTTPException(status_code=404, detail="Session not found")
+
+    pricer = sessions[session_id]
+    return pricer.get_progress()
+
+
+@app.get("/features/pricing/results/{session_id}")
+async def get_pricing_results(session_id: str):
+    """Get final pricing recommendations."""
+    if session_id not in sessions:
+        raise HTTPException(status_code=404, detail="Session not found")
+
+    pricer = sessions[session_id]
+    results = pricer.get_results()
+
+    if results is None:
+        progress = pricer.get_progress()
+        if progress["status"] == "error":
+            raise HTTPException(status_code=500, detail=progress["message"])
+        return {"ready": False}
+
+    rows = results.get("rows", [])
+    summary = results.get("summary", {})
+    return {"ready": True, "summary": summary, "rows": rows[:100], "total_rows": len(rows)}
+
+
+@app.get("/features/pricing/download/{session_id}")
+async def download_pricing_results(session_id: str, fmt: str = "csv"):
+    """Download pricing recommendations as CSV or Excel."""
+    try:
+        if session_id not in sessions:
+            raise HTTPException(status_code=404, detail="Session not found")
+
+        pricer = sessions[session_id]
+
+        if fmt == "excel":
+            file_path = pricer.export_to_excel()
+            if not file_path or not os.path.exists(file_path):
+                raise HTTPException(status_code=404, detail="Excel export failed")
+            return FileResponse(
+                path=file_path,
+                filename=f"pricing_results_{session_id}.xlsx",
+                media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            )
+
+        file_path = pricer.export_to_csv()
+        if not file_path or not os.path.exists(file_path):
+            raise HTTPException(status_code=404, detail="CSV export failed")
+        return FileResponse(
+            path=file_path,
+            filename=f"pricing_results_{session_id}.csv",
+            media_type="text/csv",
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception("Error in download_pricing_results")
+        raise HTTPException(status_code=500, detail=str(e))
+
 # --- AI Visualizer Feature ---
 
 @app.post("/features/visualizer/upload")

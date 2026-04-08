@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
     LogOut, Search, Sparkles, Database,
     FileCheck, ArrowRight, Zap, Check,
-    Globe, ChevronRight, Shuffle, GitMerge, RefreshCw, Trash2, ShieldCheck, AlertTriangle, BarChart3,
+    Globe, ChevronRight, Shuffle, GitMerge, RefreshCw, Trash2, ShieldCheck, AlertTriangle, BarChart3, TrendingUp,
     Menu, X, Home, LayoutDashboard, Settings, User, FolderClock, Clock3, BarChart2
 } from 'lucide-react';
 
@@ -16,7 +16,7 @@ import { HomePage, PricingPage, UserProfilePage, UsagePage } from './components/
 import ChatBot from './components/ChatBot';
 
 // Feature Builders
-import { EnrichmentBuilder, ScraperBuilder, SchemaMapper, DataMatchingBuilder, PipelineBuilder, SchedulerBuilder, PipelineRuns, DataVisualizer } from './features';
+import { EnrichmentBuilder, ScraperBuilder, SchemaMapper, DataMatchingBuilder, PricingIntelligenceBuilder, PipelineBuilder, SchedulerBuilder, PipelineRuns, DataVisualizer } from './features';
 
 // Assets
 import Logo from './assets/logo.png';
@@ -137,6 +137,7 @@ function App() {
         if (moduleName === 'enrichment') return 'enrichment';
         if (moduleName === 'scraper') return 'scraper';
         if (moduleName === 'matching') return 'matching';
+        if (moduleName === 'pricing') return 'pricing-intelligence';
         if (moduleName === 'pipeline') return 'pipeline-runs';
         return 'validate';
     };
@@ -337,6 +338,15 @@ function App() {
                                     action: () => setActiveTab('matching'),
                                 },
                                 {
+                                    title: 'Pricing Intelligence',
+                                    description: 'Recommend margin-safe prices after benchmarking against competitor products.',
+                                    tutorial: '1. Load your catalog and competitor price feed.\n2. Choose Below / Match / Above market and your margin floor.\n3. Review dynamic repricing signals and export recommended prices.',
+                                    icon: TrendingUp,
+                                    color: 'text-amber-500',
+                                    bg: 'bg-amber-50',
+                                    action: () => setActiveTab('pricing-intelligence'),
+                                },
+                                {
                                     title: 'AI Visualizer',
                                     description: 'Upload a dataset and get an instant AI-generated chart dashboard.',
                                     tutorial: '1. Upload your CSV or TSV file.\n2. AI analyzes column types & distributions.\n3. A beautiful dashboard of charts is auto-generated.',
@@ -415,6 +425,7 @@ function App() {
                                         { id: 'mapper', label: 'Schema Mapping' },
                                         { id: 'scraper', label: 'Web Scraping' },
                                         { id: 'matching', label: 'Data Matching' },
+                                        { id: 'pricing', label: 'Pricing Intelligence' },
                                         { id: 'pipeline', label: 'Pipelines' }
                                     ].map((tab) => {
                                         const count = recentJobs.filter(j => (j.module || 'validation') === tab.id).length;
@@ -641,28 +652,35 @@ function App() {
                 </motion.div>
             )}
 
-            {/* 7. AI VISUALIZER VIEW */}
+            {/* 7. PRICING INTELLIGENCE VIEW */}
+            {activeTab === 'pricing-intelligence' && (
+                <motion.div key="pricing-intelligence-tab" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="w-full h-full">
+                    <PricingIntelligenceBuilder />
+                </motion.div>
+            )}
+
+            {/* 8. AI VISUALIZER VIEW */}
             {activeTab === 'visualizer' && (
                 <motion.div key="visualizer-tab" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="w-full h-full">
                     <DataVisualizer />
                 </motion.div>
             )}
 
-            {/* 7. PIPELINE ORCHESTRATOR VIEW */}
+            {/* 9. PIPELINE ORCHESTRATOR VIEW */}
             {activeTab === 'pipeline' && (
                 <motion.div key="pipeline-tab" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="w-full h-full">
                     <PipelineBuilder onComplete={goToLanding} />
                 </motion.div>
             )}
 
-            {/* 8. PIPELINE SCHEDULER VIEW */}
+            {/* 10. PIPELINE SCHEDULER VIEW */}
             {activeTab === 'scheduler' && (
                 <motion.div key="scheduler-tab" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="w-full">
                     <SchedulerBuilder />
                 </motion.div>
             )}
 
-            {/* 9. PIPELINE RUNS VIEW */}
+            {/* 11. PIPELINE RUNS VIEW */}
             {activeTab === 'pipeline-runs' && (
                 <motion.div key="pipeline-runs-tab" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="w-full">
                     <PipelineRuns />
@@ -823,6 +841,7 @@ function App() {
                                 { id: 'mapper', label: 'Schema Mapping', icon: GitMerge },
                                 { id: 'scraper', label: 'Web Scraping', icon: Globe },
                                 { id: 'matching', label: 'Data Matching', icon: Shuffle },
+                                { id: 'pricing-intelligence', label: 'Pricing Intelligence', icon: TrendingUp },
                                 { id: 'visualizer', label: 'AI Visualizer', icon: BarChart3 }
                             ].map(feat => (
                                 <li key={feat.id}>
@@ -903,7 +922,7 @@ function App() {
 
             {/* Main Central Content Area */}
             <main className="flex-1 flex flex-col bg-slate-50 relative h-screen pt-16 lg:pt-0 overflow-hidden">
-                <div className={`flex-1 w-full max-w-full h-full overflow-y-auto ${activeTab === 'pipeline' ? 'p-0' : activeTab === 'validate' || activeTab === 'enrichment' || activeTab === 'scraper' || activeTab === 'mapper' || activeTab === 'matching' || activeTab === 'visualizer' ? 'p-0' : 'p-6 md:p-8'}`}>
+                <div className={`flex-1 w-full max-w-full h-full overflow-y-auto ${activeTab === 'pipeline' ? 'p-0' : activeTab === 'validate' || activeTab === 'enrichment' || activeTab === 'scraper' || activeTab === 'mapper' || activeTab === 'matching' || activeTab === 'pricing-intelligence' || activeTab === 'visualizer' ? 'p-0' : 'p-6 md:p-8'}`}>
                     {renderWorkspaceContent()}
                 </div>
             </main>

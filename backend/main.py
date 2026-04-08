@@ -819,6 +819,28 @@ async def preview_pricing(session_id: str, config: dict):
     return result.dict()
 
 
+@app.post("/features/pricing/review/{session_id}")
+async def review_pricing_matches(session_id: str, config: dict):
+    """Generate a match review report before running the pricing engine."""
+    if session_id not in sessions:
+        raise HTTPException(status_code=404, detail="Session not found")
+
+    pricer = sessions[session_id]
+    result = await pricer.review_matches(config)
+
+    if not result.success:
+        raise HTTPException(status_code=400, detail=result.error)
+
+    data = result.data or {}
+    review_rows = data.get("review_rows", [])
+    summary = data.get("summary", {})
+    return {
+        "summary": summary,
+        "review_rows": review_rows[:300],
+        "total_review_rows": len(review_rows),
+    }
+
+
 @app.post("/features/pricing/start/{session_id}")
 async def start_pricing_execution(session_id: str, config: dict, background_tasks: fastapi.BackgroundTasks):
     """Start pricing analysis in the background."""
@@ -862,7 +884,15 @@ async def get_pricing_results(session_id: str):
 
     rows = results.get("rows", [])
     summary = results.get("summary", {})
-    return {"ready": True, "summary": summary, "rows": rows[:100], "total_rows": len(rows)}
+    review_rows = results.get("review_rows", [])
+    return {
+        "ready": True,
+        "summary": summary,
+        "rows": rows[:100],
+        "review_rows": review_rows[:200],
+        "total_rows": len(rows),
+        "total_review_rows": len(review_rows),
+    }
 
 
 @app.get("/features/pricing/download/{session_id}")

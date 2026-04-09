@@ -9,7 +9,7 @@ import {
 } from 'lucide-react';
 
 // Components
-import { DataConnection, RuleBuilder, ResultsDashboard } from './components';
+import { DataConnection, RuleBuilder, ResultsDashboard, DatasetViewer, WorkspaceTabs } from './components';
 import { AuthModal, PaymentModal } from './components/modals';
 import { Footer, PlatformDropdown } from './components/common';
 import { HomePage, PricingPage, UserProfilePage, UsagePage } from './components/pages';
@@ -21,7 +21,7 @@ import { EnrichmentBuilder, ScraperBuilder, SchemaMapper, DataMatchingBuilder, P
 // Assets
 import Logo from './assets/logo.png';
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'import.meta.env.VITE_API_URL';
+const API_BASE = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || 'http://localhost:8000';
 const Motion = motion;
 
 function App() {
@@ -31,6 +31,7 @@ function App() {
     const [columns, setColumns] = useState([]);
     const [filename, setFilename] = useState('');
     const [validationResults, setValidationResults] = useState(null);
+    const [validationView, setValidationView] = useState('dataset');
 
     const [user, setUser] = useState(null);
     const [isAuthOpen, setIsAuthOpen] = useState(false);
@@ -121,6 +122,7 @@ function App() {
         setColumns([]);
         setFilename('');
         setSessionId(null);
+        setValidationView('dataset');
         handleFeatureAccess('validate');
     };
     const goToLanding = () => setActiveTab(user ? 'dashboard' : 'home');
@@ -197,6 +199,43 @@ function App() {
         }
     };
 
+    const handleRunValidation = async (rules) => {
+        if (!sessionId) {
+            alert('This validation session is no longer active. Please upload the dataset again to run validation.');
+            return;
+        }
+
+        try {
+            const res = await axios.post(`${API_BASE}/validate/${sessionId}`, { rules });
+            const nextResults = { ...res.data, rules };
+
+            setValidationResults(nextResults);
+            setStep(3);
+
+            try {
+                const token = localStorage.getItem('token');
+                const headers = token ? { Authorization: `Bearer ${token}` } : {};
+
+                await axios.post(`${API_BASE}/history/jobs`, {
+                    session_id: sessionId,
+                    file_name: filename || 'Validation Job',
+                    rules,
+                    total_rows: nextResults.total_rows || 0,
+                    valid_rows: nextResults.valid_rows || 0,
+                    invalid_rows: nextResults.invalid_rows || 0,
+                    column_stats: nextResults.column_stats || {},
+                    module: 'validation',
+                }, { headers });
+
+                fetchRecentJobs();
+            } catch (historyError) {
+                console.error('Failed to save validation history:', historyError);
+            }
+        } catch (err) {
+            alert(`Validation failed: ${err.response?.data?.detail || err.message}`);
+        }
+    };
+
     // Main UI components (Workspace / Feature Tabs)
     const renderWorkspaceContent = () => (
         <AnimatePresence mode='wait'>
@@ -207,21 +246,21 @@ function App() {
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -10 }}
-                    className="w-full max-w-7xl mx-auto pb-20"
+                    className="w-full max-w-7xl mx-auto pb-16"
                 >
                     {/* Hero Section */}
-                    <div className="mb-10 relative rounded-3xl overflow-hidden shadow-2xl" style={{background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%)'}}>
+                    <div className="mb-8 relative overflow-hidden rounded-[28px] border border-slate-800/80 shadow-xl" style={{background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%)'}}>
                         {/* Ambient glow blobs */}
-                        <div className="absolute top-0 left-1/4 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
-                        <div className="absolute bottom-0 right-1/4 w-80 h-80 bg-sky-500/10 rounded-full blur-3xl pointer-events-none" />
+                        <div className="absolute top-0 left-1/4 h-80 w-80 rounded-full bg-emerald-500/10 blur-3xl pointer-events-none" />
+                        <div className="absolute bottom-0 right-1/4 h-72 w-72 rounded-full bg-sky-500/10 blur-3xl pointer-events-none" />
                         <div className="absolute -top-10 -right-10 opacity-5"><Sparkles size={200} className="text-white" /></div>
 
-                        <div className="relative z-10 px-8 md:px-12 py-10 md:py-12">
-                            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-8">
+                        <div className="relative z-10 px-6 py-8 md:px-8 md:py-9">
+                            <div className="flex flex-col gap-7 lg:flex-row lg:items-center lg:justify-between">
                                 {/* Left: Text + CTAs */}
                                 <div className="flex-1 min-w-0">
                                     {/* Badge */}
-                                    <div className="inline-flex items-center gap-2 px-3 py-1.5 mb-5 rounded-full border border-emerald-500/30 bg-emerald-500/10 text-emerald-400 text-xs font-bold tracking-widest uppercase">
+                                    <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.18em] text-emerald-400">
                                         <span className="relative flex h-2 w-2">
                                             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                                             <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
@@ -230,15 +269,15 @@ function App() {
                                     </div>
 
                                     {/* Heading */}
-                                    <h1 className="text-4xl md:text-5xl font-black text-white mb-1 leading-tight tracking-tight">
+                                    <h1 className="mb-1 text-3xl font-black leading-tight tracking-tight text-white md:text-4xl">
                                         Welcome back,
                                     </h1>
-                                    <p className="text-4xl md:text-5xl font-black mb-5 leading-tight tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-sky-400 to-indigo-400">
+                                    <p className="mb-4 bg-gradient-to-r from-emerald-400 via-sky-400 to-indigo-400 bg-clip-text text-3xl font-black leading-tight tracking-tight text-transparent md:text-4xl">
                                         {user.full_name || 'User'}
                                     </p>
 
                                     {/* Subtitle */}
-                                    <p className="text-slate-400 text-base leading-relaxed max-w-xl mb-8 font-medium">
+                                    <p className="mb-6 max-w-lg text-sm font-medium leading-relaxed text-slate-400 md:text-[15px]">
                                         Execute intelligent data workflows, manage your recent jobs, and read through how to leverage the toolset below.
                                     </p>
 
@@ -246,13 +285,13 @@ function App() {
                                     <div className="flex flex-wrap items-center gap-3">
                                         <button
                                             onClick={() => setActiveTab('pipeline')}
-                                            className="inline-flex items-center gap-2 px-6 py-3 bg-white text-slate-900 rounded-xl font-black text-sm hover:bg-slate-100 hover:scale-[1.02] transition-all shadow-lg"
+                                            className="inline-flex items-center gap-2 rounded-lg bg-white px-5 py-2.5 text-sm font-semibold text-slate-900 shadow-md transition-all hover:bg-slate-100"
                                         >
                                             <Zap size={16} className="text-emerald-600" /> New Workflow
                                         </button>
                                         <button
                                             onClick={() => document.getElementById('job-history-section')?.scrollIntoView({ behavior: 'smooth' })}
-                                            className="inline-flex items-center gap-2 px-6 py-3 bg-white/10 hover:bg-white/20 border border-white/20 text-white rounded-xl font-bold text-sm transition-all"
+                                            className="inline-flex items-center gap-2 rounded-lg border border-white/20 bg-white/10 px-5 py-2.5 text-sm font-semibold text-white transition-all hover:bg-white/20"
                                         >
                                             <BarChart3 size={16} /> View Recent Jobs
                                         </button>
@@ -260,15 +299,15 @@ function App() {
                                 </div>
 
                                 {/* Right: Stats */}
-                                <div className="flex flex-row lg:flex-col gap-6 lg:gap-5 shrink-0">
+                                <div className="flex shrink-0 flex-row gap-5 lg:flex-col lg:gap-4">
                                     {[
                                         { value: recentJobs.length, label: 'active jobs', color: 'text-white' },
                                         { value: recentJobs.length > 0 ? '98%' : '—', label: 'success rate', color: 'text-emerald-400' },
                                         { value: recentJobs.reduce((acc, j) => acc + (j.total_rows || 0), 0).toLocaleString() || '0', label: 'rows processed', color: 'text-sky-400' },
                                     ].map(({ value, label, color }) => (
                                         <div key={label} className="flex flex-col items-center lg:items-end">
-                                            <span className={`text-3xl font-black ${color} tracking-tight`}>{value}</span>
-                                            <span className="text-slate-500 text-xs font-semibold mt-0.5">{label}</span>
+                                            <span className={`text-2xl font-black tracking-tight ${color}`}>{value}</span>
+                                            <span className="mt-0.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">{label}</span>
                                         </div>
                                     ))}
                                 </div>
@@ -278,12 +317,12 @@ function App() {
 
 
                     {/* Section: Tutorials & Tools */}
-                    <div className="mb-12">
-                        <h2 className="text-2xl font-bold text-slate-900 mb-6 flex items-center gap-2">
+                    <div className="mb-10">
+                        <h2 className="mb-5 flex items-center gap-2 text-xl font-bold text-slate-900">
                             <Database className="text-emerald-500" /> Data Services & Tutorials
                         </h2>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                        <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
                             {[
                                 {
                                     title: 'Quality Validation',
@@ -366,19 +405,19 @@ function App() {
                                 }
                             ].map((item) => (
 
-                                <div key={item.title} className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all group flex flex-col h-full">
-                                    <div className="p-6 flex-1">
-                                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center mb-6 ${item.bg}`}>
-                                            <item.icon size={24} className={item.color} />
+                                <div key={item.title} className="group flex h-full flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm transition-all hover:border-slate-300 hover:shadow-lg">
+                                    <div className="flex-1 p-5">
+                                        <div className={`mb-5 flex h-10 w-10 items-center justify-center rounded-lg ${item.bg}`}>
+                                            <item.icon size={20} className={item.color} />
                                         </div>
-                                        <h3 className="text-xl font-bold text-slate-900 mb-2">{item.title}</h3>
-                                        <p className="text-sm font-medium text-slate-500 mb-6">{item.description}</p>
+                                        <h3 className="mb-2 text-lg font-bold text-slate-900">{item.title}</h3>
+                                        <p className="mb-5 text-sm font-medium text-slate-500">{item.description}</p>
 
-                                        <div className="bg-slate-50 rounded-xl p-4 border border-slate-100 relative overflow-hidden group-hover:border-slate-300 transition-colors">
-                                            <h4 className="text-xs font-black uppercase text-slate-400 tracking-wider mb-3">How it works</h4>
+                                        <div className="relative overflow-hidden rounded-lg border border-slate-100 bg-slate-50 p-3.5 transition-colors group-hover:border-slate-300">
+                                            <h4 className="mb-3 text-[11px] font-black uppercase tracking-[0.16em] text-slate-400">How it works</h4>
                                             <ul className="space-y-2">
                                                 {item.tutorial.split('\n').map((step, idx) => (
-                                                    <li key={idx} className="text-sm text-slate-600 flex gap-2">
+                                                    <li key={idx} className="flex gap-2 text-[13px] text-slate-600">
                                                         <span className="text-slate-400 font-bold shrink-0">{step.charAt(0)}</span>
                                                         <span>{step.substring(2)}</span>
                                                     </li>
@@ -386,10 +425,10 @@ function App() {
                                             </ul>
                                         </div>
                                     </div>
-                                    <div className="p-4 border-t border-slate-100 bg-slate-50 shrink-0">
+                                    <div className="shrink-0 border-t border-slate-100 bg-slate-50 p-4">
                                         <button
                                             onClick={item.action}
-                                            className="w-full py-3 bg-slate-900 text-white rounded-xl font-bold text-sm hover:bg-slate-800 transition-all shadow-md hover:shadow-lg hover:-translate-y-0.5 flex items-center justify-center gap-2"
+                                            className="flex w-full items-center justify-center gap-2 rounded-lg bg-slate-900 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-slate-800"
                                         >
                                             Launch Tool <ArrowRight size={16} />
                                         </button>
@@ -524,14 +563,14 @@ function App() {
             {activeTab === 'validate' && (
                 <motion.div key="validate-tab" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="w-full h-full flex flex-col">
                     {/* Page Header */}
-                    <div className="flex items-center justify-between px-8 py-5 border-b border-slate-200 bg-white shrink-0">
+                    <div className="flex shrink-0 items-center justify-between border-b border-slate-200 bg-white px-6 py-4">
                         <div className="flex items-center gap-4">
-                            <div className="w-10 h-10 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center">
-                                <ShieldCheck size={20} className="text-blue-600" />
+                            <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-blue-100 bg-blue-50">
+                                <ShieldCheck size={18} className="text-blue-600" />
                             </div>
                             <div>
-                                <h2 className="text-2xl font-black text-slate-900 tracking-tight">Quality Validation</h2>
-                                <p className="text-sm text-slate-500 mt-0.5">Upload, define rules, and review quality issues in one place.</p>
+                                <h2 className="text-xl font-black tracking-tight text-slate-900">Quality Validation</h2>
+                                <p className="mt-0.5 text-sm text-slate-500">Upload, define rules, and review quality issues in one place.</p>
                             </div>
                         </div>
                         <div className="flex items-center gap-1">
@@ -539,11 +578,11 @@ function App() {
                                 const s = i + 1;
                                 return (
                                     <div key={s} className="flex items-center">
-                                        <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold transition-all ${step === s ? 'bg-slate-900 text-white' :
+                                        <div className={`flex items-center gap-2 rounded-full px-3 py-1 text-[11px] font-bold uppercase tracking-[0.14em] transition-all ${step === s ? 'bg-slate-900 text-white' :
                                                 step > s ? 'bg-emerald-100 text-emerald-700' :
                                                     'bg-slate-100 text-slate-400'
                                             }`}>
-                                            <span className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-black ${step === s ? 'bg-white text-slate-900' :
+                                            <span className={`flex h-4 w-4 items-center justify-center rounded-full text-[10px] font-black ${step === s ? 'bg-white text-slate-900' :
                                                     step > s ? 'bg-emerald-500 text-white' :
                                                         'bg-slate-300 text-slate-500'
                                                 }`}>{step > s ? '✓' : s}</span>
@@ -557,63 +596,91 @@ function App() {
                     </div>
 
                     {/* Content Area */}
-                    <div className="flex-1 overflow-y-auto px-8 py-6">
+                    <div className="flex-1 overflow-y-auto px-6 py-5">
                         {step === 1 && (
-                            <div>
+                            <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
                                 <div className="mb-5">
                                     <h3 className="text-lg font-bold text-slate-800">Import Dataset</h3>
-                                    <p className="text-sm text-slate-500 mt-1">Provide data via CSV, Excel, or a live database connection.</p>
+                                    <p className="mt-1 text-sm text-slate-500">Upload a file or connect a database to begin your quality validation run.</p>
                                 </div>
-                                <DataConnection compact={true} onUploadSuccess={(data) => { setSessionId(data.session_id); setFilename(data.filename || `Dataset_${new Date().getTime()}`); setColumns(data.columns); setStep(2); }} />
-                            </div>
-                        )}
-
-                        {step === 2 && (
-                            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
-                                <RuleBuilder
+                                <DataConnection
                                     compact={true}
-                                    columns={columns}
-                                    initialRules={validationResults?.rules || []}
-                                    onRunValidation={async (rules) => {
-                                        try {
-                                            const token = localStorage.getItem('token');
-                                            const headers = token ? { Authorization: `Bearer ${token}` } : {};
-                                            const res = await axios.post(`${API_BASE}/validate/${sessionId}`, { rules }, { headers });
-                                            setValidationResults({ ...res.data, rules });
-
-                                            if (token) {
-                                                try {
-                                                    await axios.post(`${API_BASE}/history/jobs`, {
-                                                        session_id: sessionId,
-                                                        file_name: filename,
-                                                        rules: rules,
-                                                        total_rows: res.data.total_rows || 0,
-                                                        valid_rows: res.data.valid_rows || 0,
-                                                        invalid_rows: res.data.invalid_rows || 0,
-                                                        column_stats: res.data.column_stats || null
-                                                    }, { headers });
-                                                    fetchRecentJobs();
-                                                } catch (histErr) {
-                                                    console.error("Failed to save history:", histErr);
-                                                }
-                                            }
-
-                                            setStep(3);
-                                        } catch (e) { alert("Validation Failed: " + (e.response?.data?.detail || e.message)); }
+                                    onUploadSuccess={(data) => {
+                                        setSessionId(data.session_id);
+                                        setColumns(data.columns || []);
+                                        setFilename(data.filename || data.file_name || '');
+                                        setValidationResults(null);
+                                        setValidationView('dataset');
+                                        setStep(2);
                                     }}
                                 />
                             </motion.div>
                         )}
 
-                        {step === 3 && (
-                            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
-                                <ResultsDashboard results={validationResults} onReset={() => {
-                                    setValidationResults(null);
-                                    setColumns([]);
-                                    setFilename('');
-                                    setSessionId(null);
-                                    setStep(1);
-                                }} onEditRules={() => setStep(2)} />
+                        {step === 2 && (
+                            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-5">
+                                <div className="flex flex-wrap items-start justify-between gap-4">
+                                    <div>
+                                        <h3 className="text-lg font-bold text-slate-800">Validation Workspace</h3>
+                                        <p className="mt-1 text-sm text-slate-500">Switch between the live dataset preview and the rules builder while you configure the validation run.</p>
+                                    </div>
+                                    <div className="flex flex-wrap items-center gap-2">
+                                        {filename && (
+                                            <span className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 shadow-sm">
+                                                {filename}
+                                            </span>
+                                        )}
+                                        <span className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 shadow-sm">
+                                            {columns.length} columns
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <WorkspaceTabs
+                                    tone="blue"
+                                    activeTab={validationView}
+                                    onChange={setValidationView}
+                                    tabs={[
+                                        { id: 'dataset', label: 'Dataset', icon: Database, disabled: !sessionId },
+                                        { id: 'rules', label: 'Rules', icon: FileCheck },
+                                    ]}
+                                />
+
+                                {validationView === 'dataset' && sessionId ? (
+                                    <DatasetViewer
+                                        sessionId={sessionId}
+                                        tone="blue"
+                                        title="Validation Dataset"
+                                        subtitle="Review inserted rows before switching back to rules or running validation."
+                                    />
+                                ) : (
+                                    <RuleBuilder
+                                        compact={true}
+                                        columns={columns}
+                                        initialRules={validationResults?.rules || []}
+                                        onRunValidation={handleRunValidation}
+                                    />
+                                )}
+                            </motion.div>
+                        )}
+
+                        {step === 3 && validationResults && (
+                            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                                <ResultsDashboard
+                                    results={validationResults}
+                                    onReset={() => {
+                                        setValidationResults(null);
+                                        setColumns([]);
+                                        setFilename('');
+                                        setSessionId(null);
+                                        setValidationView('dataset');
+                                        setStep(1);
+                                    }}
+                                    onEditRules={() => {
+                                        setValidationView('rules');
+                                        setStep(2);
+                                    }}
+                                />
                             </motion.div>
                         )}
                     </div>
@@ -712,13 +779,13 @@ function App() {
         return (
             <div className={`min-h-screen font-sans overflow-x-hidden transition-colors duration-500 ${(activeTab === 'home' || activeTab === 'pricing') ? 'bg-slate-950 text-slate-50' : 'bg-white text-slate-900'}`}>
                 {/* Navigation */}
-                <nav className={`fixed top-0 w-full backdrop-blur-md border-b z-50 transition-colors duration-500 ${(activeTab === 'home' || activeTab === 'pricing') ? 'bg-slate-950/80 border-slate-800' : 'bg-white/80 border-slate-200'}`}>
-                    <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
-                        <div className="flex items-center gap-8">
+                <nav className={`fixed top-0 z-50 w-full border-b backdrop-blur-md transition-colors duration-500 ${(activeTab === 'home' || activeTab === 'pricing') ? 'bg-slate-950/80 border-slate-800' : 'bg-white/80 border-slate-200'}`}>
+                    <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-5 lg:px-6">
+                        <div className="flex items-center gap-6">
                             <div className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity" onClick={goToLanding}>
-                                <img src={Logo} alt="CleanFlow" className={`h-10 w-auto transition-all ${(activeTab === 'home' || activeTab === 'pricing') ? 'brightness-0 invert' : 'brightness-0'}`} />
+                                <img src={Logo} alt="CleanFlow" className={`h-8 w-auto transition-all ${(activeTab === 'home' || activeTab === 'pricing') ? 'brightness-0 invert' : 'brightness-0'}`} />
                             </div>
-                            <div className="hidden md:flex items-center gap-6">
+                            <div className="hidden md:flex items-center gap-5">
                                 {['Solutions', 'Resources', 'Pricing'].map((item) => (
                                     <button
                                         key={item}
@@ -732,16 +799,16 @@ function App() {
                                 ))}
                             </div>
                         </div>
-                        <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-3">
                             <button
                                 onClick={() => { setAuthDefaultMode('login'); setIsAuthOpen(true); }}
-                                className={`px-4 py-2 text-sm font-bold transition-colors ${(activeTab === 'home' || activeTab === 'pricing') ? 'text-slate-300 hover:text-white' : 'text-slate-600 hover:text-slate-900'}`}
+                                className={`px-3 py-2 text-sm font-semibold transition-colors ${(activeTab === 'home' || activeTab === 'pricing') ? 'text-slate-300 hover:text-white' : 'text-slate-600 hover:text-slate-900'}`}
                             >
                                 Log in
                             </button>
                             <button
                                 onClick={() => { setAuthDefaultMode('signup'); setIsAuthOpen(true); }}
-                                className={`px-6 py-2.5 text-sm rounded-xl font-bold transition-all hover:-translate-y-0.5 ${(activeTab === 'home' || activeTab === 'pricing') ? 'bg-emerald-500 text-slate-950 hover:bg-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.3)]' : 'bg-slate-900 text-white hover:bg-slate-800 shadow-lg shadow-slate-900/20'}`}
+                                className={`rounded-lg px-5 py-2.5 text-sm font-semibold transition-all ${(activeTab === 'home' || activeTab === 'pricing') ? 'bg-emerald-500 text-slate-950 shadow-[0_0_15px_rgba(16,185,129,0.24)] hover:bg-emerald-400' : 'bg-slate-900 text-white shadow-md shadow-slate-900/15 hover:bg-slate-800'}`}
                             >
                                 Get Started
                             </button>
@@ -749,7 +816,7 @@ function App() {
                     </div>
                 </nav>
 
-                <main className={`${activeTab === 'home' ? 'pt-20 pb-20 relative min-h-screen flex flex-col' : activeTab === 'pricing' ? 'pt-28 pb-20 relative' : 'pt-28 pb-20 px-6 max-w-7xl mx-auto relative'}`}>
+                <main className={`${activeTab === 'home' ? 'relative flex min-h-screen flex-col pb-16 pt-16' : activeTab === 'pricing' ? 'relative pb-16 pt-24' : 'relative mx-auto max-w-7xl px-5 pb-16 pt-24 lg:px-6'}`}>
                     <AnimatePresence mode='wait'>
                         {activeTab === 'home' && (
                             <motion.div
@@ -801,30 +868,30 @@ function App() {
 
     // Authenticated Sidebar Workspace Layout (Databricks-style)
     return (
-        <div className="flex h-screen w-full bg-[#111928] font-sans overflow-hidden">
+        <div className="flex h-screen w-full overflow-hidden bg-[#0f172a] font-sans">
 
             {/* Mobile Header Toggle */}
-            <div className="lg:hidden fixed top-0 w-full h-16 bg-[#111928] border-b border-gray-800 flex items-center justify-between px-4 z-40">
-                <img src={Logo} alt="CleanFlow" className="h-8 w-auto brightness-0 invert" />
+            <div className="fixed top-0 z-40 flex h-14 w-full items-center justify-between border-b border-gray-800 bg-[#0f172a] px-3.5 lg:hidden">
+                <img src={Logo} alt="CleanFlow" className="h-7 w-auto brightness-0 invert" />
                 <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="p-2 text-gray-300 hover:text-white transition-colors">
-                    {isSidebarOpen ? <X size={24} /> : <Menu size={24} />}
+                    {isSidebarOpen ? <X size={22} /> : <Menu size={22} />}
                 </button>
             </div>
 
             {/* Left Vertical Sidebar Workspace */}
-            <nav className={`fixed lg:static top-0 left-0 h-screen w-[260px] bg-[#111928] border-r border-gray-800 flex flex-col z-50 transform transition-transform duration-300 ease-in-out ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
-                <div className="h-20 flex items-center px-6 border-b border-gray-800 pt-16 lg:pt-0 shrink-0">
-                    <img src={Logo} alt="CleanFlow" className="h-8 w-auto brightness-0 invert opacity-90 cursor-pointer" onClick={() => handleFeatureAccess('dashboard')} />
+            <nav className={`fixed top-0 left-0 z-50 flex h-screen w-[244px] flex-col border-r border-gray-800 bg-[#0f172a] transform transition-transform duration-300 ease-in-out lg:static ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
+                <div className="flex h-16 shrink-0 items-center border-b border-gray-800 px-5 pt-14 lg:pt-0">
+                    <img src={Logo} alt="CleanFlow" className="h-7 w-auto cursor-pointer brightness-0 invert opacity-90" onClick={() => handleFeatureAccess('dashboard')} />
                 </div>
 
-                <div className="flex-1 overflow-y-auto py-6 px-4 space-y-8 sidebar-scrollbar">
+                <div className="sidebar-scrollbar flex-1 space-y-6 overflow-y-auto px-3.5 py-5">
 
                     {/* Section: Core Workspace */}
                     <div>
-                        <h4 className="px-3 mb-2 text-xs font-black uppercase tracking-wider text-gray-500">Workspace</h4>
+                        <h4 className="mb-2 px-3 text-[11px] font-black uppercase tracking-[0.16em] text-gray-500">Workspace</h4>
                         <ul className="space-y-1">
                             <li>
-                                <button onClick={() => handleFeatureAccess('dashboard')} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all ${activeTab === 'dashboard' ? 'bg-[#1f2937] text-white shadow-xl border border-gray-700' : 'text-gray-400 hover:text-gray-100 hover:bg-[#1f2937]'}`}>
+                                <button onClick={() => handleFeatureAccess('dashboard')} className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-[13px] font-semibold transition-all ${activeTab === 'dashboard' ? 'border border-gray-700 bg-[#1f2937] text-white shadow-lg' : 'text-gray-400 hover:bg-[#1f2937] hover:text-gray-100'}`}>
                                     <Home size={18} /> Home
                                 </button>
                             </li>
@@ -833,7 +900,7 @@ function App() {
 
                     {/* Section: Data Operation Features */}
                     <div>
-                        <h4 className="px-3 mb-2 text-xs font-black uppercase tracking-wider text-gray-500">Data Services</h4>
+                        <h4 className="mb-2 px-3 text-[11px] font-black uppercase tracking-[0.16em] text-gray-500">Data Services</h4>
                         <ul className="space-y-1">
                             {[
                                 { id: 'validate', label: 'Quality Validation', icon: ShieldCheck },
@@ -845,7 +912,7 @@ function App() {
                                 { id: 'visualizer', label: 'AI Visualizer', icon: BarChart3 }
                             ].map(feat => (
                                 <li key={feat.id}>
-                                    <button onClick={() => handleFeatureAccess(feat.id)} className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-semibold transition-all group ${activeTab === feat.id ? 'bg-emerald-600/10 text-emerald-400 border border-emerald-900/50' : 'text-gray-400 hover:text-gray-100 hover:bg-[#1f2937]'}`}>
+                                    <button onClick={() => handleFeatureAccess(feat.id)} className={`group flex w-full items-center justify-between rounded-lg px-3 py-2 text-[13px] font-semibold transition-all ${activeTab === feat.id ? 'border border-emerald-900/50 bg-emerald-600/10 text-emerald-400' : 'text-gray-400 hover:bg-[#1f2937] hover:text-gray-100'}`}>
                                         <div className="flex items-center gap-3">
                                             <feat.icon size={18} className={activeTab === feat.id ? 'text-emerald-500' : 'text-gray-500 group-hover:text-gray-300'} />
                                             {feat.label}
@@ -858,7 +925,7 @@ function App() {
                     </div>
 
                     <div>
-                        <h4 className="px-3 mb-2 text-xs font-black uppercase tracking-wider text-gray-500">Data Orchestrate</h4>
+                        <h4 className="mb-2 px-3 text-[11px] font-black uppercase tracking-[0.16em] text-gray-500">Data Orchestrate</h4>
                         <ul className="space-y-1">
                             {[
                                 { id: 'pipeline', label: 'Pipeline Builder', icon: GitMerge },
@@ -866,7 +933,7 @@ function App() {
                                 { id: 'pipeline-runs', label: 'Pipeline Runs', icon: FolderClock }
                             ].map(feat => (
                                 <li key={feat.id}>
-                                    <button onClick={() => handleFeatureAccess(feat.id)} className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-semibold transition-all group ${activeTab === feat.id ? 'bg-emerald-600/10 text-emerald-400 border border-emerald-900/50' : 'text-gray-400 hover:text-gray-100 hover:bg-[#1f2937]'}`}>
+                                    <button onClick={() => handleFeatureAccess(feat.id)} className={`group flex w-full items-center justify-between rounded-lg px-3 py-2 text-[13px] font-semibold transition-all ${activeTab === feat.id ? 'border border-emerald-900/50 bg-emerald-600/10 text-emerald-400' : 'text-gray-400 hover:bg-[#1f2937] hover:text-gray-100'}`}>
                                         <div className="flex items-center gap-3">
                                             <feat.icon size={18} className={activeTab === feat.id ? 'text-emerald-500' : 'text-gray-500 group-hover:text-gray-300'} />
                                             {feat.label}
@@ -880,10 +947,10 @@ function App() {
 
                     {/* Section: Resources */}
                     <div>
-                        <h4 className="px-3 mb-2 text-xs font-black uppercase tracking-wider text-gray-500">Resources</h4>
+                        <h4 className="mb-2 px-3 text-[11px] font-black uppercase tracking-[0.16em] text-gray-500">Resources</h4>
                         <ul className="space-y-1">
                             <li>
-                                <button onClick={() => handleFeatureAccess('usage')} className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-semibold transition-all group ${activeTab === 'usage' ? 'bg-emerald-600/10 text-emerald-400 border border-emerald-900/50' : 'text-gray-400 hover:text-gray-100 hover:bg-[#1f2937]'}`}>
+                                <button onClick={() => handleFeatureAccess('usage')} className={`group flex w-full items-center justify-between rounded-lg px-3 py-2 text-[13px] font-semibold transition-all ${activeTab === 'usage' ? 'border border-emerald-900/50 bg-emerald-600/10 text-emerald-400' : 'text-gray-400 hover:bg-[#1f2937] hover:text-gray-100'}`}>
                                     <div className="flex items-center gap-3">
                                         <BarChart2 size={18} className={activeTab === 'usage' ? 'text-emerald-500' : 'text-gray-500 group-hover:text-gray-300'} />
                                         Usage & Resources
@@ -897,14 +964,14 @@ function App() {
                 </div>
 
                 {/* Bottom Profile Section */}
-                <div className="p-4 border-t border-gray-800 bg-[#0d131f] shrink-0">
+                <div className="shrink-0 border-t border-gray-800 bg-[#0d131f] p-3.5">
                     <div className="flex items-center justify-between">
-                        <button onClick={() => handleFeatureAccess('profile')} className="flex items-center gap-3 group px-2 py-1.5 rounded-lg hover:bg-[#1f2937] transition-colors flex-1 overflow-hidden">
-                            <div className="w-8 h-8 rounded-full bg-emerald-600 text-white text-xs font-bold flex items-center justify-center shrink-0">
+                        <button onClick={() => handleFeatureAccess('profile')} className="group flex flex-1 items-center gap-3 overflow-hidden rounded-lg px-2 py-1.5 transition-colors hover:bg-[#1f2937]">
+                            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-600 text-xs font-bold text-white">
                                 {user.full_name?.[0] || user.email?.[0]?.toUpperCase() || 'U'}
                             </div>
                             <div className="text-left overflow-hidden">
-                                <p className="text-sm font-bold text-gray-200 truncate">{user.full_name || 'My Account'}</p>
+                                <p className="truncate text-[13px] font-bold text-gray-200">{user.full_name || 'My Account'}</p>
                                 <p className="text-xs text-gray-500 truncate">{user.email}</p>
                             </div>
                         </button>
@@ -921,8 +988,8 @@ function App() {
             )}
 
             {/* Main Central Content Area */}
-            <main className="flex-1 flex flex-col bg-slate-50 relative h-screen pt-16 lg:pt-0 overflow-hidden">
-                <div className={`flex-1 w-full max-w-full h-full overflow-y-auto ${activeTab === 'pipeline' ? 'p-0' : activeTab === 'validate' || activeTab === 'enrichment' || activeTab === 'scraper' || activeTab === 'mapper' || activeTab === 'matching' || activeTab === 'pricing-intelligence' || activeTab === 'visualizer' ? 'p-0' : 'p-6 md:p-8'}`}>
+            <main className="relative flex h-screen flex-1 flex-col overflow-hidden bg-slate-50 pt-14 lg:pt-0">
+                <div className={`h-full w-full max-w-full flex-1 overflow-y-auto ${activeTab === 'pipeline' ? 'p-0' : activeTab === 'validate' || activeTab === 'enrichment' || activeTab === 'scraper' || activeTab === 'mapper' || activeTab === 'matching' || activeTab === 'pricing-intelligence' || activeTab === 'visualizer' ? 'p-0' : 'p-4 md:p-6'}`}>
                     {renderWorkspaceContent()}
                 </div>
             </main>

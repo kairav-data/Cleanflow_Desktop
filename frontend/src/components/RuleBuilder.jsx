@@ -213,22 +213,22 @@ const RuleBuilder = ({ columns = [], onRunValidation, onSaveRules, isEmbedded = 
 
     const shellClass = compact
         ? 'w-full'
-        : 'bg-white rounded-[32px] shadow-xl border border-slate-200 p-8 w-full';
+        : 'w-full rounded-[28px] border border-slate-200 bg-white p-6 shadow-lg';
     const headerClass = compact
         ? 'flex flex-col md:flex-row md:justify-between md:items-start gap-4 mb-6'
-        : 'flex justify-between items-center mb-10';
+        : 'mb-8 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between';
     const actionsClass = compact
         ? 'flex flex-wrap gap-2'
         : 'flex flex-wrap gap-3';
     const secondaryButtonClass = compact
         ? 'flex items-center gap-2 px-3 py-2 bg-slate-50 border border-slate-200 hover:bg-slate-100 text-slate-700 rounded-lg font-semibold text-sm transition-colors'
-        : 'flex items-center gap-2 px-4 py-2.5 bg-slate-50 border border-slate-200 hover:bg-slate-100 text-slate-700 rounded-xl font-bold text-sm transition-all shadow-sm hover:shadow-md';
+        : 'flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3.5 py-2 text-sm font-semibold text-slate-700 transition-all hover:bg-slate-100';
     const accentButtonClass = compact
         ? 'flex items-center gap-2 px-3 py-2 bg-emerald-50 border border-emerald-200 hover:bg-emerald-100 text-emerald-700 rounded-lg font-semibold text-sm transition-colors'
-        : 'flex items-center gap-2 px-4 py-2.5 bg-emerald-50 border border-emerald-200 hover:bg-emerald-100 text-emerald-700 rounded-xl font-bold text-sm transition-all shadow-sm hover:shadow-md';
+        : 'flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3.5 py-2 text-sm font-semibold text-emerald-700 transition-all hover:bg-emerald-100';
     const modalCardClass = compact
         ? 'relative bg-white rounded-2xl shadow-2xl w-full max-w-lg p-5 max-h-[80vh] overflow-y-auto'
-        : 'relative bg-white rounded-3xl shadow-2xl w-full max-w-xl p-8 max-h-[80vh] overflow-y-auto';
+        : 'relative max-h-[80vh] w-full max-w-lg overflow-y-auto rounded-2xl bg-white p-6 shadow-2xl';
     
     const getCategoryColor = (category) => {
         const colors = {
@@ -243,29 +243,29 @@ const RuleBuilder = ({ columns = [], onRunValidation, onSaveRules, isEmbedded = 
 
     const ruleCardClass = (category) => compact
         ? `p-4 rounded-xl bg-white border border-slate-200 flex flex-col gap-4 relative shadow-sm border-l-4 ${getCategoryColor(category)}`
-        : `p-6 rounded-2xl bg-white border border-slate-200 flex flex-col md:flex-row gap-5 items-start md:items-center relative shadow-sm hover:shadow-lg transition-shadow border-l-4 ${getCategoryColor(category)}`;
+        : `relative flex flex-col items-start gap-4 rounded-xl border border-slate-200 border-l-4 bg-white p-5 shadow-sm transition-shadow hover:shadow-md md:flex-row md:items-center ${getCategoryColor(category)}`;
     
     const gridClass = compact
         ? 'grid grid-cols-1 lg:grid-cols-2 gap-4 w-full'
-        : 'grid grid-cols-1 md:grid-cols-12 gap-5 w-full items-end';
+        : 'grid w-full grid-cols-1 items-end gap-4 md:grid-cols-12';
     
     const columnSpanClass = compact ? '' : 'col-span-3';
     
     const emptyStateClass = compact
         ? 'text-center py-10 bg-slate-50 rounded-xl border border-dashed border-slate-200'
-        : 'text-center py-16 bg-slate-50 rounded-3xl border-2 border-dashed border-slate-200';
+        : 'rounded-2xl border border-dashed border-slate-200 bg-slate-50 py-12 text-center';
 
     return (
         <div className={shellClass}>
             <div className={headerClass}>
                 <div className="flex items-center gap-3">
                     {!compact && (
-                        <div className="w-12 h-12 rounded-xl bg-blue-100 flex items-center justify-center text-blue-600">
-                            <CheckCircle2 size={24} />
+                        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100 text-blue-600">
+                            <CheckCircle2 size={20} />
                         </div>
                     )}
                     <div>
-                        <h3 className={`${compact ? 'text-lg' : 'text-2xl'} font-black text-slate-900 tracking-tight`}>Validation Rules</h3>
+                        <h3 className={`${compact ? 'text-lg' : 'text-xl'} font-black text-slate-900 tracking-tight`}>Validation Rules</h3>
                         <p className="text-slate-500 font-medium text-sm mt-0.5">{rules.length} conditions established</p>
                     </div>
                 </div>
@@ -294,7 +294,7 @@ const RuleBuilder = ({ columns = [], onRunValidation, onSaveRules, isEmbedded = 
                     )}
                     <button
                         onClick={addRule}
-                        className={compact ? 'flex items-center gap-2 px-3 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-lg font-semibold text-sm transition-colors' : 'flex items-center gap-2 px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-bold text-sm transition-all shadow-sm hover:shadow-md'}
+                            className={compact ? 'flex items-center gap-2 px-3 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-lg font-semibold text-sm transition-colors' : 'flex items-center gap-2 rounded-lg bg-slate-900 px-3.5 py-2 text-sm font-semibold text-white transition-all hover:bg-slate-800'}
                     >
                         <Plus size={compact ? 16 : 18} /> Add Rule
                     </button>
@@ -654,12 +654,12 @@ const RuleBuilder = ({ columns = [], onRunValidation, onSaveRules, isEmbedded = 
 
                 {rules.length === 0 && (
                     <div className={emptyStateClass}>
-                        <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mx-auto mb-4 border border-slate-200 shadow-sm">
+                        <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full border border-slate-200 bg-white shadow-sm">
                             <AlertCircle className="text-slate-400" size={32} />
                         </div>
                         <h4 className="text-lg font-bold text-slate-800 mb-1">No execution rules defined</h4>
                         <p className="text-slate-500 font-medium max-w-sm mx-auto mb-6">Build a robust rule set by adding conditions to validate your dataset columns.</p>
-                        <button onClick={addRule} className="px-6 py-3 bg-slate-900 text-white font-bold rounded-xl hover:bg-slate-800 transition-colors shadow-md">
+                        <button onClick={addRule} className="rounded-lg bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-slate-800">
                             + Add Data Rule
                         </button>
                     </div>
@@ -667,14 +667,14 @@ const RuleBuilder = ({ columns = [], onRunValidation, onSaveRules, isEmbedded = 
             </div>
 
             {/* Submit Button Area - always visible, just disabled if empty */}
-            <div className="mt-10 flex justify-end gap-3 pt-6 border-t border-slate-100">
+            <div className="mt-8 flex justify-end gap-3 border-t border-slate-100 pt-5">
                 {isEmbedded && (
                     <button
                         onClick={() => {
                             const payload = rules.map(({ column, rule_type, params }) => ({ column, rule_type, params }));
                             if (onSaveRules) onSaveRules(payload);
                         }}
-                        className={`${compact ? 'px-4 py-2.5 rounded-xl text-sm' : 'px-6 py-3.5 rounded-2xl'} font-bold flex items-center gap-2 transition-all bg-slate-900 text-white hover:bg-slate-800 shadow-lg`}
+                        className={`${compact ? 'px-4 py-2.5 rounded-xl text-sm' : 'px-5 py-3 rounded-xl'} flex items-center gap-2 bg-slate-900 text-sm font-semibold text-white transition-all hover:bg-slate-800 shadow-md`}
                     >
                         Save Configuration <Save size={compact ? 16 : 18} />
                     </button>
@@ -685,10 +685,10 @@ const RuleBuilder = ({ columns = [], onRunValidation, onSaveRules, isEmbedded = 
                         onClick={handleRun}
                         disabled={loading || rules.length === 0}
                         className={`
-                            ${compact ? 'px-5 py-3 rounded-xl text-sm' : 'px-8 py-4 rounded-2xl'} font-black flex items-center gap-3 transition-all tracking-wide
+                            ${compact ? 'px-5 py-3 rounded-xl text-sm' : 'px-6 py-3 rounded-xl'} flex items-center gap-3 text-sm font-semibold transition-all tracking-wide
                             ${rules.length === 0
                                 ? 'bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200'
-                                : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-xl shadow-blue-600/30 hover:-translate-y-0.5'
+                                : 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-600/25 hover:from-blue-700 hover:to-indigo-700'
                             }
                         `}
                     >

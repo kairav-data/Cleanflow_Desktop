@@ -16,6 +16,7 @@ import {
     XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
 } from 'recharts';
 import html2canvas from 'html2canvas';
+import { DatasetViewer, WorkspaceTabs } from '../components';
 
 // ── Config ───────────────────────────────────────────────────────────────────
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
@@ -719,7 +720,7 @@ function ColumnTablePanel({ columns }) {
     );
 }
 
-function DashboardWorkspace({ analysis, dashboardSummary, filename, activeView, regenerating, onExpandChart, smartKpis }) {
+function DashboardWorkspace({ analysis, dashboardSummary, filename, activeView, regenerating, onExpandChart, smartKpis, sessionId }) {
     return (
         <div className="space-y-6">
             <div className="relative overflow-hidden rounded-[28px] border border-slate-200 bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950 p-6 md:p-7 shadow-xl shadow-slate-900/10">
@@ -845,6 +846,13 @@ function DashboardWorkspace({ analysis, dashboardSummary, filename, activeView, 
                         </p>
                     </div>
                 )
+            ) : activeView === 'dataset' ? (
+                <DatasetViewer
+                    sessionId={sessionId}
+                    tone="violet"
+                    title="Visualization Dataset"
+                    subtitle="Inspect the uploaded rows alongside the AI dashboard so you can move between charts, column analysis, and raw records."
+                />
             ) : (
                 <div className="space-y-6">
                     <SchemaMixPanel profile={dashboardSummary?.profile} />
@@ -1239,14 +1247,16 @@ export default function DataVisualizer() {
                                         <span className="text-slate-300">·</span>
                                         <span className="text-slate-500 font-medium">{analysis.totalColumns} cols</span>
                                     </div>
-                                    <div className="flex items-center gap-1 bg-white border border-slate-200/80 rounded-xl p-1 shadow-sm">
-                                        {[['charts', LayoutDashboard, 'Charts'], ['columns', TableProperties, 'Columns']].map(([view, Icon, label]) => (
-                                            <button key={view} onClick={() => setActiveView(view)}
-                                                className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 ${activeView === view ? 'bg-violet-600 text-white shadow-sm' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'}`}>
-                                                <Icon size={12} /> {label}
-                                            </button>
-                                        ))}
-                                    </div>
+                                    <WorkspaceTabs
+                                        tone="violet"
+                                        activeTab={activeView}
+                                        onChange={setActiveView}
+                                        tabs={[
+                                            { id: 'charts', label: 'Charts', icon: LayoutDashboard },
+                                            { id: 'columns', label: 'Columns', icon: TableProperties },
+                                            { id: 'dataset', label: 'Dataset', icon: Database },
+                                        ]}
+                                    />
                                 </div>
                                 <div className="flex items-center gap-2">
                                     <button onClick={handleDownloadDashboard}
@@ -1284,6 +1294,7 @@ export default function DataVisualizer() {
                                     regenerating={regenerating}
                                     onExpandChart={(chart, index) => setExpandedChart({ chart, index })}
                                     smartKpis={smartKpis}
+                                    sessionId={sessionId}
                                 />
                                 {showLegacyVisualizer && (<div>
                                 {/* KPI tiles */}

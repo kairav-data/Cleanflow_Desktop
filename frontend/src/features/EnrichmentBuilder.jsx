@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Sparkles, Play, Eye, Download, CheckCircle, FileJson, FileSpreadsheet, FileText, Plus, Trash2, AlertCircle, ArrowLeft } from 'lucide-react';
-import { DataConnection } from '../components';
+import { DataConnection, DatasetViewer, WorkspaceTabs } from '../components';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'import.meta.env.VITE_API_URL';
 
@@ -16,6 +16,7 @@ export default function EnrichmentBuilder({ sessionId: initialSessionId, columns
     const [previewData, setPreviewData] = useState(null);
     const [loading, setLoading] = useState(false);
     const [step, setStep] = useState(1);
+    const [workspaceTab, setWorkspaceTab] = useState('dataset');
 
     useEffect(() => { fetchOperations(); }, []);
 
@@ -147,14 +148,50 @@ export default function EnrichmentBuilder({ sessionId: initialSessionId, columns
                         <DataConnection compact={true} onUploadSuccess={(data) => {
                             setSessionId(data.session_id);
                             setColumns(data.columns || []);
+                            setWorkspaceTab('dataset');
+                            setStep(2);
                         }} />
                     </motion.div>
                 )}
 
                 {/* Step 2: Configure Operations */}
                 {!loading && sessionId && step <= 2 && (
-                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                        <div className="flex items-center justify-between mb-6">
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-5">
+                        <div className="flex flex-wrap items-start justify-between gap-4">
+                            <div>
+                                <h3 className="text-lg font-bold text-slate-800">Cleaning Workspace</h3>
+                                <p className="text-sm text-slate-500 mt-1">Review inserted rows, switch to the pipeline, and iterate without losing sight of your source data.</p>
+                            </div>
+                            <div className="flex flex-wrap items-center gap-2">
+                                <span className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 shadow-sm">
+                                    {columns.length} columns
+                                </span>
+                                <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700 shadow-sm">
+                                    {rules.length} operation{rules.length !== 1 ? 's' : ''}
+                                </span>
+                            </div>
+                        </div>
+
+                        <WorkspaceTabs
+                            tone="emerald"
+                            activeTab={workspaceTab}
+                            onChange={setWorkspaceTab}
+                            tabs={[
+                                { id: 'dataset', label: 'Dataset' },
+                                { id: 'rules', label: 'Pipeline' },
+                            ]}
+                        />
+
+                        {workspaceTab === 'dataset' ? (
+                            <DatasetViewer
+                                sessionId={sessionId}
+                                tone="emerald"
+                                title="Cleaning Dataset"
+                                subtitle="Inspect source rows here, then jump back to the pipeline tab to configure transformations."
+                            />
+                        ) : (
+                        <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+                            <div className="flex items-center justify-between mb-6">
                             <div>
                                 <h3 className="text-lg font-bold text-slate-800">Cleaning Operations</h3>
                                 <p className="text-sm text-slate-500 mt-1">{rules.length} operation{rules.length !== 1 ? 's' : ''} in pipeline</p>
@@ -288,6 +325,8 @@ export default function EnrichmentBuilder({ sessionId: initialSessionId, columns
                                 </button>
                             </div>
                         )}
+                        </div>
+                        )}
                     </motion.div>
                 )}
 
@@ -300,7 +339,7 @@ export default function EnrichmentBuilder({ sessionId: initialSessionId, columns
                                 <p className="text-sm text-slate-500 mt-1">Top 5 sample rows after applying your pipeline.</p>
                             </div>
                             <div className="flex items-center gap-3">
-                                <button onClick={() => setStep(2)} className="flex items-center gap-2 px-4 py-2 border border-slate-200 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-colors">
+                                <button onClick={() => { setWorkspaceTab('rules'); setStep(2); }} className="flex items-center gap-2 px-4 py-2 border border-slate-200 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-colors">
                                     <ArrowLeft size={15} /> Edit Pipeline
                                 </button>
                                 <button onClick={handleExecute} disabled={loading}
@@ -360,7 +399,7 @@ export default function EnrichmentBuilder({ sessionId: initialSessionId, columns
                             ))}
                         </div>
 
-                        <button onClick={() => { setStep(1); setRules([]); if (onComplete) onComplete(); }}
+                        <button onClick={() => { setStep(1); setRules([]); setSessionId(null); setColumns([]); setPreviewData(null); setWorkspaceTab('dataset'); if (onComplete) onComplete(); }}
                             className="px-8 py-3 border-2 border-slate-200 hover:border-slate-300 hover:bg-slate-50 text-slate-700 rounded-xl font-bold text-sm transition-all">
                             Start New Cleaning Job
                         </button>

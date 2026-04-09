@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
 import { GitMerge, Upload, Play, CheckCircle, TrendingUp, Plus, Trash2, Database, File, FileSpreadsheet, FileText, AlertCircle } from 'lucide-react';
+import DatasetViewer from '../components/DatasetViewer';
+import WorkspaceTabs from '../components/WorkspaceTabs';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
 const STEPS = ['Upload', 'Configure', 'Results'];
@@ -24,6 +26,7 @@ export default function DataMatchingBuilder({ onComplete }) {
     const [datasetMode, setDatasetMode] = useState({ dataset1: 'file', dataset2: 'file' });
     const [datasetQueries, setDatasetQueries] = useState({ dataset1: 'SELECT * FROM table1 LIMIT 100', dataset2: 'SELECT * FROM table2 LIMIT 100' });
     const [datasetConnections, setDatasetConnections] = useState({ dataset1: '', dataset2: '' });
+    const [workspaceTab, setWorkspaceTab] = useState('dataset1');
 
     const token = localStorage.getItem('token');
     const headers = token ? { Authorization: `Bearer ${token}` } : {};
@@ -337,7 +340,7 @@ export default function DataMatchingBuilder({ onComplete }) {
                         </div>
 
                         <div className="flex justify-end pt-4 border-t border-slate-100">
-                            <button onClick={() => setStep(2)} disabled={!datasets.dataset1 || !datasets.dataset2}
+                            <button onClick={() => { setWorkspaceTab('dataset1'); setStep(2); }} disabled={!datasets.dataset1 || !datasets.dataset2}
                                 className="flex items-center gap-2 px-6 py-3 bg-violet-600 hover:bg-violet-700 disabled:bg-slate-200 disabled:text-slate-400 text-white rounded-xl font-bold text-sm transition-all shadow-md shadow-violet-600/20 hover:-translate-y-0.5">
                                 Configure Matching Rules →
                             </button>
@@ -347,7 +350,35 @@ export default function DataMatchingBuilder({ onComplete }) {
 
                 {/* ── Step 2: Configure ── */}
                 {!loading && step === 2 && (
-                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-5">
+                        <div className="flex flex-wrap items-start justify-between gap-4">
+                            <div>
+                                <h3 className="text-base font-bold text-slate-800">Matching Workspace</h3>
+                                <p className="text-sm text-slate-500 mt-1">Switch between both inserted datasets and your matching rules while you configure the job.</p>
+                            </div>
+                            <div className="flex flex-wrap items-center gap-2">
+                                <span className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 shadow-sm">
+                                    {datasetColumns.dataset1.length} + {datasetColumns.dataset2.length} columns
+                                </span>
+                                <span className="rounded-full border border-violet-200 bg-violet-50 px-3 py-1.5 text-xs font-semibold text-violet-700 shadow-sm">
+                                    {matchRules.length} rule{matchRules.length !== 1 ? 's' : ''}
+                                </span>
+                            </div>
+                        </div>
+
+                        <WorkspaceTabs
+                            tone="violet"
+                            activeTab={workspaceTab}
+                            onChange={setWorkspaceTab}
+                            tabs={[
+                                { id: 'dataset1', label: 'Dataset 1' },
+                                { id: 'dataset2', label: 'Dataset 2' },
+                                { id: 'rules', label: 'Rules', icon: GitMerge },
+                            ]}
+                        />
+
+                        {workspaceTab === 'rules' ? (
+                        <div className="space-y-5">
                         <div className="flex items-center justify-between mb-5">
                             <div>
                                 <h3 className="text-base font-bold text-slate-800">Matching Rules</h3>
@@ -449,6 +480,29 @@ export default function DataMatchingBuilder({ onComplete }) {
                                 <Play size={16} fill="currentColor" /> Run Matching Algorithms
                             </button>
                         </div>
+                        </div>
+                        ) : (
+                        <div className="space-y-4">
+                            <DatasetViewer
+                                sessionId={sessionId}
+                                datasetId={workspaceTab}
+                                tone="violet"
+                                title={workspaceTab === 'dataset1' ? 'Dataset 1 Preview' : 'Dataset 2 Preview'}
+                                subtitle={workspaceTab === 'dataset1'
+                                    ? 'Review the first dataset, then switch tabs to compare it against rules or the second dataset.'
+                                    : 'Review the second dataset, then switch tabs to compare it against rules or the first dataset.'
+                                }
+                            />
+                            <div className="flex items-center justify-between border-t border-slate-100 pt-4">
+                                <button onClick={() => setStep(1)} className="flex items-center gap-2 px-4 py-2 border border-slate-200 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-colors">
+                                    Back
+                                </button>
+                                <button onClick={() => setWorkspaceTab('rules')} className="flex items-center gap-2 px-5 py-2.5 bg-violet-600 hover:bg-violet-700 text-white rounded-xl font-semibold text-sm transition-colors shadow-sm shadow-violet-600/20">
+                                    Continue to Rules
+                                </button>
+                            </div>
+                        </div>
+                        )}
                     </motion.div>
                 )}
 
@@ -521,9 +575,12 @@ export default function DataMatchingBuilder({ onComplete }) {
                                     onClick={() => {
                                         setStep(1);
                                         setDatasets({ dataset1: null, dataset2: null });
+                                        setDatasetColumns({ dataset1: [], dataset2: [] });
+                                        setOutputColumns({ dataset1: [], dataset2: [] });
                                         setMatchRules([{ id: 1, column1: '', column2: '', algorithm: 'fuzzy', threshold: 0.8 }]);
                                         setFinalResults(null);
                                         setProgress({ percent: 0, message: '', status: 'idle' });
+                                        setWorkspaceTab('dataset1');
                                     }}
                                     className="flex items-center gap-2 px-4 py-2.5 border border-slate-200 hover:border-slate-300 hover:bg-slate-50 text-slate-700 rounded-xl font-bold text-sm transition-all"
                                 >

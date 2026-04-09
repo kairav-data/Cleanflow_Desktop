@@ -146,35 +146,35 @@ const DataConnection = ({ onUploadSuccess, compact = false }) => {
 
     const wrapperClass = compact
         ? 'w-full max-w-3xl mx-auto py-0 px-0'
-        : 'w-full max-w-5xl mx-auto py-12 px-6';
+        : 'w-full max-w-4xl mx-auto py-10 px-5';
     const headerWrapClass = compact ? 'text-left mb-6' : 'text-center mb-12';
     const badgeClass = compact
         ? 'inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-brand-blue/10 text-brand-blue text-[11px] font-bold uppercase tracking-wider mb-3'
         : 'inline-flex items-center gap-2 px-3 py-1 rounded-full bg-brand-blue/10 text-brand-blue text-xs font-bold uppercase tracking-wider mb-4';
     const titleClass = compact
         ? 'text-2xl md:text-3xl font-black text-slate-900 mb-2 tracking-tight'
-        : 'text-5xl font-black text-slate-900 mb-4 tracking-tight';
+        : 'text-4xl md:text-[2.75rem] font-black text-slate-900 mb-4 tracking-tight';
     const bodyClass = compact
         ? 'text-slate-500 text-sm md:text-base max-w-xl'
-        : 'text-slate-500 text-lg max-w-2xl mx-auto';
+        : 'text-slate-500 text-base max-w-2xl mx-auto';
     const modeClass = compact
         ? 'flex p-1 bg-slate-200/50 backdrop-blur-md rounded-xl mb-6 w-fit border border-white/50 shadow-inner'
-        : 'flex p-1.5 bg-slate-200/50 backdrop-blur-md rounded-2xl mb-10 w-fit mx-auto border border-white/50 shadow-inner';
+        : 'flex p-1 bg-slate-200/50 backdrop-blur-md rounded-xl mb-8 w-fit mx-auto border border-white/50 shadow-inner';
     const modeButtonClass = compact
         ? 'relative flex items-center gap-2 px-5 py-2.5 rounded-lg font-bold text-sm transition-all z-10'
-        : 'relative flex items-center gap-2 px-8 py-3.5 rounded-xl font-bold transition-all z-10';
+        : 'relative flex items-center gap-2 px-6 py-3 rounded-lg font-semibold transition-all z-10';
     const delimiterWrapClass = compact
         ? 'flex items-center justify-start gap-3 bg-white/70 py-2.5 px-4 rounded-xl w-fit border border-slate-100 shadow-sm'
-        : 'flex items-center justify-center gap-4 bg-white/50 py-3 px-6 rounded-2xl w-fit mx-auto border border-slate-100 shadow-sm';
+        : 'flex items-center justify-center gap-3 bg-white/50 py-2.5 px-5 rounded-xl w-fit mx-auto border border-slate-100 shadow-sm';
     const dropzoneClass = compact
         ? `relative group cursor-pointer border-2 border-dashed rounded-[1.75rem] p-10 md:p-12 flex flex-col items-center justify-center transition-all overflow-hidden ${isDragging ? 'border-brand-blue bg-brand-blue/5' : 'border-slate-300 bg-white hover:border-brand-blue hover:shadow-glow'}`
-        : `relative group cursor-pointer border-2 border-dashed rounded-[2.5rem] p-20 flex flex-col items-center justify-center transition-all overflow-hidden ${isDragging ? 'border-brand-blue bg-brand-blue/5' : 'border-slate-300 bg-white hover:border-brand-blue hover:shadow-glow'}`;
-    const uploadShellClass = compact ? 'w-16 h-16 bg-brand-blue/10 text-brand-blue rounded-2xl flex items-center justify-center mb-5 group-hover:scale-105 transition-transform duration-300' : 'w-24 h-24 bg-brand-blue/10 text-brand-blue rounded-[2rem] flex items-center justify-center mb-8 group-hover:scale-110 transition-transform duration-500';
-    const uploadTitleClass = compact ? 'text-xl md:text-2xl font-black text-slate-800 mb-2' : 'text-3xl font-black text-slate-800 mb-2';
+        : `relative group cursor-pointer border-2 border-dashed rounded-[1.75rem] p-14 md:p-16 flex flex-col items-center justify-center transition-all overflow-hidden ${isDragging ? 'border-brand-blue bg-brand-blue/5' : 'border-slate-300 bg-white hover:border-brand-blue hover:shadow-glow'}`;
+    const uploadShellClass = compact ? 'w-16 h-16 bg-brand-blue/10 text-brand-blue rounded-2xl flex items-center justify-center mb-5 group-hover:scale-105 transition-transform duration-300' : 'w-20 h-20 bg-brand-blue/10 text-brand-blue rounded-[1.5rem] flex items-center justify-center mb-6 group-hover:scale-105 transition-transform duration-300';
+    const uploadTitleClass = compact ? 'text-xl md:text-2xl font-black text-slate-800 mb-2' : 'text-2xl font-black text-slate-800 mb-2';
     const uploadTextClass = compact ? 'text-slate-400 font-medium text-sm text-center' : 'text-slate-400 font-medium';
     const dbCardClass = compact
         ? 'bg-white border border-slate-200 rounded-[1.75rem] p-6 shadow-lg shadow-slate-200/40'
-        : 'bg-white border border-slate-200 rounded-[2.5rem] p-10 shadow-xl shadow-slate-200/50';
+        : 'bg-white border border-slate-200 rounded-[1.75rem] p-8 shadow-lg shadow-slate-200/40';
 
     return (
         <div className={wrapperClass}>

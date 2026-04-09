@@ -54,7 +54,7 @@ const Footer = () => {
   ];
 
   return (
-    <footer className="bg-[#F8FAFC] border-t border-slate-200/60 mt-20 relative">
+    <footer className="relative mt-16 border-t border-slate-200/60 bg-[#F8FAFC]">
       {/* Background Ornament */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute bottom-0 left-10 w-72 h-72 bg-blue-500/5 rounded-full blur-[120px]" />
@@ -63,11 +63,11 @@ const Footer = () => {
 
       {/* Newsletter Section */}
       <div className="border-b border-slate-200/60 relative z-10">
-        <div className="max-w-7xl mx-auto px-6 py-16">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+        <div className="mx-auto max-w-7xl px-6 py-12">
+          <div className="grid grid-cols-1 items-center gap-8 md:grid-cols-2">
             <div>
-              <h2 className="text-3xl md:text-4xl font-black text-slate-900 mb-4">Stay updated</h2>
-              <p className="text-slate-500 text-lg font-medium leading-relaxed">Get the latest features, tips, and data quality insights delivered to your inbox.</p>
+              <h2 className="mb-4 text-2xl font-black text-slate-900 md:text-3xl">Stay updated</h2>
+              <p className="text-base font-medium leading-relaxed text-slate-500">Get the latest features, tips, and data quality insights delivered to your inbox.</p>
             </div>
             <form onSubmit={handleSubscribe} className="flex gap-3">
               <input
@@ -76,11 +76,11 @@ const Footer = () => {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="flex-1 px-5 py-3 rounded-xl bg-white border border-slate-200 text-slate-900 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all font-medium"
+                className="flex-1 rounded-lg border border-slate-200 bg-white px-4 py-3 font-medium text-slate-900 placeholder-slate-400 transition-all focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
               />
               <button
                 type="submit"
-                className="px-6 py-3 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl transition-all flex items-center gap-2 whitespace-nowrap shadow-md hover:shadow-lg"
+                className="flex items-center gap-2 whitespace-nowrap rounded-lg bg-slate-900 px-5 py-3 text-sm font-semibold text-white shadow-sm transition-all hover:bg-slate-800"
               >
                 {subscribed ? '✓' : <Send size={18} />} {subscribed ? 'Subscribed' : 'Subscribe'}
               </button>
@@ -90,19 +90,19 @@ const Footer = () => {
       </div>
 
       {/* Main Footer Content */}
-      <div className="max-w-7xl mx-auto px-6 py-16 relative z-10">
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-12 mb-16">
+      <div className="relative z-10 mx-auto max-w-7xl px-6 py-12">
+        <div className="mb-10 grid grid-cols-1 gap-10 md:grid-cols-5">
           {/* Brand Section */}
           <div className="md:col-span-1">
             <div className="flex items-center gap-2 mb-6">
               <img
                 src={Logo}
                 alt="CleanFlow"
-                className="h-10 w-auto object-contain"
+                className="h-8 w-auto object-contain"
                 style={{ filter: 'brightness(0)' }}
               />
             </div>
-            <p className="text-slate-500 text-sm leading-relaxed mb-8 font-medium">
+            <p className="mb-6 text-sm font-medium leading-relaxed text-slate-500">
               The modern data quality platform for enterprises. Clean, validate, and transform your data with confidence.
             </p>
             <div className="flex items-center gap-3">
@@ -125,7 +125,7 @@ const Footer = () => {
           {/* Links Sections */}
           {Object.entries(footerLinks).map(([category, links]) => (
             <div key={category}>
-              <h3 className="font-black text-slate-900 mb-6 text-sm uppercase tracking-widest">{category}</h3>
+              <h3 className="mb-5 text-sm font-black uppercase tracking-[0.16em] text-slate-900">{category}</h3>
               <ul className="space-y-3">
                 {links.map((link) => (
                   <li key={link.label}>
@@ -143,7 +143,7 @@ const Footer = () => {
         </div>
 
         {/* Bottom Footer */}
-        <div className="border-t border-slate-200/60 pt-8">
+        <div className="border-t border-slate-200/60 pt-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
             <div className="text-slate-500 text-sm font-medium">
               <p>&copy; 2026 CleanFlow. All rights reserved.</p>

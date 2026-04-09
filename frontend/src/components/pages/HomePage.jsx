@@ -24,12 +24,12 @@ export default function HomePage({ startValidation, onViewPricing, handleFeature
 
   return (
     <>
-      <div className="w-full mb-16 relative">
+      <div className="relative mb-12 w-full">
         {/* Ambient Dark Glows */}
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-[1000px] h-[500px] bg-[radial-gradient(ellipse_at_center,rgba(52,211,153,0.15),transparent_70%)] pointer-events-none" />
+        <div className="pointer-events-none absolute left-1/2 top-0 h-[420px] w-full max-w-[920px] -translate-x-1/2 bg-[radial-gradient(ellipse_at_center,rgba(52,211,153,0.14),transparent_70%)]" />
 
-        <div className="relative overflow-visible min-h-[420px] md:min-h-[60vh] flex flex-col justify-center bg-transparent mt-16 md:mt-24 z-10">
-          <div className="relative max-w-5xl mx-auto px-8 w-full">
+        <div className="relative z-10 mt-12 flex min-h-[380px] flex-col justify-center overflow-visible bg-transparent md:mt-16 md:min-h-[52vh]">
+          <div className="relative mx-auto w-full max-w-4xl px-6">
             <motion.div
               className="flex flex-col items-center text-center"
               initial={{ opacity: 0, y: 18 }}
@@ -38,7 +38,7 @@ export default function HomePage({ startValidation, onViewPricing, handleFeature
             >
               <motion.div
                 initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.5 }}
-                className="inline-flex items-center justify-center gap-2 px-4 py-1.5 mb-8 rounded-full border border-emerald-500/30 bg-emerald-500/10 text-emerald-400 text-sm font-bold tracking-widest uppercase shadow-[0_0_15px_rgba(16,185,129,0.2)]"
+                className="mb-6 inline-flex items-center justify-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.18em] text-emerald-400 shadow-[0_0_12px_rgba(16,185,129,0.18)]"
               >
                 <Sparkles size={16} /> The New CleanFlow v2.5
               </motion.div>
@@ -47,7 +47,7 @@ export default function HomePage({ startValidation, onViewPricing, handleFeature
                 initial={{ opacity: 0, y: 14 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: 0.1, ease: "easeOut" }}
-                className="text-6xl md:text-8xl font-black text-white mb-6 leading-[1.1] tracking-tight"
+                className="mb-5 text-5xl font-black leading-[1.02] tracking-tight text-white md:text-6xl"
               >
                 Clean &amp; Transform
                 <br />
@@ -60,7 +60,7 @@ export default function HomePage({ startValidation, onViewPricing, handleFeature
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: 0.2, ease: "easeOut" }}
-                className="text-lg md:text-2xl text-slate-400 mb-12 leading-relaxed max-w-3xl font-medium"
+                className="mb-8 max-w-2xl text-base font-medium leading-relaxed text-slate-400 md:text-lg"
               >
                 Validate, enrich, and transform enterprise data with absolute confidence. Millions of records, all in one platform.
               </motion.p>
@@ -69,17 +69,17 @@ export default function HomePage({ startValidation, onViewPricing, handleFeature
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: 0.3, ease: "easeOut" }}
-                className="flex flex-col sm:flex-row items-center justify-center gap-5 w-full sm:w-auto"
+                className="flex w-full flex-col items-center justify-center gap-4 sm:w-auto sm:flex-row"
               >
                 <button
                   onClick={startValidation}
-                  className="w-full sm:w-auto px-10 py-5 bg-white text-slate-950 rounded-2xl font-black shadow-[0_0_30px_rgba(255,255,255,0.2)] hover:shadow-[0_0_40px_rgba(255,255,255,0.3)] hover:scale-105 transition-all flex items-center justify-center gap-3 text-xl"
+                  className="flex w-full items-center justify-center gap-3 rounded-xl bg-white px-8 py-4 text-base font-semibold text-slate-950 shadow-[0_0_24px_rgba(255,255,255,0.14)] transition-all hover:bg-slate-100 sm:w-auto"
                 >
-                  Start Execution Engine <ArrowRight size={22} className="text-emerald-600" />
+                  Start Execution Engine <ArrowRight size={18} className="text-emerald-600" />
                 </button>
                 <button
                   onClick={onViewPricing}
-                  className="w-full sm:w-auto px-8 py-5 border-2 border-slate-700 text-white rounded-2xl font-bold hover:bg-slate-800 transition-colors text-xl"
+                  className="w-full rounded-xl border border-slate-700 px-7 py-4 text-base font-semibold text-white transition-colors hover:bg-slate-900/80 sm:w-auto"
                 >
                   Explore Pricing
                 </button>
@@ -89,20 +89,20 @@ export default function HomePage({ startValidation, onViewPricing, handleFeature
         </div>
       </div>
 
-      <div className="px-6 max-w-7xl mx-auto">
+      <div className="mx-auto max-w-7xl px-6">
         {/* Modules Overview Section */}
-        <div className="w-full mb-32 relative">
-          <div className="absolute inset-0 bg-slate-900 rounded-[40px] blur-3xl opacity-50 -z-10" />
+        <div className="relative mb-24 w-full">
+          <div className="absolute inset-0 -z-10 rounded-[32px] bg-slate-900 opacity-45 blur-3xl" />
 
-          <div className="text-center mb-12">
-            <p className="text-xs font-bold uppercase tracking-[0.2em] text-emerald-500 mb-3">Modules At A Glance</p>
-            <h2 className="text-3xl md:text-4xl font-black text-white mb-4">One platform, unlimited data workflows</h2>
-            <p className="text-slate-400 max-w-2xl mx-auto text-lg font-medium">
+          <div className="mb-10 text-center">
+            <p className="mb-3 text-xs font-bold uppercase tracking-[0.2em] text-emerald-500">Modules At A Glance</p>
+            <h2 className="mb-4 text-2xl font-black text-white md:text-3xl">One platform, unlimited data workflows</h2>
+            <p className="mx-auto max-w-2xl text-base font-medium text-slate-400">
               From data quality checks to enrichment and extraction, each module is purpose-built and connected to the same high-performance engine.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-5">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-5">
             {[
               {
                 title: "Quality Validation",
@@ -148,17 +148,17 @@ export default function HomePage({ startValidation, onViewPricing, handleFeature
               <button
                 key={m.title}
                 onClick={m.cta}
-                className={`text-left p-6 rounded-2xl backdrop-blur-md border transition-all h-full flex flex-col group hover:-translate-y-1 ${m.tone}`}
+                className={`group flex h-full flex-col rounded-xl border p-5 text-left backdrop-blur-md transition-all hover:-translate-y-0.5 ${m.tone}`}
               >
-                <div className="flex items-center justify-between mb-4 min-h-[42px]">
-                  <div className="p-2.5 rounded-xl bg-slate-800 border border-slate-700 shadow-inner group-hover:scale-110 transition-transform">{m.icon}</div>
-                  <span className="text-[11px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-slate-800 border border-slate-700 text-slate-300">
+                <div className="mb-4 flex min-h-[38px] items-center justify-between">
+                  <div className="rounded-lg border border-slate-700 bg-slate-800 p-2 shadow-inner transition-transform group-hover:scale-105">{m.icon}</div>
+                  <span className="rounded-full border border-slate-700 bg-slate-800 px-2 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-slate-300">
                     {m.stat}
                   </span>
                 </div>
-                <h3 className="text-lg font-bold text-white mb-2 min-h-[48px] group-hover:text-emerald-400 transition-colors">{m.title}</h3>
-                <p className="text-sm text-slate-400 mb-6 leading-relaxed font-medium min-h-[66px]">{m.desc}</p>
-                <span className="inline-flex items-center gap-1.5 text-[13px] font-bold uppercase tracking-wider mt-auto text-emerald-500 group-hover:text-emerald-400">
+                <h3 className="mb-2 min-h-[40px] text-base font-bold text-white transition-colors group-hover:text-emerald-400">{m.title}</h3>
+                <p className="mb-5 min-h-[60px] text-sm font-medium leading-relaxed text-slate-400">{m.desc}</p>
+                <span className="mt-auto inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-[0.16em] text-emerald-500 group-hover:text-emerald-400">
                   Launch Module <ChevronRight size={14} />
                 </span>
               </button>
@@ -167,47 +167,47 @@ export default function HomePage({ startValidation, onViewPricing, handleFeature
         </div>
 
         {/* Validation Visual Section */}
-        <div className="w-full mb-20 border-2 border-slate-800 shadow-2xl rounded-[32px] p-8 md:p-12 bg-slate-900 overflow-hidden relative">
+        <div className="relative mb-16 w-full overflow-hidden rounded-[28px] border border-slate-800 bg-slate-900 p-6 shadow-xl md:p-8">
           <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_right,rgba(16,185,129,0.15),transparent_60%)]" />
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center relative z-10">
+          <div className="relative z-10 grid grid-cols-1 items-center gap-8 lg:grid-cols-2">
             <div>
-              <p className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-emerald-400 mb-4">
+              <p className="mb-4 inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.18em] text-emerald-400">
                 <BarChart3 size={16} /> Data Validation Snapshot
               </p>
-              <h2 className="text-4xl font-black text-white mb-5 tracking-tight">Understand data quality instantly</h2>
-              <p className="text-slate-400 leading-relaxed font-medium mb-8 text-lg">
+              <h2 className="mb-4 text-3xl font-black tracking-tight text-white">Understand data quality instantly</h2>
+              <p className="mb-6 text-base font-medium leading-relaxed text-slate-400">
                 CleanFlow highlights invalid records, missing fields, and pattern failures with clear visual summaries so teams can act exactly where they need to.
               </p>
-              <div className="space-y-4">
-                <div className="flex items-start gap-3 bg-slate-800/50 p-4 rounded-xl border border-slate-700/50">
-                  <ShieldCheck className="text-emerald-400 shrink-0" size={24} />
+              <div className="space-y-3">
+                <div className="flex items-start gap-3 rounded-lg border border-slate-700/50 bg-slate-800/50 p-3.5">
+                  <ShieldCheck className="shrink-0 text-emerald-400" size={20} />
                   <p className="text-sm font-medium text-slate-300"><span className="font-bold text-emerald-200">Validity score tracking</span> gives you a continuous pulse on overall dataset health.</p>
                 </div>
-                <div className="flex items-start gap-3 bg-slate-800/50 p-4 rounded-xl border border-slate-700/50">
-                  <AlertTriangle className="text-amber-400 shrink-0" size={24} />
+                <div className="flex items-start gap-3 rounded-lg border border-slate-700/50 bg-slate-800/50 p-3.5">
+                  <AlertTriangle className="shrink-0 text-amber-400" size={20} />
                   <p className="text-sm font-medium text-slate-300"><span className="font-bold text-amber-200">Deep rule failure insights</span> isolate the top anomalies down to the specific column.</p>
                 </div>
               </div>
             </div>
 
-            <div className="bg-slate-950 border border-slate-800 rounded-3xl p-8 shadow-2xl shadow-emerald-900/20">
-              <div className="flex items-center justify-between mb-8">
+            <div className="rounded-2xl border border-slate-800 bg-slate-950 p-6 shadow-xl shadow-emerald-900/20">
+              <div className="mb-6 flex items-center justify-between">
                 <h3 className="text-base font-bold text-white uppercase tracking-wider">Report Output</h3>
-                <span className="text-xs px-3 py-1.5 rounded-full bg-emerald-500/20 text-emerald-400 font-bold border border-emerald-500/30">86% Healthy Validation</span>
+                <span className="rounded-full border border-emerald-500/30 bg-emerald-500/20 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.16em] text-emerald-400">86% Healthy Validation</span>
               </div>
 
-              <div className="grid grid-cols-2 gap-5 mb-8">
-                <div className="p-5 rounded-2xl bg-slate-900 border border-slate-800">
+              <div className="mb-6 grid grid-cols-2 gap-4">
+                <div className="rounded-xl border border-slate-800 bg-slate-900 p-4">
                   <p className="text-xs font-bold uppercase tracking-widest text-slate-500 mb-2">Total Load</p>
-                  <p className="text-3xl font-black text-white tracking-tight">12,540</p>
+                  <p className="text-2xl font-black tracking-tight text-white">12,540</p>
                 </div>
-                <div className="p-5 rounded-2xl bg-slate-900 border border-slate-800">
+                <div className="rounded-xl border border-slate-800 bg-slate-900 p-4">
                   <p className="text-xs font-bold uppercase tracking-widest text-slate-500 mb-2">Flagged</p>
-                  <p className="text-3xl font-black text-red-400 tracking-tight">1,754</p>
+                  <p className="text-2xl font-black tracking-tight text-red-400">1,754</p>
                 </div>
               </div>
 
-              <div className="mb-8 p-6 rounded-2xl bg-slate-900 border border-slate-800">
+              <div className="mb-6 rounded-xl border border-slate-800 bg-slate-900 p-5">
                 <p className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-5">Critical Failure Rates</p>
                 <div className="space-y-4">
                   {[
@@ -233,32 +233,32 @@ export default function HomePage({ startValidation, onViewPricing, handleFeature
         </div>
 
         {/* Comparison Section */}
-        <div className="w-full mb-10 border border-slate-800 rounded-3xl overflow-hidden bg-slate-900 relative shadow-2xl">
+        <div className="relative mb-8 w-full overflow-hidden rounded-[28px] border border-slate-800 bg-slate-900 shadow-xl">
           <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-[radial-gradient(circle_at_center,rgba(56,189,248,0.1),transparent_60%)] pointer-events-none" />
-          <div className="px-8 md:px-12 py-12 relative z-10">
-            <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-8">
+          <div className="relative z-10 px-6 py-8 md:px-8 md:py-9">
+            <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
               <div className="max-w-2xl">
-                <p className="text-xs font-bold uppercase tracking-[0.22em] text-sky-400 mb-4">Enterprise Grade vs Local</p>
-                <h2 className="text-3xl md:text-5xl font-black text-white mb-4 tracking-tight">CleanFlow vs manual sheets</h2>
-                <p className="text-slate-400 leading-relaxed font-medium text-lg">
+                <p className="mb-4 text-xs font-bold uppercase tracking-[0.22em] text-sky-400">Enterprise Grade vs Local</p>
+                <h2 className="mb-4 text-3xl font-black tracking-tight text-white md:text-4xl">CleanFlow vs manual sheets</h2>
+                <p className="text-base font-medium leading-relaxed text-slate-400">
                   Stop wrestling with nested IF statements and crashing workbooks. CleanFlow is built to process identical validation models across data at massive scale.
                 </p>
               </div>
               <button
                 onClick={startValidation}
-                className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-xl bg-sky-500 text-slate-950 font-black hover:bg-sky-400 transition-colors w-full lg:w-auto shadow-[0_0_20px_rgba(56,189,248,0.3)] hover:shadow-[0_0_30px_rgba(56,189,248,0.5)]"
+                className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-sky-500 px-6 py-3 text-sm font-semibold text-slate-950 shadow-[0_0_18px_rgba(56,189,248,0.24)] transition-colors hover:bg-sky-400 lg:w-auto"
               >
                 Benchmark the Speed <ChevronRight size={18} />
               </button>
             </div>
           </div>
 
-          <div className="p-6 md:p-10 bg-slate-950/50 border-t border-slate-800 relative z-10">
-            <div className="grid grid-cols-4 gap-4 items-center text-sm mb-6">
+          <div className="relative z-10 border-t border-slate-800 bg-slate-950/50 p-5 md:p-8">
+            <div className="mb-5 grid grid-cols-4 items-center gap-3 text-sm">
               <div className="hidden md:block" />
-              <div className="rounded-2xl border border-sky-500/30 bg-sky-500/10 text-sky-400 px-4 py-3 font-black text-center uppercase tracking-wider text-xs">CleanFlow</div>
-              <div className="rounded-2xl border border-slate-800 bg-slate-900 px-4 py-3 font-bold text-center text-slate-500">Excel</div>
-              <div className="rounded-2xl border border-slate-800 bg-slate-900 px-4 py-3 font-bold text-center text-slate-500">Google Sheets</div>
+              <div className="rounded-xl border border-sky-500/30 bg-sky-500/10 px-3 py-2.5 text-center text-xs font-black uppercase tracking-[0.16em] text-sky-400">CleanFlow</div>
+              <div className="rounded-xl border border-slate-800 bg-slate-900 px-3 py-2.5 text-center font-bold text-slate-500">Excel</div>
+              <div className="rounded-xl border border-slate-800 bg-slate-900 px-3 py-2.5 text-center font-bold text-slate-500">Google Sheets</div>
             </div>
 
             <div className="space-y-4 text-sm font-medium">
@@ -292,7 +292,7 @@ export default function HomePage({ startValidation, onViewPricing, handleFeature
                 };
 
                 return (
-                  <div key={row.label} className="grid grid-cols-1 md:grid-cols-4 gap-4 items-center rounded-2xl border border-slate-800 bg-slate-900/50 p-5 hover:bg-slate-800/50 transition-colors">
+                  <div key={row.label} className="grid grid-cols-1 gap-4 rounded-xl border border-slate-800 bg-slate-900/50 p-4 transition-colors hover:bg-slate-800/50 md:grid-cols-4 md:items-center">
                     <div className="text-slate-300 font-bold md:col-span-1">{row.label}</div>
                     <div className="flex md:justify-center items-center md:col-span-1">
                       <Cell value={row.cf} />
@@ -311,14 +311,14 @@ export default function HomePage({ startValidation, onViewPricing, handleFeature
         </div>
 
         {/* CTA Section */}
-        <div className="w-full text-center bg-gradient-to-br from-emerald-600 to-sky-600 text-white p-16 rounded-[40px] shadow-2xl relative overflow-hidden mb-10">
+        <div className="relative mb-10 w-full overflow-hidden rounded-[28px] bg-gradient-to-br from-emerald-600 to-sky-600 p-10 text-center text-white shadow-xl md:p-12">
           <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10 mix-blend-overlay"></div>
           <div className="relative z-10">
-            <h2 className="text-4xl md:text-5xl font-black mb-6 tracking-tight">Ready to activate your data?</h2>
-            <p className="text-emerald-50 max-w-2xl mx-auto mb-10 text-xl font-medium">Join leading data engineers and operators using CleanFlow to streamline their quality and cleaning pipelines.</p>
+            <h2 className="mb-5 text-3xl font-black tracking-tight md:text-4xl">Ready to activate your data?</h2>
+            <p className="mx-auto mb-8 max-w-2xl text-base font-medium text-emerald-50">Join leading data engineers and operators using CleanFlow to streamline their quality and cleaning pipelines.</p>
             <button
               onClick={startValidation}
-              className="px-10 py-5 bg-slate-950 text-white rounded-2xl font-black hover:bg-black hover:-translate-y-1 hover:shadow-xl transition-all inline-flex items-center gap-3 text-lg"
+              className="inline-flex items-center gap-3 rounded-xl bg-slate-950 px-8 py-4 text-base font-semibold text-white transition-all hover:bg-black"
             >
               Initialize Workspace <Zap className="text-emerald-400 flex-shrink-0" fill="currentColor" size={20} />
             </button>

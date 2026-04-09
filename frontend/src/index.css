@@ -3,8 +3,24 @@
 @tailwind utilities;
 
 @layer base {
+  html {
+    font-size: 15px;
+  }
+
   body {
     @apply bg-white text-slate-900 antialiased font-sans;
+    line-height: 1.5;
+  }
+
+  #root {
+    min-height: 100vh;
+  }
+
+  button,
+  input,
+  select,
+  textarea {
+    font: inherit;
   }
 }
 

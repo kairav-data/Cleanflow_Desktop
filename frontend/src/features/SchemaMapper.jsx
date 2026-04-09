@@ -3,6 +3,8 @@ import axios from 'axios';
 import { motion } from 'framer-motion';
 import { Shuffle, ArrowRight, CheckCircle, Wand2, Upload, ArrowLeft, Play, Eye } from 'lucide-react';
 import DataConnection from '../components/DataConnection';
+import DatasetViewer from '../components/DatasetViewer';
+import WorkspaceTabs from '../components/WorkspaceTabs';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'import.meta.env.VITE_API_URL';
 const STEPS = ['Upload', 'Configure', 'Results'];
@@ -17,6 +19,7 @@ export default function SchemaMapper({ onComplete }) {
     const [step, setStep] = useState(0); // 0: Upload, 1: Configure, 2: Preview, 3: Complete
     const [sessionId, setSessionId] = useState(null);
     const [columns, setColumns] = useState([]);
+    const [workspaceTab, setWorkspaceTab] = useState('dataset');
 
     useEffect(() => { fetchTransformations(); }, []);
 
@@ -130,6 +133,7 @@ export default function SchemaMapper({ onComplete }) {
                             onUploadSuccess={(data) => {
                                 setSessionId(data.session_id);
                                 setColumns(data.columns || []);
+                                setWorkspaceTab('dataset');
                                 setStep(1);
                             }} 
                         />
@@ -138,7 +142,41 @@ export default function SchemaMapper({ onComplete }) {
 
                 {/* Step 1: Configure */}
                 {step === 1 && (
-                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-5">
+                        <div className="flex flex-wrap items-start justify-between gap-4">
+                            <div>
+                                <h3 className="text-lg font-bold text-slate-800">Mapping Workspace</h3>
+                                <p className="text-sm text-slate-500 mt-1">Switch between the inserted dataset and the mapping canvas while you shape the target schema.</p>
+                            </div>
+                            <div className="flex flex-wrap items-center gap-2">
+                                <span className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 shadow-sm">
+                                    {columns.length} columns
+                                </span>
+                                <span className="rounded-full border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-xs font-semibold text-indigo-700 shadow-sm">
+                                    {mappedCount} mapped
+                                </span>
+                            </div>
+                        </div>
+
+                        <WorkspaceTabs
+                            tone="indigo"
+                            activeTab={workspaceTab}
+                            onChange={setWorkspaceTab}
+                            tabs={[
+                                { id: 'dataset', label: 'Dataset' },
+                                { id: 'mapping', label: 'Mapping', icon: Wand2 },
+                            ]}
+                        />
+
+                        {workspaceTab === 'dataset' ? (
+                            <DatasetViewer
+                                sessionId={sessionId}
+                                tone="indigo"
+                                title="Source Dataset"
+                                subtitle="Inspect the loaded data here, then return to the mapping tab to assign target fields."
+                            />
+                        ) : (
+                        <div className="space-y-5">
                         <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
                             {/* Target schema input */}
                             <div className="lg:col-span-2">
@@ -208,6 +246,8 @@ export default function SchemaMapper({ onComplete }) {
                                 <Eye size={16} /> Preview Mapped Data
                             </button>
                         </div>
+                        </div>
+                        )}
                     </motion.div>
                 )}
 
@@ -220,7 +260,7 @@ export default function SchemaMapper({ onComplete }) {
                                 <p className="text-sm text-slate-500 mt-1">Top 5 rows after schema mapping is applied.</p>
                             </div>
                             <div className="flex items-center gap-3">
-                                <button onClick={() => setStep(1)} className="flex items-center gap-2 px-4 py-2 border border-slate-200 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-colors">
+                                <button onClick={() => { setWorkspaceTab('mapping'); setStep(1); }} className="flex items-center gap-2 px-4 py-2 border border-slate-200 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-colors">
                                     <ArrowLeft size={15} /> Edit Mapping
                                 </button>
                                 <button onClick={handleExecute} disabled={loading}

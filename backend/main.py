@@ -361,6 +361,36 @@ async def export_data(session_id: str, format: str = "csv"):
         
     return FileResponse(file_path, filename=f"dataset_cleaned.{format}")
 
+# --- Dataset Viewer Endpoints ---
+@app.get("/dataset/{session_id}/preview")
+async def get_dataset_preview(session_id: str, limit: int = 50, dataset_id: str = None):
+    """Preview raw dataset for a given session. Supports multiple datasets if dataset_id is provided."""
+    import polars as pl
+    if session_id not in sessions:
+        raise HTTPException(status_code=404, detail="Session not found")
+        
+    engine = sessions[session_id]
+    df = None
+    
+    # Most pipelines use engine.df
+    if hasattr(engine, 'df'):
+        df = engine.df
+    # Data Matching and Pricing Intelligence use engine.datasets 
+    # (or you could pass dataset_id corresponding to primary/secondary)
+    elif hasattr(engine, 'datasets'):
+        if not engine.datasets:
+            return {"data": []}
+        if dataset_id and dataset_id in engine.datasets:
+            df = engine.datasets[dataset_id]
+        else:
+            # Fallback to the first dataset if none specified
+            df = list(engine.datasets.values())[0]
+            
+    if df is None or not isinstance(df, pl.DataFrame):
+        return {"data": []}
+        
+    return {"data": df.head(limit).to_dicts()}
+
 # Scraping Feature
 @app.get("/features/scraper/templates")
 async def get_scraper_templates():

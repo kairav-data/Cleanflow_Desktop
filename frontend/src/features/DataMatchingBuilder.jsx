@@ -47,7 +47,7 @@ export default function DataMatchingBuilder({ onComplete }) {
     const fetchConnections = async () => {
         if (!token) return;
         try {
-            const res = await axios.get(`${API_BASE}/history/connections`, { headers });
+            const res = await axios.get(`${API_BASE}/connections`, { headers });
             setConnections(res.data);
             if (res.data.length > 0) setDatasetConnections({ dataset1: res.data[0].id, dataset2: res.data[0].id });
         } catch (err) { console.error("Could not load saved connections.", err); }

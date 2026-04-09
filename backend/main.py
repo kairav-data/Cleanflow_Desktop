@@ -1,7 +1,7 @@
 from fastapi import FastAPI, UploadFile, File, HTTPException, Depends, Form, BackgroundTasks, Body
 import fastapi
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse, JSONResponse, Response
 from contextlib import asynccontextmanager
 import asyncio
 import os
@@ -17,7 +17,7 @@ except ImportError:
 import shutil
 import polars as pl
 import pandas as pd # Keep for legacy database reading if needed, or migration
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 from typing import List
 
 from logger import setup_logger
@@ -97,6 +97,31 @@ sessions = {}
 @app.get("/")
 def read_root():
     return {"message": "Data Cleaning API is running"}
+
+
+@app.head("/")
+def read_root_head():
+    return Response(status_code=200)
+
+
+def _get_database_health() -> dict:
+    try:
+        with db.pg_engine.connect() as conn:
+            conn.execute(text("SELECT 1"))
+        return {"status": "ok", "db": "connected"}
+    except Exception as exc:
+        logger.warning("Health check database ping failed: %s", exc)
+        return {"status": "degraded", "db": "disconnected"}
+
+
+@app.get("/health")
+def health_check():
+    return _get_database_health()
+
+
+@app.head("/health")
+def health_check_head():
+    return Response(status_code=200)
 
 # --- File Upload Endpoints ---
 

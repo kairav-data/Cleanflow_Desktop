@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { motion } from 'framer-motion';
 import { Shuffle, ArrowRight, CheckCircle, Wand2, Upload, ArrowLeft, Play, Eye } from 'lucide-react';
+import DataConnection from '../components/DataConnection';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'import.meta.env.VITE_API_URL';
 const STEPS = ['Upload', 'Configure', 'Results'];
@@ -16,9 +17,6 @@ export default function SchemaMapper({ onComplete }) {
     const [step, setStep] = useState(0); // 0: Upload, 1: Configure, 2: Preview, 3: Complete
     const [sessionId, setSessionId] = useState(null);
     const [columns, setColumns] = useState([]);
-    const [isDragging, setIsDragging] = useState(false);
-    const [delimiter, setDelimiter] = useState(',');
-    const fileInputRef = React.useRef(null);
 
     useEffect(() => { fetchTransformations(); }, []);
 
@@ -27,21 +25,6 @@ export default function SchemaMapper({ onComplete }) {
             const res = await axios.get(`${API_BASE}/features/mapper/transformations`);
             setTransformations(res.data.transformations || []);
         } catch (e) { console.error('Error fetching transformations:', e); }
-    };
-
-    const handleFileUpload = async (file) => {
-        if (!file) return;
-        const formData = new FormData();
-        formData.append('file', file);
-        formData.append('delimiter', delimiter);
-        setLoading(true);
-        try {
-            const res = await axios.post(`${API_BASE}/upload`, formData);
-            setSessionId(res.data.session_id);
-            setColumns(res.data.columns);
-            setStep(1);
-        } catch (e) { alert('Upload failed: ' + (e.response?.data?.detail || e.message)); }
-        setLoading(false);
     };
 
     const handleAutoMap = () => {
@@ -139,61 +122,17 @@ export default function SchemaMapper({ onComplete }) {
                 {step === 0 && (
                     <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
                         <div className="mb-5">
-                            <h3 className="text-lg font-bold text-slate-800">Upload Source File</h3>
-                            <p className="text-sm text-slate-500 mt-1">Upload a CSV or delimited file to begin configuring your schema mapping.</p>
+                            <h3 className="text-lg font-bold text-slate-800">Import Dataset</h3>
+                            <p className="text-sm text-slate-500 mt-1">Upload a file or connect a database to begin building your schema mapping pipeline.</p>
                         </div>
-
-                        {/* Separator selector */}
-                        <div className="flex items-center gap-3 bg-white/70 py-2.5 px-4 rounded-xl w-fit border border-slate-100 shadow-sm mb-5">
-                            <span className="text-sm font-bold text-slate-600">Separator:</span>
-                            <div className="flex gap-1.5">
-                                {[',', ';', '|', '\t'].map(d => (
-                                    <button
-                                        key={d}
-                                        onClick={() => setDelimiter(d)}
-                                        className={`w-9 h-9 rounded-lg flex items-center justify-center font-mono border text-xs font-bold transition-all ${
-                                            delimiter === d
-                                                ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm'
-                                                : 'bg-white text-slate-400 border-slate-200 hover:border-indigo-400 hover:text-indigo-600'
-                                        }`}
-                                    >
-                                        {d === '\t' ? 'TAB' : d}
-                                    </button>
-                                ))}
-                                <input
-                                    type="text"
-                                    maxLength={1}
-                                    placeholder="?"
-                                    value={![',', ';', '|', '\t'].includes(delimiter) ? delimiter : ''}
-                                    onChange={e => setDelimiter(e.target.value || ',')}
-                                    className={`w-10 h-9 rounded-lg text-center font-mono border text-xs transition-all outline-none ${
-                                        ![',', ';', '|', '\t'].includes(delimiter)
-                                            ? 'border-indigo-600 text-indigo-700 font-bold bg-indigo-50'
-                                            : 'border-slate-200 text-slate-400 focus:border-indigo-400'
-                                    }`}
-                                />
-                            </div>
-                        </div>
-
-                        <div
-                            onDragOver={e => { e.preventDefault(); setIsDragging(true); }}
-                            onDragLeave={() => setIsDragging(false)}
-                            onDrop={e => { e.preventDefault(); setIsDragging(false); handleFileUpload(e.dataTransfer.files[0]); }}
-                            onClick={() => !loading && fileInputRef.current?.click()}
-                            className={`cursor-pointer border-2 border-dashed rounded-2xl p-16 flex flex-col items-center justify-center transition-all ${
-                                isDragging ? 'border-indigo-400 bg-indigo-50' : 'border-slate-300 bg-white hover:border-indigo-400 hover:bg-indigo-50/50'
-                            }`}
-                        >
-                            <input type="file" ref={fileInputRef} accept=".csv,.txt,.tsv" onChange={e => e.target.files[0] && handleFileUpload(e.target.files[0])} className="hidden" id="mapper-upload" />
-                            <div className="w-16 h-16 bg-indigo-100 rounded-2xl flex items-center justify-center mb-5">
-                                <Upload size={32} className="text-indigo-600" />
-                            </div>
-                            <h3 className="text-xl font-black text-slate-800 mb-2">{loading ? 'Uploading…' : 'Drop your file here'}</h3>
-                            <p className="text-slate-500 text-sm text-center">or click to browse — CSV, TSV, or any delimited file</p>
-                            <div className="mt-5 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-sm transition-colors">
-                                {loading ? 'Processing…' : 'Choose File'}
-                            </div>
-                        </div>
+                        <DataConnection 
+                            compact={true} 
+                            onUploadSuccess={(data) => {
+                                setSessionId(data.session_id);
+                                setColumns(data.columns || []);
+                                setStep(1);
+                            }} 
+                        />
                     </motion.div>
                 )}
 

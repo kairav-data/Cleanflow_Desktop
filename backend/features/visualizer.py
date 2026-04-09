@@ -205,23 +205,286 @@ def _build_line_chart(df: pl.DataFrame, date_col: str, num_col: str, color_idx: 
 
 def _build_kpis(df: pl.DataFrame, col_types: dict[str, str]) -> list[dict]:
     numeric_cols = [c for c, t in col_types.items() if t == "numeric"]
+    categorical_cols = [c for c, t in col_types.items() if t == "categorical"]
+    datetime_cols = [c for c, t in col_types.items() if t == "datetime"]
     total_rows = len(df)
     null_count = sum(df[c].null_count() for c in df.columns)
     total_cells = total_rows * len(df.columns)
     completeness = round((1 - null_count / max(total_cells, 1)) * 100, 1)
+    duplicate_rows = 0
+    try:
+        duplicate_rows = max(total_rows - df.unique().height, 0)
+    except Exception:
+        duplicate_rows = 0
+
     kpis = [
-        {"label": "Total Rows",        "value": f"{total_rows:,}", "icon": "rows",    "color": "#6366f1"},
-        {"label": "Columns",           "value": str(len(df.columns)), "icon": "columns", "color": "#10b981"},
-        {"label": "Data Completeness", "value": f"{completeness}%",  "icon": "check",   "color": "#f59e0b"},
+        {
+            "label": "Total Rows",
+            "value": f"{total_rows:,}",
+            "icon": "rows",
+            "color": "#6366f1",
+            "hint": "Records currently loaded into the dashboard",
+        },
+        {
+            "label": "Columns",
+            "value": str(len(df.columns)),
+            "icon": "columns",
+            "color": "#10b981",
+            "hint": "Available attributes across the dataset",
+        },
+        {
+            "label": "Data Completeness",
+            "value": f"{completeness}%",
+            "icon": "check",
+            "color": "#f59e0b",
+            "hint": f"{null_count:,} missing values across all cells",
+        },
     ]
     if numeric_cols:
         col = numeric_cols[0]
         try:
             mean_val = df[col].mean()
-            kpis.append({"label": f"Avg {col[:14]}", "value": f"{mean_val:,.2f}" if mean_val is not None else "—", "icon": "stats", "color": "#8b5cf6"})
+            kpis.append(
+                {
+                    "label": f"Avg {col[:14]}",
+                    "value": f"{mean_val:,.2f}" if mean_val is not None else "—",
+                    "icon": "stats",
+                    "color": "#8b5cf6",
+                    "hint": f"First numeric metric selected from {len(numeric_cols)} numeric columns",
+                }
+            )
         except Exception:
             pass
+    if categorical_cols:
+        kpis.append(
+            {
+                "label": "Dimensions",
+                "value": str(len(categorical_cols)),
+                "icon": "segments",
+                "color": "#0ea5e9",
+                "hint": "Categorical columns available for grouping and slicing",
+            }
+        )
+    if datetime_cols:
+        kpis.append(
+            {
+                "label": "Time Columns",
+                "value": str(len(datetime_cols)),
+                "icon": "time",
+                "color": "#ec4899",
+                "hint": "Columns that can support trend and seasonality analysis",
+            }
+        )
+    kpis.append(
+        {
+            "label": "Duplicate Rows",
+            "value": f"{duplicate_rows:,}",
+            "icon": "duplicate",
+            "color": "#f97316",
+            "hint": "Potential repeated records detected row by row",
+        }
+    )
     return kpis
+
+
+def _build_dataset_profile(
+    df: pl.DataFrame,
+    col_types: dict[str, str],
+    charts_count: int = 0,
+    ai_used: bool = False,
+    user_prompt: str = "",
+) -> dict[str, Any]:
+    total_rows = len(df)
+    total_columns = len(df.columns)
+    null_count = sum(df[c].null_count() for c in df.columns)
+    total_cells = max(total_rows * total_columns, 1)
+    completeness_pct = round((1 - null_count / total_cells) * 100, 1)
+    missing_pct = round(100 - completeness_pct, 1)
+
+    type_counts = {
+        "numeric": sum(1 for kind in col_types.values() if kind == "numeric"),
+        "categorical": sum(1 for kind in col_types.values() if kind == "categorical"),
+        "datetime": sum(1 for kind in col_types.values() if kind == "datetime"),
+        "boolean": sum(1 for kind in col_types.values() if kind == "boolean"),
+    }
+
+    duplicate_rows = 0
+    try:
+        duplicate_rows = max(total_rows - df.unique().height, 0)
+    except Exception:
+        duplicate_rows = 0
+    duplicate_pct = round((duplicate_rows / max(total_rows, 1)) * 100, 1)
+
+    columns_with_missing = sum(1 for column in df.columns if df[column].null_count() > 0)
+    sparse_columns = []
+    high_cardinality_columns = []
+    for column in df.columns:
+        null_pct = round(df[column].null_count() / max(total_rows, 1) * 100, 1)
+        unique_count = df[column].n_unique()
+        if null_pct >= 20:
+            sparse_columns.append(column)
+        if unique_count >= max(min(total_rows // 2, 200), 25):
+            high_cardinality_columns.append(column)
+
+    quality_score = round(
+        max(
+            0.0,
+            min(
+                100.0,
+                completeness_pct
+                - min(duplicate_pct * 0.8, 15)
+                - min((len(sparse_columns) / max(total_columns, 1)) * 20, 12),
+            ),
+        ),
+        1,
+    )
+    readiness_score = round(
+        min(
+            100.0,
+            quality_score * 0.55
+            + min(type_counts["numeric"] * 6, 18)
+            + min(type_counts["categorical"] * 4, 16)
+            + min(type_counts["datetime"] * 8, 16)
+            + min(charts_count * 4, 20),
+        ),
+        1,
+    )
+
+    if readiness_score >= 85:
+        readiness_label = "High"
+    elif readiness_score >= 65:
+        readiness_label = "Medium"
+    else:
+        readiness_label = "Low"
+
+    return {
+        "qualityScore": quality_score,
+        "readinessScore": readiness_score,
+        "readinessLabel": readiness_label,
+        "completenessPct": completeness_pct,
+        "missingPct": missing_pct,
+        "nullCount": int(null_count),
+        "duplicateRows": int(duplicate_rows),
+        "duplicatePct": duplicate_pct,
+        "columnsWithMissing": columns_with_missing,
+        "chartCount": charts_count,
+        "aiUsed": ai_used,
+        "promptUsed": bool(user_prompt.strip()),
+        "typeCounts": type_counts,
+        "sparseColumns": sparse_columns[:8],
+        "highCardinalityColumns": high_cardinality_columns[:8],
+    }
+
+
+def _build_top_columns(
+    df: pl.DataFrame,
+    col_types: dict[str, str],
+    metric: str,
+    limit: int = 5,
+) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    total_rows = max(len(df), 1)
+
+    for column in df.columns:
+        null_pct = round(df[column].null_count() / total_rows * 100, 1)
+        unique_count = df[column].n_unique()
+        entry = {
+            "name": column,
+            "type": col_types.get(column, "categorical"),
+            "nullPct": null_pct,
+            "unique": unique_count,
+        }
+        if metric == "null_pct":
+            entry["score"] = null_pct
+        elif metric == "uniqueness":
+            entry["score"] = round((unique_count / total_rows) * 100, 1)
+        else:
+            entry["score"] = 0
+        rows.append(entry)
+
+    return sorted(rows, key=lambda item: item.get("score", 0), reverse=True)[:limit]
+
+
+def _build_insight_cards(
+    df: pl.DataFrame,
+    col_types: dict[str, str],
+    charts_count: int,
+    ai_used: bool,
+    user_prompt: str,
+) -> list[dict[str, str]]:
+    profile = _build_dataset_profile(df, col_types, charts_count=charts_count, ai_used=ai_used, user_prompt=user_prompt)
+    type_counts = profile["typeCounts"]
+    metric_columns = type_counts["numeric"]
+    dimension_columns = type_counts["categorical"]
+
+    chart_note = (
+        f"{charts_count} charts prepared from the dataset schema."
+        if charts_count
+        else "No charts could be prepared from the available schema."
+    )
+
+    return [
+        {
+            "title": "Dataset Readiness",
+            "value": f"{profile['readinessScore']}%",
+            "description": f"{profile['readinessLabel']} readiness based on quality, schema mix, and chartability.",
+            "tone": "violet",
+        },
+        {
+            "title": "Quality Score",
+            "value": f"{profile['qualityScore']}%",
+            "description": f"{profile['nullCount']:,} missing values and {profile['duplicateRows']:,} possible duplicate rows detected.",
+            "tone": "emerald" if profile["qualityScore"] >= 85 else "amber" if profile["qualityScore"] >= 65 else "rose",
+        },
+        {
+            "title": "Schema Mix",
+            "value": f"{dimension_columns}D / {metric_columns}M",
+            "description": f"{dimension_columns} dimensions and {metric_columns} metrics available for slicing and comparison.",
+            "tone": "sky",
+        },
+        {
+            "title": "AI Coverage",
+            "value": "AI-guided" if ai_used else "Auto heuristics",
+            "description": (user_prompt.strip() and ai_used)
+            and "Dashboard refined from your prompt and dataset schema."
+            or chart_note,
+            "tone": "indigo",
+        },
+    ]
+
+
+def _build_dashboard_summary(
+    df: pl.DataFrame,
+    col_types: dict[str, str],
+    charts: list[dict[str, Any]],
+    ai_used: bool = False,
+    user_prompt: str = "",
+) -> dict[str, Any]:
+    profile = _build_dataset_profile(
+        df,
+        col_types,
+        charts_count=len(charts),
+        ai_used=ai_used,
+        user_prompt=user_prompt,
+    )
+
+    quality_band = "Strong" if profile["qualityScore"] >= 85 else "Needs review" if profile["qualityScore"] < 65 else "Good"
+    summary_text = (
+        f"This dataset contains {len(df):,} rows across {len(df.columns)} columns. "
+        f"Overall completeness is {profile['completenessPct']}%, with {profile['duplicateRows']:,} potential duplicate rows. "
+        f"The schema includes {profile['typeCounts']['numeric']} numeric, {profile['typeCounts']['categorical']} categorical, "
+        f"{profile['typeCounts']['datetime']} datetime, and {profile['typeCounts']['boolean']} boolean columns."
+    )
+
+    return {
+        "headline": "AI dataset intelligence",
+        "summary": summary_text,
+        "qualityBand": quality_band,
+        "profile": profile,
+        "insightCards": _build_insight_cards(df, col_types, len(charts), ai_used, user_prompt),
+        "topNullColumns": _build_top_columns(df, col_types, "null_pct", limit=5),
+        "topUniqueColumns": _build_top_columns(df, col_types, "uniqueness", limit=5),
+    }
 
 
 # ── Column summary ───────────────────────────────────────────────────────────
@@ -451,17 +714,21 @@ def analyze_with_ai(
         result = analyze(df)
         result["aiUsed"] = False
         result["schemaText"] = schema_text
+        result["prompt"] = user_prompt
         return result
 
+    dashboard_summary = _build_dashboard_summary(df, col_types, charts, ai_used=ai_used, user_prompt=user_prompt)
+
     return {
-        "kpis":          _build_kpis(df, col_types),
-        "charts":        charts,
-        "columnSummary": _build_column_summary(df, col_types),
-        "totalRows":     len(df),
-        "totalColumns":  len(df.columns),
-        "aiUsed":        ai_used,
-        "prompt":        user_prompt,
-        "schemaText":    schema_text,
+        "kpis":             _build_kpis(df, col_types),
+        "charts":           charts,
+        "columnSummary":    _build_column_summary(df, col_types),
+        "totalRows":        len(df),
+        "totalColumns":     len(df.columns),
+        "aiUsed":           ai_used,
+        "prompt":           user_prompt,
+        "schemaText":       schema_text,
+        "dashboardSummary": dashboard_summary,
     }
 
 
@@ -543,10 +810,11 @@ def analyze(df: pl.DataFrame) -> dict[str, Any]:
             pass
 
     return {
-        "kpis":          _build_kpis(df, col_types),
-        "charts":        charts,
-        "columnSummary": _build_column_summary(df, col_types),
-        "totalRows":     len(df),
-        "totalColumns":  len(df.columns),
-        "aiUsed":        False,
+        "kpis":             _build_kpis(df, col_types),
+        "charts":           charts,
+        "columnSummary":    _build_column_summary(df, col_types),
+        "totalRows":        len(df),
+        "totalColumns":     len(df.columns),
+        "aiUsed":           False,
+        "dashboardSummary": _build_dashboard_summary(df, col_types, charts, ai_used=False, user_prompt=""),
     }

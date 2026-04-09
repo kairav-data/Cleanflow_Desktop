@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
 import * as XLSX from 'xlsx';
@@ -34,6 +34,7 @@ const SEPARATORS = [
 const KPI_ICONS = {
     rows: Database, columns: TableProperties,
     check: CheckCircle2, stats: TrendingUp,
+    segments: PieIcon, time: Calendar, duplicate: RotateCcw,
 };
 const TYPE_ICON = { numeric: Hash, categorical: Type, datetime: Calendar, boolean: ToggleLeft };
 const TYPE_COLOR = {
@@ -48,6 +49,101 @@ const CHART_BADGES = {
     line: { icon: TrendingUp, label: 'Line', color: '#10b981' },
     pie: { icon: PieIcon, label: 'Pie', color: '#f59e0b' },
     scatter: { icon: Sparkles, label: 'Scatter', color: '#ec4899' },
+};
+
+const TONE_STYLES = {
+    violet: {
+        panel: 'border-violet-200 bg-violet-50/70',
+        chip: 'bg-violet-100 text-violet-700',
+    },
+    emerald: {
+        panel: 'border-emerald-200 bg-emerald-50/70',
+        chip: 'bg-emerald-100 text-emerald-700',
+    },
+    amber: {
+        panel: 'border-amber-200 bg-amber-50/70',
+        chip: 'bg-amber-100 text-amber-700',
+    },
+    rose: {
+        panel: 'border-rose-200 bg-rose-50/70',
+        chip: 'bg-rose-100 text-rose-700',
+    },
+    sky: {
+        panel: 'border-sky-200 bg-sky-50/70',
+        chip: 'bg-sky-100 text-sky-700',
+    },
+    indigo: {
+        panel: 'border-indigo-200 bg-indigo-50/70',
+        chip: 'bg-indigo-100 text-indigo-700',
+    },
+    slate: {
+        panel: 'border-slate-200 bg-slate-50/70',
+        chip: 'bg-slate-100 text-slate-700',
+    },
+};
+
+const buildFallbackDashboardSummary = (analysis) => {
+    const columnSummary = analysis?.columnSummary || [];
+    const typeCounts = columnSummary.reduce((acc, column) => {
+        const key = column.type || 'categorical';
+        acc[key] = (acc[key] || 0) + 1;
+        return acc;
+    }, { numeric: 0, categorical: 0, datetime: 0, boolean: 0 });
+
+    const topNullColumns = [...columnSummary]
+        .sort((left, right) => Number(right.nullPct || 0) - Number(left.nullPct || 0))
+        .slice(0, 5)
+        .map((column) => ({ ...column, score: column.nullPct || 0 }));
+
+    const topUniqueColumns = [...columnSummary]
+        .map((column) => ({
+            ...column,
+            score: analysis?.totalRows ? (((column.unique || 0) / Math.max(analysis.totalRows, 1)) * 100) : 0,
+        }))
+        .sort((left, right) => Number(right.score || 0) - Number(left.score || 0))
+        .slice(0, 5);
+
+    const completenessKpi = (analysis?.kpis || []).find((kpi) => kpi.label === 'Data Completeness');
+    const completenessPct = Number.parseFloat((completenessKpi?.value || '0').toString()) || 0;
+
+    return {
+        headline: 'AI dataset intelligence',
+        summary: `This dataset contains ${analysis?.totalRows?.toLocaleString?.() || analysis?.totalRows || 0} rows across ${analysis?.totalColumns || 0} columns.`,
+        qualityBand: completenessPct >= 85 ? 'Strong' : completenessPct >= 65 ? 'Good' : 'Needs review',
+        profile: {
+            qualityScore: completenessPct,
+            readinessScore: Math.min(100, completenessPct + Math.min((analysis?.charts?.length || 0) * 3, 15)),
+            readinessLabel: completenessPct >= 85 ? 'High' : completenessPct >= 65 ? 'Medium' : 'Low',
+            completenessPct,
+            missingPct: Math.max(0, 100 - completenessPct),
+            nullCount: 0,
+            duplicateRows: 0,
+            duplicatePct: 0,
+            columnsWithMissing: topNullColumns.filter((column) => Number(column.nullPct || 0) > 0).length,
+            chartCount: analysis?.charts?.length || 0,
+            aiUsed: Boolean(analysis?.aiUsed),
+            promptUsed: Boolean((analysis?.prompt || '').trim()),
+            typeCounts,
+            sparseColumns: topNullColumns.filter((column) => Number(column.nullPct || 0) >= 20).map((column) => column.name),
+            highCardinalityColumns: topUniqueColumns.filter((column) => Number(column.score || 0) >= 50).map((column) => column.name),
+        },
+        insightCards: [
+            {
+                title: 'Dataset Readiness',
+                value: `${Math.min(100, completenessPct + Math.min((analysis?.charts?.length || 0) * 3, 15)).toFixed(1)}%`,
+                description: 'Estimated dashboard readiness based on completeness and chart coverage.',
+                tone: 'violet',
+            },
+            {
+                title: 'Schema Mix',
+                value: `${typeCounts.categorical || 0}D / ${typeCounts.numeric || 0}M`,
+                description: 'Dimensions vs metrics available for slicing and analysis.',
+                tone: 'sky',
+            },
+        ],
+        topNullColumns,
+        topUniqueColumns,
+    };
 };
 
 // ── FIXED Custom Tooltip ─────────────────────────────────────────────────────
@@ -362,7 +458,7 @@ function ChartCard({ chart, index, onExpand }) {
             </div>
 
             <div className="px-3 pb-4 flex-1 pointer-events-none">
-                {renderChartJSX(chart, index, 215, '')}
+                {renderChartJSX(chart, index, 170, '')}
             </div>
 
             <div className="px-5 pb-3 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
@@ -445,6 +541,316 @@ function PromptBar({ currentPrompt, onRegenerate, aiUsed, loading }) {
                     </motion.div>
                 )}
             </AnimatePresence>
+        </div>
+    );
+}
+
+function InsightCard({ card, index }) {
+    const tone = TONE_STYLES[card.tone] || TONE_STYLES.slate;
+
+    return (
+        <motion.div
+            initial={{ opacity: 0, y: 14 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: index * 0.05, type: 'spring', stiffness: 280, damping: 24 }}
+            className={`rounded-2xl border p-5 shadow-sm ${tone.panel}`}
+        >
+            <div className="flex items-center justify-between gap-3">
+                <p className="text-sm font-bold text-slate-800">{card.title}</p>
+                <span className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-bold ${tone.chip}`}>{card.value}</span>
+            </div>
+            <p className="mt-3 text-sm leading-6 text-slate-600">{card.description}</p>
+        </motion.div>
+    );
+}
+
+function ProgressMeter({ label, value, tone = 'violet', helper }) {
+    const normalized = Math.max(0, Math.min(Number(value || 0), 100));
+    const toneMap = {
+        violet: 'from-violet-500 to-indigo-500',
+        emerald: 'from-emerald-500 to-teal-500',
+        amber: 'from-amber-500 to-orange-500',
+        rose: 'from-rose-500 to-pink-500',
+        sky: 'from-sky-500 to-cyan-500',
+    };
+
+    return (
+        <div className="space-y-2">
+            <div className="flex items-center justify-between gap-3">
+                <p className="text-sm font-semibold text-slate-700">{label}</p>
+                <p className="text-sm font-black text-slate-900">{normalized.toFixed(1)}%</p>
+            </div>
+            <div className="h-2.5 rounded-full bg-slate-100 overflow-hidden">
+                <div className={`h-full rounded-full bg-gradient-to-r ${toneMap[tone] || toneMap.violet}`} style={{ width: `${normalized}%` }} />
+            </div>
+            {helper ? <p className="text-xs text-slate-500">{helper}</p> : null}
+        </div>
+    );
+}
+
+function ProfileMiniStat({ label, value, helper, accent = 'slate' }) {
+    const tone = TONE_STYLES[accent] || TONE_STYLES.slate;
+
+    return (
+        <div className={`rounded-2xl border px-4 py-3 ${tone.panel}`}>
+            <p className="text-[11px] font-black uppercase tracking-wider text-slate-400">{label}</p>
+            <p className="mt-2 text-xl font-black text-slate-900">{value}</p>
+            {helper ? <p className="mt-1 text-xs text-slate-500">{helper}</p> : null}
+        </div>
+    );
+}
+
+function SchemaMixPanel({ profile }) {
+    const typeCounts = profile?.typeCounts || {};
+    const rows = [
+        { label: 'Metrics', value: typeCounts.numeric || 0, tone: 'violet' },
+        { label: 'Dimensions', value: typeCounts.categorical || 0, tone: 'emerald' },
+        { label: 'Time', value: typeCounts.datetime || 0, tone: 'amber' },
+        { label: 'Flags', value: typeCounts.boolean || 0, tone: 'rose' },
+    ];
+
+    return (
+        <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+            <div className="flex items-center justify-between gap-3">
+                <div>
+                    <p className="text-[11px] font-black uppercase tracking-wider text-slate-400">Schema Mix</p>
+                    <h3 className="mt-1 text-base font-black text-slate-900">Dataset structure at a glance</h3>
+                </div>
+                <span className="inline-flex rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-600">
+                    {Object.values(typeCounts).reduce((sum, count) => sum + Number(count || 0), 0)} total columns
+                </span>
+            </div>
+            <div className="mt-4 grid grid-cols-2 gap-3">
+                {rows.map((row) => (
+                    <ProfileMiniStat key={row.label} label={row.label} value={row.value} accent={row.tone} />
+                ))}
+            </div>
+        </div>
+    );
+}
+
+function ColumnRiskPanel({ title, rows, accent = 'amber', emptyText, valueLabel, formatter }) {
+    const tone = TONE_STYLES[accent] || TONE_STYLES.slate;
+
+    return (
+        <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+            <div className="flex items-center justify-between gap-3">
+                <div>
+                    <p className="text-[11px] font-black uppercase tracking-wider text-slate-400">{title}</p>
+                    <h3 className="mt-1 text-base font-black text-slate-900">Column watchlist</h3>
+                </div>
+                <span className={`inline-flex rounded-full px-3 py-1 text-xs font-bold ${tone.chip}`}>{rows?.length || 0} columns</span>
+            </div>
+            <div className="mt-4 space-y-3">
+                {(rows || []).length ? rows.map((row, index) => (
+                    <div key={`${row.name}-${index}`} className="rounded-2xl border border-slate-100 bg-slate-50 px-4 py-3">
+                        <div className="flex items-center justify-between gap-3">
+                            <div className="min-w-0">
+                                <p className="text-sm font-bold text-slate-800 truncate">{row.name}</p>
+                                <p className="mt-1 text-xs text-slate-500">{row.type} column · {row.unique?.toLocaleString?.() ?? row.unique} unique values</p>
+                            </div>
+                            <div className="text-right">
+                                <p className="text-sm font-black text-slate-900">{formatter ? formatter(row.score) : row.score}</p>
+                                <p className="text-[11px] text-slate-400">{valueLabel}</p>
+                            </div>
+                        </div>
+                    </div>
+                )) : (
+                    <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-5 text-sm text-slate-500">
+                        {emptyText}
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+}
+
+function ColumnTablePanel({ columns }) {
+    return (
+        <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
+            <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+                <div>
+                    <p className="text-[11px] font-black uppercase tracking-wider text-slate-400">Column Intelligence</p>
+                    <h3 className="mt-1 font-black text-slate-800 text-base">Column analysis</h3>
+                    <p className="text-xs text-slate-400 font-medium mt-0.5">{columns?.length} columns detected</p>
+                </div>
+            </div>
+            <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                    <thead>
+                        <tr className="bg-slate-50/80 text-xs font-bold uppercase text-slate-400 tracking-widest border-b border-slate-100">
+                            <th className="px-6 py-3 text-left">Column</th>
+                            <th className="px-4 py-3 text-left">Type</th>
+                            <th className="px-4 py-3 text-right">Unique</th>
+                            <th className="px-4 py-3 text-right">Nulls %</th>
+                            <th className="px-4 py-3 text-right">Min</th>
+                            <th className="px-4 py-3 text-right">Max</th>
+                            <th className="px-6 py-3 text-right">Mean</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {columns?.map((col, i) => {
+                            const TypeIcon = TYPE_ICON[col.type] || Hash;
+                            const typeStyle = TYPE_COLOR[col.type] || 'text-slate-500 bg-slate-100';
+                            return (
+                                <tr key={i} className="border-t border-slate-50 hover:bg-slate-50/60 transition-colors">
+                                    <td className="px-6 py-3.5 font-bold text-slate-800 text-sm">{col.name}</td>
+                                    <td className="px-4 py-3.5">
+                                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold ${typeStyle}`}>
+                                            <TypeIcon size={9} /> {col.type}
+                                        </span>
+                                    </td>
+                                    <td className="px-4 py-3.5 text-right text-slate-500 font-medium text-sm">{col.unique?.toLocaleString()}</td>
+                                    <td className="px-4 py-3.5 text-right">
+                                        <span className={`font-bold text-sm ${col.nullPct > 20 ? 'text-red-500' : col.nullPct > 5 ? 'text-amber-500' : 'text-emerald-500'}`}>
+                                            {col.nullPct}%
+                                        </span>
+                                    </td>
+                                    <td className="px-4 py-3.5 text-right text-slate-400 font-mono text-xs">{col.min ?? '—'}</td>
+                                    <td className="px-4 py-3.5 text-right text-slate-400 font-mono text-xs">{col.max ?? '—'}</td>
+                                    <td className="px-6 py-3.5 text-right text-slate-400 font-mono text-xs">{col.mean ?? '—'}</td>
+                                </tr>
+                            );
+                        })}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    );
+}
+
+function DashboardWorkspace({ analysis, dashboardSummary, filename, activeView, regenerating, onExpandChart, smartKpis }) {
+    return (
+        <div className="space-y-6">
+            <div className="relative overflow-hidden rounded-[28px] border border-slate-200 bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950 p-6 md:p-7 shadow-xl shadow-slate-900/10">
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(129,140,248,0.28),transparent_34%),radial-gradient(circle_at_bottom_left,rgba(16,185,129,0.2),transparent_28%)]" />
+                <div className="relative flex flex-col xl:flex-row xl:items-start xl:justify-between gap-6">
+                    <div className="max-w-3xl">
+                        <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.22em] text-indigo-100">
+                            <Sparkles size={12} className="text-indigo-200" /> {dashboardSummary?.headline || 'Dataset intelligence'}
+                        </div>
+                        <h2 className="mt-4 text-2xl md:text-3xl font-black tracking-tight text-white">
+                            {filename.replace(/\.[^.]+$/, '') || 'AI Visualizer dashboard'}
+                        </h2>
+                        <p className="mt-3 max-w-2xl text-sm md:text-[15px] leading-7 text-slate-300">
+                            {dashboardSummary?.summary || 'Dynamic dashboard generated from your uploaded dataset.'}
+                        </p>
+                        <div className="mt-5 flex flex-wrap gap-2.5">
+                            <span className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3.5 py-1.5 text-xs font-semibold text-white">
+                                <LayoutDashboard size={12} className="text-indigo-200" /> {analysis.charts?.length || 0} charts
+                            </span>
+                            <span className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3.5 py-1.5 text-xs font-semibold text-white">
+                                <Database size={12} className="text-emerald-200" /> {analysis.totalRows?.toLocaleString()} rows
+                            </span>
+                            <span className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3.5 py-1.5 text-xs font-semibold text-white">
+                                <TableProperties size={12} className="text-sky-200" /> {analysis.totalColumns} columns
+                            </span>
+                            <span className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3.5 py-1.5 text-xs font-semibold text-white">
+                                <Bot size={12} className="text-violet-200" /> {analysis.aiUsed ? 'AI-guided layout' : 'Automatic layout'}
+                            </span>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3 min-w-full sm:min-w-[360px] xl:max-w-[420px]">
+                        <ProfileMiniStat label="Readiness" value={`${dashboardSummary?.profile?.readinessScore ?? 0}%`} helper={`${dashboardSummary?.profile?.readinessLabel || 'Low'} dashboard readiness`} accent="violet" />
+                        <ProfileMiniStat label="Quality Band" value={dashboardSummary?.qualityBand || 'Good'} helper={`${dashboardSummary?.profile?.completenessPct ?? 0}% complete`} accent="emerald" />
+                        <ProfileMiniStat label="Sparse Columns" value={dashboardSummary?.profile?.sparseColumns?.length || 0} helper="Columns with meaningful missing-value pressure" accent="amber" />
+                        <ProfileMiniStat label="High Cardinality" value={dashboardSummary?.profile?.highCardinalityColumns?.length || 0} helper="Columns with very high uniqueness" accent="sky" />
+                    </div>
+                </div>
+            </div>
+
+            {smartKpis.length > 0 && (
+                <div className="grid grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6 gap-4">
+                    {smartKpis.map((kpi, i) => {
+                        const Icon = KPI_ICONS[kpi.icon] || BarChart3;
+                        return (
+                            <motion.div
+                                key={i}
+                                initial={{ opacity: 0, scale: 0.96 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                transition={{ delay: i * 0.05, type: 'spring', stiffness: 300 }}
+                                className="rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-sm"
+                            >
+                                <div className="flex items-start justify-between gap-3">
+                                    <div className="min-w-0">
+                                        <p className="text-[11px] font-black uppercase tracking-wider text-slate-400">{kpi.label}</p>
+                                        <p className="mt-3 text-2xl font-black tracking-tight text-slate-900 truncate">{kpi.value}</p>
+                                    </div>
+                                    <div className="w-11 h-11 rounded-2xl flex items-center justify-center shrink-0" style={{ backgroundColor: `${kpi.color}15` }}>
+                                        <Icon size={18} style={{ color: kpi.color }} />
+                                    </div>
+                                </div>
+                                {kpi.hint ? <p className="mt-3 text-xs leading-5 text-slate-500">{kpi.hint}</p> : null}
+                            </motion.div>
+                        );
+                    })}
+                </div>
+            )}
+
+            <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm mt-6">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                        <p className="text-[11px] font-black uppercase tracking-wider text-slate-400">Executive Insights</p>
+                        <h3 className="mt-1 text-base font-black text-slate-900">AI-generated dashboard briefing</h3>
+                    </div>
+                    <span className="inline-flex rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-600">
+                        {dashboardSummary?.insightCards?.length || 0} live insights
+                    </span>
+                </div>
+                <div className="mt-4 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+                    {(dashboardSummary?.insightCards || []).map((card, index) => (
+                        <InsightCard key={`${card.title}-${index}`} card={card} index={index} />
+                    ))}
+                </div>
+            </div>
+
+            {activeView === 'charts' ? (
+                regenerating ? (
+                    <div className="flex flex-col items-center justify-center py-20 text-center">
+                        <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center mb-5 shadow-xl shadow-violet-200">
+                            <Sparkles size={26} className="text-white animate-pulse" />
+                        </div>
+                        <p className="text-slate-700 font-black text-lg mb-1.5">Rethinking your dashboard...</p>
+                        <p className="text-sm text-slate-400 font-medium max-w-xs">
+                            AI is selecting the most useful chart layout from your dataset.
+                        </p>
+                    </div>
+                ) : analysis.charts?.length > 0 ? (
+                    <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+                        <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
+                            <div>
+                                <p className="text-[11px] font-black uppercase tracking-wider text-slate-400">Live Dashboard</p>
+                                <h3 className="mt-1 text-base font-black text-slate-900">Interactive chart board</h3>
+                            </div>
+                            <div className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-500 font-medium">
+                                <Maximize2 size={11} className="text-violet-500" />
+                                Click any chart to enlarge, download Excel, or export PNG
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+                            {analysis.charts.map((chart, i) => (
+                                <ChartCard key={i} chart={chart} index={i} onExpand={() => onExpandChart(chart, i)} />
+                            ))}
+                        </div>
+                    </div>
+                ) : (
+                    <div className="flex flex-col items-center justify-center py-20 text-center rounded-3xl border border-slate-200 bg-white shadow-sm">
+                        <div className="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center mb-4">
+                            <BarChart3 size={26} className="text-slate-300" />
+                        </div>
+                        <p className="text-slate-600 font-bold mb-1.5">No charts generated</p>
+                        <p className="text-sm text-slate-400 max-w-sm font-medium">
+                            Try a different prompt, or use a dataset with numeric and categorical columns.
+                        </p>
+                    </div>
+                )
+            ) : (
+                <div className="space-y-6">
+                    <SchemaMixPanel profile={dashboardSummary?.profile} />
+                    <ColumnTablePanel columns={analysis.columnSummary} />
+                </div>
+            )}
         </div>
     );
 }
@@ -566,6 +972,56 @@ export default function DataVisualizer() {
 
     const steps = [{ n: 1, label: 'Upload' }, { n: 2, label: 'Visualize' }];
     const isLoading = uploading || analyzing || regenerating;
+    const dashboardSummary = useMemo(() => {
+        if (!analysis) return null;
+        return analysis.dashboardSummary || buildFallbackDashboardSummary(analysis);
+    }, [analysis]);
+
+    const smartKpis = useMemo(() => {
+        if (!analysis || !analysis.columnSummary) return [];
+        const numerics = analysis.columnSummary.filter(c => c.type === 'numeric');
+        const keywords = ['sale', 'rev', 'price', 'amount', 'total', 'profit', 'cost', 'qty', 'quantity', 'order', 'margin', 'val'];
+        
+        const scored = numerics.map(c => {
+            let score = 0;
+            const name = c.name.toLowerCase();
+            if (keywords.some(k => name.includes(k))) score += 50;
+            if (name.includes('id')) score -= 100;
+            if (name.includes('year') || name.includes('date')) score -= 50;
+            return { ...c, score };
+        }).sort((a, b) => b.score - a.score);
+
+        const colors = ['#6366f1', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6', '#0ea5e9'];
+        let colorIdx = 0;
+        
+        const generated = [];
+        scored.slice(0, 3).forEach(c => {
+            const meanVal = c.mean ?? 0;
+            const maxVal = c.max ?? 0;
+            generated.push({
+                label: `Avg ${c.name}`,
+                value: meanVal.toLocaleString(undefined, { maximumFractionDigits: 2 }),
+                icon: 'stats',
+                color: colors[colorIdx++ % colors.length],
+            });
+            if (maxVal > 0) {
+                generated.push({
+                    label: `Max ${c.name}`,
+                    value: maxVal.toLocaleString(undefined, { maximumFractionDigits: 2 }),
+                    icon: 'stats',
+                    color: colors[colorIdx++ % colors.length],
+                });
+            }
+        });
+        
+        if (generated.length === 0 && analysis.kpis) {
+            return analysis.kpis.filter(k => !['Total Rows', 'Columns', 'Data Completeness', 'Duplicate Rows'].includes(k.label)).slice(0, 6);
+        }
+        
+        return generated.slice(0, 6);
+    }, [analysis]);
+
+    const showLegacyVisualizer = false;
 
     return (
         <div className="flex flex-col h-full w-full bg-slate-50/80">
@@ -820,6 +1276,16 @@ export default function DataVisualizer() {
                             )}
 
                             <div ref={dashRef}>
+                                <DashboardWorkspace
+                                    analysis={analysis}
+                                    dashboardSummary={dashboardSummary}
+                                    filename={filename}
+                                    activeView={activeView}
+                                    regenerating={regenerating}
+                                    onExpandChart={(chart, index) => setExpandedChart({ chart, index })}
+                                    smartKpis={smartKpis}
+                                />
+                                {showLegacyVisualizer && (<div>
                                 {/* KPI tiles */}
                                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
                                     {analysis.kpis?.map((kpi, i) => {
@@ -927,6 +1393,7 @@ export default function DataVisualizer() {
                                         </div>
                                     </div>
                                 )}
+                                </div>)}
                             </div>
                         </motion.div>
                     )}

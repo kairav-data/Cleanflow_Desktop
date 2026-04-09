@@ -258,7 +258,7 @@ export default function PricingIntelligenceBuilder() {
         const loadConnections = async () => {
             if (!token) return;
             try {
-                const res = await axios.get(`${API_BASE}/history/connections`, { headers: { Authorization: `Bearer ${token}` } });
+                const res = await axios.get(`${API_BASE}/connections`, { headers: { Authorization: `Bearer ${token}` } });
                 const available = res.data || [];
                 setConnections(available);
                 if (available.length > 0) {

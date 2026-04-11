@@ -153,3 +153,42 @@ class DatabaseConnection(DatabaseConnectionCreate):
 class DatabaseQueryRequest(BaseModel):
     connection_id: str
     query: str
+
+
+# --- Global Repo Models ---
+
+class RuleRepoCreate(BaseModel):
+    name: str
+    description: Optional[str] = ""
+    severity: Optional[str] = "Standard"
+    space: Optional[str] = "Global Repository"
+    category: Optional[str] = "Validity"
+    logic_type: Optional[str] = "condition"
+    use_for_validation: Optional[bool] = True
+    definition: Optional[dict] = None
+    rules: List[dict]          # [{column, rule_type, params}]
+
+class RuleRepoItem(RuleRepoCreate):
+    id: Optional[str] = None
+    author_email: Optional[str] = ""
+    author_name: Optional[str] = "Anonymous"
+    created_at: Optional[str] = ""
+    updated_at: Optional[str] = ""
+
+
+class CleaningOpRepoCreate(BaseModel):
+    name: str
+    description: Optional[str] = ""
+    severity: Optional[str] = "Standard"
+    space: Optional[str] = "Global Repository"
+    category: Optional[str] = "Standardization"
+    operation_kind: Optional[str] = "replace_value"
+    definition: Optional[dict] = None
+    operations: List[dict]     # [{column, operation, params}]
+
+class CleaningOpRepoItem(CleaningOpRepoCreate):
+    id: Optional[str] = None
+    author_email: Optional[str] = ""
+    author_name: Optional[str] = "Anonymous"
+    created_at: Optional[str] = ""
+    updated_at: Optional[str] = ""

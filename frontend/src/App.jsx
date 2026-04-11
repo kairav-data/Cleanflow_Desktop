@@ -5,7 +5,7 @@ import {
     LogOut, Search, Sparkles, Database,
     FileCheck, ArrowRight, Zap, Check,
     Globe, ChevronRight, Shuffle, GitMerge, RefreshCw, Trash2, ShieldCheck, AlertTriangle, BarChart3, TrendingUp,
-    Menu, X, Home, LayoutDashboard, Settings, User, FolderClock, Clock3, BarChart2
+    Menu, X, Home, LayoutDashboard, Settings, User, FolderClock, Clock3, BarChart2, BookOpen
 } from 'lucide-react';
 
 // Components
@@ -16,7 +16,7 @@ import { HomePage, PricingPage, UserProfilePage, UsagePage } from './components/
 import ChatBot from './components/ChatBot';
 
 // Feature Builders
-import { EnrichmentBuilder, ScraperBuilder, SchemaMapper, DataMatchingBuilder, PricingIntelligenceBuilder, PipelineBuilder, SchedulerBuilder, PipelineRuns, DataVisualizer } from './features';
+import { EnrichmentBuilder, ScraperBuilder, SchemaMapper, DataMatchingBuilder, PricingIntelligenceBuilder, PipelineBuilder, SchedulerBuilder, PipelineRuns, DataVisualizer, GlobalRepositoryBuilder } from './features';
 
 // Assets
 import Logo from './assets/logo.png';
@@ -32,6 +32,7 @@ function App() {
     const [filename, setFilename] = useState('');
     const [validationResults, setValidationResults] = useState(null);
     const [validationView, setValidationView] = useState('dataset');
+    const [validationRules, setValidationRules] = useState([]); // lifted so rules survive tab switches
 
     const [user, setUser] = useState(null);
     const [isAuthOpen, setIsAuthOpen] = useState(false);
@@ -122,6 +123,7 @@ function App() {
         setColumns([]);
         setFilename('');
         setSessionId(null);
+        setValidationRules([]);
         setValidationView('dataset');
         handleFeatureAccess('validate');
     };
@@ -148,6 +150,7 @@ function App() {
         const targetTab = getTabFromModule(job.module);
         if (targetTab === 'validate') {
             setFilename(job.file_name || job.filename || '');
+            setValidationRules(job.rules || []);
             const allColumns = job.column_stats ? Object.keys(job.column_stats) : [];
             const uniqueColumns = Array.from(new Set([...allColumns, ...(job.rules || []).map(r => r.column).filter(Boolean)]));
             if (uniqueColumns.length > 0) {
@@ -249,7 +252,7 @@ function App() {
                     className="w-full max-w-7xl mx-auto pb-16"
                 >
                     {/* Hero Section */}
-                    <div className="mb-8 relative overflow-hidden rounded-[28px] border border-slate-800/80 shadow-xl" style={{background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%)'}}>
+                    <div className="mb-8 relative overflow-hidden rounded-[28px] border border-slate-800/80 shadow-xl" style={{ background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%)' }}>
                         {/* Ambient glow blobs */}
                         <div className="absolute top-0 left-1/4 h-80 w-80 rounded-full bg-emerald-500/10 blur-3xl pointer-events-none" />
                         <div className="absolute bottom-0 right-1/4 h-72 w-72 rounded-full bg-sky-500/10 blur-3xl pointer-events-none" />
@@ -336,6 +339,7 @@ function App() {
                                         setColumns([]);
                                         setFilename('');
                                         setSessionId(null);
+                                        setValidationRules([]);
                                         setStep(1);
                                         setActiveTab('validate');
                                     }
@@ -579,12 +583,12 @@ function App() {
                                 return (
                                     <div key={s} className="flex items-center">
                                         <div className={`flex items-center gap-2 rounded-full px-3 py-1 text-[11px] font-bold uppercase tracking-[0.14em] transition-all ${step === s ? 'bg-slate-900 text-white' :
-                                                step > s ? 'bg-emerald-100 text-emerald-700' :
-                                                    'bg-slate-100 text-slate-400'
+                                            step > s ? 'bg-emerald-100 text-emerald-700' :
+                                                'bg-slate-100 text-slate-400'
                                             }`}>
                                             <span className={`flex h-4 w-4 items-center justify-center rounded-full text-[10px] font-black ${step === s ? 'bg-white text-slate-900' :
-                                                    step > s ? 'bg-emerald-500 text-white' :
-                                                        'bg-slate-300 text-slate-500'
+                                                step > s ? 'bg-emerald-500 text-white' :
+                                                    'bg-slate-300 text-slate-500'
                                                 }`}>{step > s ? '✓' : s}</span>
                                             {label}
                                         </div>
@@ -610,6 +614,7 @@ function App() {
                                         setColumns(data.columns || []);
                                         setFilename(data.filename || data.file_name || '');
                                         setValidationResults(null);
+                                        setValidationRules([]); // reset rules on new dataset
                                         setValidationView('dataset');
                                         setStep(2);
                                     }}
@@ -646,21 +651,28 @@ function App() {
                                     ]}
                                 />
 
-                                {validationView === 'dataset' && sessionId ? (
+                                {/* Dataset panel */}
+                                <div style={{ display: validationView === 'dataset' && sessionId ? 'block' : 'none' }}>
                                     <DatasetViewer
                                         sessionId={sessionId}
                                         tone="blue"
                                         title="Validation Dataset"
                                         subtitle="Review inserted rows before switching back to rules or running validation."
                                     />
-                                ) : (
+                                </div>
+
+                                {/* Rules panel – always mounted so rules are never lost on tab switch */}
+                                <div style={{ display: validationView === 'rules' || !sessionId ? 'block' : 'none' }}>
                                     <RuleBuilder
                                         compact={true}
                                         columns={columns}
-                                        initialRules={validationResults?.rules || []}
+                                        initialRules={validationRules}
+                                        onRulesChange={setValidationRules}
                                         onRunValidation={handleRunValidation}
+                                        showRepoLibrary={true}
+                                        user={user}
                                     />
-                                )}
+                                </div>
                             </motion.div>
                         )}
 
@@ -677,6 +689,7 @@ function App() {
                                         setStep(1);
                                     }}
                                     onEditRules={() => {
+                                        setValidationRules(validationResults?.rules || []);
                                         setValidationView('rules');
                                         setStep(2);
                                     }}
@@ -687,15 +700,22 @@ function App() {
                 </motion.div>
             )}
 
-            {/* 3. ENRICHMENT VIEW */}
-            {activeTab === 'enrichment' && (
-                <motion.div key="enrichment-tab" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="w-full h-full">
-
-                    <EnrichmentBuilder onComplete={goToLanding} />
+            {/* 3. GLOBAL REPOSITORY VIEW */}
+            {activeTab === 'repository' && (
+                <motion.div key="repository-tab" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="w-full h-full">
+                    <GlobalRepositoryBuilder user={user} />
                 </motion.div>
             )}
 
-            {/* 4. SCRAPER VIEW */}
+            {/* 4. ENRICHMENT VIEW */}
+            {activeTab === 'enrichment' && (
+                <motion.div key="enrichment-tab" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="w-full h-full">
+
+                    <EnrichmentBuilder user={user} onComplete={goToLanding} />
+                </motion.div>
+            )}
+
+            {/* 5. SCRAPER VIEW */}
             {activeTab === 'scraper' && (
                 <motion.div key="scraper-tab" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="w-full h-full">
 
@@ -703,7 +723,7 @@ function App() {
                 </motion.div>
             )}
 
-            {/* 5. MAPPER VIEW */}
+            {/* 6. MAPPER VIEW */}
             {activeTab === 'mapper' && (
                 <motion.div key="mapper-tab" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="w-full h-full">
 
@@ -711,7 +731,7 @@ function App() {
                 </motion.div>
             )}
 
-            {/* 6. DATA MATCHING VIEW */}
+            {/* 7. DATA MATCHING VIEW */}
             {activeTab === 'matching' && (
                 <motion.div key="matching-tab" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="w-full h-full">
 
@@ -719,35 +739,35 @@ function App() {
                 </motion.div>
             )}
 
-            {/* 7. PRICING INTELLIGENCE VIEW */}
+            {/* 8. PRICING INTELLIGENCE VIEW */}
             {activeTab === 'pricing-intelligence' && (
                 <motion.div key="pricing-intelligence-tab" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="w-full h-full">
                     <PricingIntelligenceBuilder />
                 </motion.div>
             )}
 
-            {/* 8. AI VISUALIZER VIEW */}
+            {/* 9. AI VISUALIZER VIEW */}
             {activeTab === 'visualizer' && (
                 <motion.div key="visualizer-tab" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="w-full h-full">
                     <DataVisualizer />
                 </motion.div>
             )}
 
-            {/* 9. PIPELINE ORCHESTRATOR VIEW */}
+            {/* 10. PIPELINE ORCHESTRATOR VIEW */}
             {activeTab === 'pipeline' && (
                 <motion.div key="pipeline-tab" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="w-full h-full">
                     <PipelineBuilder onComplete={goToLanding} />
                 </motion.div>
             )}
 
-            {/* 10. PIPELINE SCHEDULER VIEW */}
+            {/* 11. PIPELINE SCHEDULER VIEW */}
             {activeTab === 'scheduler' && (
                 <motion.div key="scheduler-tab" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="w-full">
                     <SchedulerBuilder />
                 </motion.div>
             )}
 
-            {/* 11. PIPELINE RUNS VIEW */}
+            {/* 12. PIPELINE RUNS VIEW */}
             {activeTab === 'pipeline-runs' && (
                 <motion.div key="pipeline-runs-tab" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="w-full">
                     <PipelineRuns />
@@ -950,6 +970,15 @@ function App() {
                         <h4 className="mb-2 px-3 text-[11px] font-black uppercase tracking-[0.16em] text-gray-500">Resources</h4>
                         <ul className="space-y-1">
                             <li>
+                                <button onClick={() => handleFeatureAccess('repository')} className={`group flex w-full items-center justify-between rounded-lg px-3 py-2 text-[13px] font-semibold transition-all ${activeTab === 'repository' ? 'border border-emerald-900/50 bg-emerald-600/10 text-emerald-400' : 'text-gray-400 hover:bg-[#1f2937] hover:text-gray-100'}`}>
+                                    <div className="flex items-center gap-3">
+                                        <BookOpen size={18} className={activeTab === 'repository' ? 'text-emerald-500' : 'text-gray-500 group-hover:text-gray-300'} />
+                                        Global Repository
+                                    </div>
+                                    {activeTab === 'repository' && <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]" />}
+                                </button>
+                            </li>
+                            <li>
                                 <button onClick={() => handleFeatureAccess('usage')} className={`group flex w-full items-center justify-between rounded-lg px-3 py-2 text-[13px] font-semibold transition-all ${activeTab === 'usage' ? 'border border-emerald-900/50 bg-emerald-600/10 text-emerald-400' : 'text-gray-400 hover:bg-[#1f2937] hover:text-gray-100'}`}>
                                     <div className="flex items-center gap-3">
                                         <BarChart2 size={18} className={activeTab === 'usage' ? 'text-emerald-500' : 'text-gray-500 group-hover:text-gray-300'} />
@@ -989,7 +1018,7 @@ function App() {
 
             {/* Main Central Content Area */}
             <main className="relative flex h-screen flex-1 flex-col overflow-hidden bg-slate-50 pt-14 lg:pt-0">
-                <div className={`h-full w-full max-w-full flex-1 overflow-y-auto ${activeTab === 'pipeline' ? 'p-0' : activeTab === 'validate' || activeTab === 'enrichment' || activeTab === 'scraper' || activeTab === 'mapper' || activeTab === 'matching' || activeTab === 'pricing-intelligence' || activeTab === 'visualizer' ? 'p-0' : 'p-4 md:p-6'}`}>
+                <div className={`h-full w-full max-w-full flex-1 overflow-y-auto ${activeTab === 'pipeline' ? 'p-0' : activeTab === 'validate' || activeTab === 'repository' || activeTab === 'enrichment' || activeTab === 'scraper' || activeTab === 'mapper' || activeTab === 'matching' || activeTab === 'pricing-intelligence' || activeTab === 'visualizer' ? 'p-0' : 'p-4 md:p-6'}`}>
                     {renderWorkspaceContent()}
                 </div>
             </main>

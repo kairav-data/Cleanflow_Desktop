@@ -1,79 +1,158 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles, Play, Eye, Download, CheckCircle, FileJson, FileSpreadsheet, FileText, Plus, Trash2, AlertCircle, ArrowLeft } from 'lucide-react';
+import { AnimatePresence, motion } from 'framer-motion';
+import {
+    AlertCircle,
+    ArrowLeft,
+    BookOpen,
+    CheckCircle,
+    Eye,
+    FileJson,
+    FileSpreadsheet,
+    FileText,
+    Play,
+    Plus,
+    Sparkles,
+    Trash2,
+} from 'lucide-react';
 import { DataConnection, DatasetViewer, WorkspaceTabs } from '../components';
+import RepoSidebar from '../components/RepoSidebar';
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'import.meta.env.VITE_API_URL';
-
+const API_BASE = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || 'http://localhost:8000';
 const STEPS = ['Upload', 'Configure', 'Results'];
 
-export default function EnrichmentBuilder({ sessionId: initialSessionId, columns: initialColumns, onComplete }) {
-    const [sessionId, setSessionId] = useState(initialSessionId);
+const createOperationDraft = (columns = [], operations = []) => ({
+    id: `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+    column: columns[0] || '',
+    operation: operations[0]?.id || '',
+    params: {},
+});
+
+const mapImportedOperations = (items = [], columns = [], operations = []) =>
+    items.map((item, index) => ({
+        id: `${Date.now()}_${index}_${Math.random().toString(36).slice(2, 8)}`,
+        column: item.column || columns[0] || '',
+        operation: item.operation || operations[0]?.id || '',
+        params: item.params || {},
+    }));
+
+const DownloadCard = ({ fmt, label, Icon, onClick }) => (
+    <button
+        type="button"
+        onClick={() => onClick(fmt)}
+        className="group flex flex-col items-center gap-3 rounded-2xl border-2 border-slate-200 py-7 transition-all hover:-translate-y-1 hover:border-emerald-400 hover:bg-emerald-50 hover:shadow-lg"
+    >
+        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-slate-100 shadow-sm transition-colors group-hover:bg-white">
+            <Icon className="text-slate-500 transition-colors group-hover:text-emerald-600" size={26} />
+        </div>
+        <span className="text-sm font-bold text-slate-700 transition-colors group-hover:text-emerald-700">{label}</span>
+    </button>
+);
+
+export default function EnrichmentBuilder({ sessionId: initialSessionId, columns: initialColumns, onComplete, user = null }) {
+    const [sessionId, setSessionId] = useState(initialSessionId || null);
     const [columns, setColumns] = useState(initialColumns || []);
     const [operations, setOperations] = useState([]);
     const [rules, setRules] = useState([]);
-    const [previewData, setPreviewData] = useState(null);
+    const [previewData, setPreviewData] = useState([]);
     const [loading, setLoading] = useState(false);
-    const [step, setStep] = useState(1);
+    const [step, setStep] = useState(initialSessionId ? 2 : 1);
     const [workspaceTab, setWorkspaceTab] = useState('dataset');
+    const [showRepoSidebar, setShowRepoSidebar] = useState(false);
 
-    useEffect(() => { fetchOperations(); }, []);
+    useEffect(() => {
+        const fetchOperations = async () => {
+            try {
+                const { data } = await axios.get(`${API_BASE}/features/cleaner/operations`);
+                setOperations(data.operations || []);
+            } catch (error) {
+                console.error('Error fetching cleaning operations:', error);
+            }
+        };
+        fetchOperations();
+    }, []);
 
-    const fetchOperations = async () => {
-        try {
-            const cleanerRes = await axios.get(`${API_BASE}/features/cleaner/operations`);
-            setOperations(cleanerRes.data.operations || []);
-        } catch (e) { console.error('Error fetching cleaning operations:', e); }
-    };
+    const getOperationMeta = (id) => operations.find((operation) => operation.id === id) || null;
 
-    const addRule = () => {
-        setRules([...rules, { id: Date.now(), column: columns[0] || '', operation: operations[0]?.id || '', params: {} }]);
-    };
-    const removeRule = (id) => setRules(rules.filter(r => r.id !== id));
+    const addRule = () => setRules((current) => [...current, createOperationDraft(columns, operations)]);
+    const removeRule = (id) => setRules((current) => current.filter((rule) => rule.id !== id));
+
     const updateRule = (id, field, value) => {
-        if (field === 'operation') {
-            setRules(rules.map(r => r.id === id ? { ...r, [field]: value, params: {} } : r));
-        } else {
-            setRules(rules.map(r => r.id === id ? { ...r, [field]: value } : r));
-        }
+        setRules((current) =>
+            current.map((rule) =>
+                rule.id === id
+                    ? { ...rule, [field]: value, params: field === 'operation' ? {} : rule.params }
+                    : rule
+            )
+        );
     };
-    const updateParams = (id, paramKey, paramValue) => {
-        setRules(rules.map(r => r.id === id ? { ...r, params: { ...r.params, [paramKey]: paramValue } } : r));
+
+    const updateParams = (id, key, value) => {
+        setRules((current) =>
+            current.map((rule) => (rule.id === id ? { ...rule, params: { ...rule.params, [key]: value } } : rule))
+        );
     };
-    const buildPayload = () => ({ rules: rules.map(r => ({ column: r.column, operation: r.operation, params: r.params })) });
-    const getOperationMeta = (opId) => operations.find(o => o.id === opId) || null;
+
+    const buildPayload = () => ({
+        rules: rules.map(({ column, operation, params }) => ({ column, operation, params })),
+    });
+
+    const applyRepoOperations = (repoOperations, mode = 'replace') => {
+        const mapped = mapImportedOperations(repoOperations || [], columns, operations);
+        if (mapped.length === 0) return;
+        setRules((current) => (mode === 'append' ? [...current, ...mapped] : mapped));
+        setWorkspaceTab('rules');
+        setStep(2);
+    };
 
     const handlePreview = async () => {
-        if (rules.length === 0) return;
+        if (!sessionId || rules.length === 0) return;
         setLoading(true);
         try {
-            const res = await axios.post(`${API_BASE}/features/cleaner/preview/${sessionId}`, buildPayload());
-            setPreviewData(res.data.data);
+            const { data } = await axios.post(`${API_BASE}/features/cleaner/preview/${sessionId}`, buildPayload());
+            setPreviewData(data.data || []);
             setStep(3);
-        } catch (e) { alert('Preview failed: ' + (e.response?.data?.detail || e.message)); }
-        setLoading(false);
+        } catch (error) {
+            alert(`Preview failed: ${error.response?.data?.detail || error.message}`);
+        } finally {
+            setLoading(false);
+        }
     };
 
     const handleExecute = async () => {
+        if (!sessionId) return;
         setLoading(true);
         try {
             await axios.post(`${API_BASE}/features/cleaner/execute/${sessionId}`, buildPayload());
             try {
                 const token = localStorage.getItem('token');
                 const headers = token ? { Authorization: `Bearer ${token}` } : {};
-                await axios.post(`${API_BASE}/history/jobs`, {
-                    session_id: sessionId, file_name: `Data Cleaning Pipeline`,
-                    rules: rules.map(r => ({ column: r.column, operation: r.operation })),
-                    total_rows: 0, valid_rows: 0, invalid_rows: 0, module: 'enrichment'
-                }, { headers });
-            } catch (histErr) { console.error("Failed to save history:", histErr); }
+                await axios.post(
+                    `${API_BASE}/history/jobs`,
+                    {
+                        session_id: sessionId,
+                        file_name: 'Data Cleaning Pipeline',
+                        rules: rules.map(({ column, operation, params }) => ({ column, operation, params })),
+                        total_rows: 0,
+                        valid_rows: 0,
+                        invalid_rows: 0,
+                        module: 'enrichment',
+                    },
+                    { headers }
+                );
+            } catch (historyError) {
+                console.error('Failed to save history:', historyError);
+            }
             setStep(4);
-        } catch (e) { alert('Processing failed: ' + (e.response?.data?.detail || e.message)); }
-        setLoading(false);
+        } catch (error) {
+            alert(`Processing failed: ${error.response?.data?.detail || error.message}`);
+        } finally {
+            setLoading(false);
+        }
     };
 
     const handleDownload = async (format) => {
+        if (!sessionId) return;
         try {
             const response = await axios.get(`${API_BASE}/features/export/${sessionId}?format=${format}`, { responseType: 'blob' });
             const url = window.URL.createObjectURL(new Blob([response.data]));
@@ -82,330 +161,322 @@ export default function EnrichmentBuilder({ sessionId: initialSessionId, columns
             link.setAttribute('download', `dataset_cleaned.${format}`);
             document.body.appendChild(link);
             link.click();
-            link.parentNode.removeChild(link);
-        } catch (e) { alert('Download failed: ' + e.message); }
+            link.remove();
+        } catch (error) {
+            alert(`Download failed: ${error.message}`);
+        }
     };
 
+    const resetWorkspace = () => {
+        setStep(1);
+        setRules([]);
+        setSessionId(null);
+        setColumns([]);
+        setPreviewData([]);
+        setWorkspaceTab('dataset');
+        if (onComplete) onComplete();
+    };
+
+    const renderParams = (rule) => {
+        const meta = getOperationMeta(rule.operation);
+        if (!meta?.requires_input) {
+            return <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-400">No additional parameters required</span>;
+        }
+
+        if (rule.operation === 'fill_nulls') {
+            return (
+                <div className="flex flex-col gap-3">
+                    <select
+                        className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-medium text-slate-700 outline-none transition-all focus:border-emerald-500"
+                        value={rule.params.method || 'mean'}
+                        onChange={(event) => updateParams(rule.id, 'method', event.target.value)}
+                    >
+                        <option value="mean">Average (Mean)</option>
+                        <option value="median">Median</option>
+                        <option value="min">Minimum Value</option>
+                        <option value="max">Maximum Value</option>
+                        <option value="custom">Custom Value...</option>
+                    </select>
+                    {rule.params.method === 'custom' && (
+                        <input
+                            type="text"
+                            className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-medium text-slate-700 outline-none transition-all focus:border-emerald-500"
+                            placeholder="e.g. Unknown, 0, Pending"
+                            value={rule.params.custom_value || ''}
+                            onChange={(event) => updateParams(rule.id, 'custom_value', event.target.value)}
+                        />
+                    )}
+                </div>
+            );
+        }
+
+        if (rule.operation === 'replace_value') {
+            return (
+                <div className="flex flex-col gap-2">
+                    <select
+                        className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-medium text-slate-700 outline-none transition-all focus:border-emerald-500"
+                        value={rule.params.match_type || 'whole'}
+                        onChange={(event) => updateParams(rule.id, 'match_type', event.target.value)}
+                    >
+                        <option value="whole">Replace Whole Cell (Exact Match)</option>
+                        <option value="partial">Replace Partial Text (Substring)</option>
+                    </select>
+                    <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
+                        <input
+                            type="text"
+                            className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-medium text-slate-700 outline-none transition-all focus:border-emerald-500"
+                            placeholder="Find text..."
+                            value={rule.params.target_value || ''}
+                            onChange={(event) => updateParams(rule.id, 'target_value', event.target.value)}
+                        />
+                        <input
+                            type="text"
+                            className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2.5 text-sm font-medium text-slate-700 outline-none transition-all focus:border-emerald-500"
+                            placeholder="Replace with..."
+                            value={rule.params.replacement_value || ''}
+                            onChange={(event) => updateParams(rule.id, 'replacement_value', event.target.value)}
+                        />
+                    </div>
+                </div>
+            );
+        }
+
+        return null;
+    };
+
+    const effectiveStep = !sessionId ? 1 : step >= 4 ? 3 : step;
+
     return (
-        <div className="w-full h-full flex flex-col">
-            {/* ── Page Header ── */}
-            <div className="flex items-center justify-between px-8 py-5 border-b border-slate-200 bg-white shrink-0">
+        <div className="flex h-full w-full flex-col">
+            <div className="flex shrink-0 items-center justify-between border-b border-slate-200 bg-white px-8 py-5">
                 <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-emerald-100 bg-emerald-50">
                         <Sparkles size={20} className="text-emerald-600" />
                     </div>
                     <div>
-                        <h2 className="text-2xl font-black text-slate-900 tracking-tight">Data Cleaning</h2>
-                        <p className="text-sm text-slate-500 mt-0.5">Build an automated sequence of cleaning operations on your dataset.</p>
+                        <h2 className="text-2xl font-black tracking-tight text-slate-900">Data Cleaning</h2>
+                        <p className="mt-0.5 text-sm text-slate-500">Build an automated sequence of cleaning operations on your dataset.</p>
                     </div>
                 </div>
-
-                {/* Step Indicator */}
                 <div className="flex items-center gap-1">
-                    {STEPS.map((label, i) => {
-                        const s = i + 1;
-                        const effectiveStep = !sessionId ? 1 : step >= 4 ? 3 : 2;
+                    {STEPS.map((label, index) => {
+                        const currentStep = index + 1;
                         return (
-                            <div key={s} className="flex items-center">
-                                <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold transition-all ${
-                                    effectiveStep === s ? 'bg-emerald-600 text-white' :
-                                    effectiveStep > s ? 'bg-emerald-100 text-emerald-700' :
-                                    'bg-slate-100 text-slate-400'
-                                }`}>
-                                    <span className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-black ${
-                                        effectiveStep === s ? 'bg-white text-emerald-600' :
-                                        effectiveStep > s ? 'bg-emerald-500 text-white' :
-                                        'bg-slate-300 text-slate-500'
-                                    }`}>{effectiveStep > s ? '✓' : s}</span>
+                            <div key={label} className="flex items-center">
+                                <div className={`flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-bold transition-all ${effectiveStep === currentStep ? 'bg-emerald-600 text-white' : effectiveStep > currentStep ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-400'}`}>
+                                    <span className={`flex h-4 w-4 items-center justify-center rounded-full text-[10px] font-black ${effectiveStep === currentStep ? 'bg-white text-emerald-600' : effectiveStep > currentStep ? 'bg-emerald-500 text-white' : 'bg-slate-300 text-slate-500'}`}>{effectiveStep > currentStep ? '✓' : currentStep}</span>
                                     {label}
                                 </div>
-                                {s < STEPS.length && <div className={`w-6 h-px mx-1 ${effectiveStep > s ? 'bg-emerald-300' : 'bg-slate-200'}`} />}
+                                {currentStep < STEPS.length && <div className={`mx-1 h-px w-6 ${effectiveStep > currentStep ? 'bg-emerald-300' : 'bg-slate-200'}`} />}
                             </div>
                         );
                     })}
                 </div>
             </div>
 
-            {/* ── Content Area ── */}
             <div className="flex-1 overflow-y-auto px-8 py-6">
-
-                {/* Loading overlay */}
                 {loading && (
-                    <div className="flex flex-col items-center justify-center h-64 gap-4">
+                    <div className="flex h-64 flex-col items-center justify-center gap-4">
                         <Sparkles className="animate-pulse text-emerald-500" size={40} />
-                        <p className="text-lg font-bold text-slate-700">Processing pipeline…</p>
+                        <p className="text-lg font-bold text-slate-700">Processing pipeline...</p>
                         <p className="text-sm text-slate-400">This may take a moment for large datasets.</p>
                     </div>
                 )}
 
-                {/* Step 1: Upload */}
                 {!loading && !sessionId && (
                     <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
                         <div className="mb-5">
                             <h3 className="text-lg font-bold text-slate-800">Import Dataset</h3>
-                            <p className="text-sm text-slate-500 mt-1">Upload a file or connect a database to begin building your cleaning pipeline.</p>
+                            <p className="mt-1 text-sm text-slate-500">Upload a file or connect a database to begin building your cleaning pipeline.</p>
                         </div>
-                        <DataConnection compact={true} onUploadSuccess={(data) => {
-                            setSessionId(data.session_id);
-                            setColumns(data.columns || []);
-                            setWorkspaceTab('dataset');
-                            setStep(2);
-                        }} />
+                        <DataConnection
+                            compact={true}
+                            onUploadSuccess={(data) => {
+                                setSessionId(data.session_id);
+                                setColumns(data.columns || []);
+                                setRules([]);
+                                setPreviewData([]);
+                                setWorkspaceTab('dataset');
+                                setStep(2);
+                            }}
+                        />
                     </motion.div>
                 )}
 
-                {/* Step 2: Configure Operations */}
                 {!loading && sessionId && step <= 2 && (
                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-5">
                         <div className="flex flex-wrap items-start justify-between gap-4">
                             <div>
                                 <h3 className="text-lg font-bold text-slate-800">Cleaning Workspace</h3>
-                                <p className="text-sm text-slate-500 mt-1">Review inserted rows, switch to the pipeline, and iterate without losing sight of your source data.</p>
+                                <p className="mt-1 text-sm text-slate-500">Review source rows, import shared operation packs, and assemble reusable cleaning flows.</p>
                             </div>
                             <div className="flex flex-wrap items-center gap-2">
-                                <span className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 shadow-sm">
-                                    {columns.length} columns
-                                </span>
-                                <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700 shadow-sm">
-                                    {rules.length} operation{rules.length !== 1 ? 's' : ''}
-                                </span>
+                                <span className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 shadow-sm">{columns.length} columns</span>
+                                <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700 shadow-sm">{rules.length} operation{rules.length !== 1 ? 's' : ''}</span>
                             </div>
                         </div>
 
-                        <WorkspaceTabs
-                            tone="emerald"
-                            activeTab={workspaceTab}
-                            onChange={setWorkspaceTab}
-                            tabs={[
-                                { id: 'dataset', label: 'Dataset' },
-                                { id: 'rules', label: 'Pipeline' },
-                            ]}
-                        />
+                        <WorkspaceTabs tone="emerald" activeTab={workspaceTab} onChange={setWorkspaceTab} tabs={[{ id: 'dataset', label: 'Dataset' }, { id: 'rules', label: 'Pipeline' }]} />
 
                         {workspaceTab === 'dataset' ? (
-                            <DatasetViewer
-                                sessionId={sessionId}
-                                tone="emerald"
-                                title="Cleaning Dataset"
-                                subtitle="Inspect source rows here, then jump back to the pipeline tab to configure transformations."
-                            />
+                            <DatasetViewer sessionId={sessionId} tone="emerald" title="Cleaning Dataset" subtitle="Inspect source rows here, then jump back to the pipeline tab to configure transformations." />
                         ) : (
-                        <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-                            <div className="flex items-center justify-between mb-6">
-                            <div>
-                                <h3 className="text-lg font-bold text-slate-800">Cleaning Operations</h3>
-                                <p className="text-sm text-slate-500 mt-1">{rules.length} operation{rules.length !== 1 ? 's' : ''} in pipeline</p>
-                            </div>
-                            <button
-                                onClick={addRule}
-                                className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-semibold text-sm transition-colors shadow-sm shadow-emerald-600/20"
-                            >
-                                <Plus size={16} /> Add Operation
-                            </button>
-                        </div>
+                            <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+                                <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
+                                    <div>
+                                        <h3 className="text-lg font-bold text-slate-800">Cleaning Operations</h3>
+                                        <p className="mt-1 text-sm text-slate-500">{rules.length} operation{rules.length !== 1 ? 's' : ''} in the current pipeline</p>
+                                    </div>
+                                    <div className="flex flex-wrap gap-2">
+                                        <button type="button" onClick={() => setShowRepoSidebar(true)} className="flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-700 transition-colors hover:bg-emerald-100">
+                                            <BookOpen size={16} /> Global Repo
+                                        </button>
+                                        <button type="button" onClick={addRule} className="flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-sm shadow-emerald-600/20 transition-colors hover:bg-emerald-700">
+                                            <Plus size={16} /> Add Operation
+                                        </button>
+                                    </div>
+                                </div>
 
-                        <div className="space-y-3 mb-6">
-                            <AnimatePresence>
-                                {rules.map((rule, idx) => {
-                                    const opMeta = getOperationMeta(rule.operation);
-                                    return (
-                                        <motion.div
-                                            key={rule.id}
-                                            initial={{ opacity: 0, height: 0 }}
-                                            animate={{ opacity: 1, height: 'auto' }}
-                                            exit={{ opacity: 0, height: 0 }}
-                                            className="bg-white border border-slate-200 border-l-4 border-l-emerald-400 rounded-2xl p-5 relative shadow-sm hover:shadow-md transition-shadow"
-                                        >
-                                            <div>
-                                                {/* Card header: number + delete */}
-                                                <div className="flex items-center justify-between mb-4">
-                                                    <span className="inline-flex items-center gap-1.5 text-xs font-black text-slate-500 bg-slate-100 px-2.5 py-1 rounded-lg">
-                                                        Operation {idx + 1}
-                                                    </span>
-                                                    <button onClick={() => removeRule(rule.id)}
-                                                        className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
-                                                        title="Remove">
+                                <div className="mb-6 space-y-3">
+                                    <AnimatePresence>
+                                        {rules.map((rule, index) => (
+                                            <motion.div
+                                                key={rule.id}
+                                                initial={{ opacity: 0, height: 0 }}
+                                                animate={{ opacity: 1, height: 'auto' }}
+                                                exit={{ opacity: 0, height: 0 }}
+                                                className="rounded-2xl border border-slate-200 border-l-4 border-l-emerald-400 bg-white p-5 shadow-sm transition-shadow hover:shadow-md"
+                                            >
+                                                <div className="mb-4 flex items-center justify-between">
+                                                    <span className="inline-flex items-center gap-1.5 rounded-lg bg-slate-100 px-2.5 py-1 text-xs font-black text-slate-500">Operation {index + 1}</span>
+                                                    <button type="button" onClick={() => removeRule(rule.id)} className="rounded-lg p-1.5 text-slate-400 transition-all hover:bg-red-50 hover:text-red-600">
                                                         <Trash2 size={15} />
                                                     </button>
                                                 </div>
-                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                <div>
-                                                    <label className="text-[11px] font-black text-slate-400 uppercase tracking-wider mb-1.5 block">Target Column</label>
-                                                    <select
-                                                        className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/10 outline-none transition-all"
-                                                        value={rule.column}
-                                                        onChange={(e) => updateRule(rule.id, 'column', e.target.value)}
-                                                    >
-                                                        <option value="" disabled>Select column…</option>
-                                                        {(columns || []).map(c => <option key={c} value={c}>{c}</option>)}
-                                                    </select>
-                                                </div>
-                                                <div>
-                                                    <label className="text-[11px] font-black text-slate-400 uppercase tracking-wider mb-1.5 block">Cleaning Action</label>
-                                                    <select
-                                                        className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/10 outline-none transition-all"
-                                                        value={rule.operation}
-                                                        onChange={(e) => updateRule(rule.id, 'operation', e.target.value)}
-                                                    >
-                                                        <option value="" disabled>Select action…</option>
-                                                        {operations.map(op => <option key={op.id} value={op.id}>{op.name}</option>)}
-                                                    </select>
-                                                </div>
+
+                                                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                                                    <div>
+                                                        <label className="mb-1.5 block text-[11px] font-black uppercase tracking-wider text-slate-400">Target Column</label>
+                                                        <select className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-medium text-slate-700 outline-none transition-all focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/10" value={rule.column} onChange={(event) => updateRule(rule.id, 'column', event.target.value)}>
+                                                            <option value="" disabled>Select column...</option>
+                                                            {columns.map((column) => <option key={column} value={column}>{column}</option>)}
+                                                        </select>
+                                                    </div>
+                                                    <div>
+                                                        <label className="mb-1.5 block text-[11px] font-black uppercase tracking-wider text-slate-400">Cleaning Action</label>
+                                                        <select className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-medium text-slate-700 outline-none transition-all focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/10" value={rule.operation} onChange={(event) => updateRule(rule.id, 'operation', event.target.value)}>
+                                                            <option value="" disabled>Select action...</option>
+                                                            {operations.map((operation) => <option key={operation.id} value={operation.id}>{operation.name}</option>)}
+                                                        </select>
+                                                    </div>
                                                 </div>
 
-                                                {opMeta?.requires_input && (
-                                                    <div className="md:col-span-2">
-                                                        <label className="text-[11px] font-black text-slate-400 uppercase tracking-wider mb-1.5 block">Parameters</label>
-                                                        <div className="flex flex-col gap-3">
-                                                            {rule.operation === 'fill_nulls' && (
-                                                                <>
-                                                                    <select className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:border-emerald-500 outline-none"
-                                                                        onChange={e => updateParams(rule.id, 'method', e.target.value)} value={rule.params.method || 'mean'}>
-                                                                        <option value="mean">Average (Mean)</option>
-                                                                        <option value="median">Median</option>
-                                                                        <option value="min">Minimum Value</option>
-                                                                        <option value="max">Maximum Value</option>
-                                                                        <option value="custom">Custom Value…</option>
-                                                                    </select>
-                                                                    {rule.params.method === 'custom' && (
-                                                                        <input type="text" className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:border-emerald-500 outline-none"
-                                                                            placeholder="e.g. 'Unknown', '0', 'Pending'"
-                                                                            value={rule.params.custom_value || ''}
-                                                                            onChange={e => updateParams(rule.id, 'custom_value', e.target.value)} />
-                                                                    )}
-                                                                </>
-                                                            )}
-                                                            {rule.operation === 'replace_value' && (
-                                                                <div className="flex flex-col gap-2">
-                                                                    <select className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:border-emerald-500 outline-none"
-                                                                        onChange={e => updateParams(rule.id, 'match_type', e.target.value)} value={rule.params.match_type || 'whole'}>
-                                                                        <option value="whole">Replace Whole Cell (Exact Match)</option>
-                                                                        <option value="partial">Replace Partial Text (Substring)</option>
-                                                                    </select>
-                                                                    <div className="grid grid-cols-2 gap-2">
-                                                                        <input type="text" className="px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:border-emerald-500 outline-none" placeholder="Find text…"
-                                                                            value={rule.params.target_value || ''} onChange={e => updateParams(rule.id, 'target_value', e.target.value)} />
-                                                                        <input type="text" className="px-3 py-2.5 bg-emerald-50 border border-emerald-200 rounded-xl text-sm font-medium focus:border-emerald-500 outline-none" placeholder="Replace with…"
-                                                                            value={rule.params.replacement_value || ''} onChange={e => updateParams(rule.id, 'replacement_value', e.target.value)} />
-                                                                    </div>
-                                                                </div>
-                                                            )}
-                                                        </div>
-                                                    </div>
-                                                )}
+                                                <div className="mt-4">
+                                                    <label className="mb-1.5 block text-[11px] font-black uppercase tracking-wider text-slate-400">Parameters</label>
+                                                    {renderParams(rule)}
+                                                </div>
+                                            </motion.div>
+                                        ))}
+                                    </AnimatePresence>
 
-                                                {!opMeta?.requires_input && (
-                                                    <div className="md:col-span-2 flex items-center">
-                                                        <span className="text-xs font-semibold text-slate-400 bg-slate-100 py-1 px-3 rounded-full">No additional parameters required</span>
-                                                    </div>
-                                                )}
+                                    {rules.length === 0 && (
+                                        <div className="rounded-2xl border-2 border-dashed border-slate-200 bg-white py-14 text-center">
+                                            <AlertCircle className="mx-auto mb-3 text-slate-300" size={36} />
+                                            <h3 className="mb-1 text-base font-bold text-slate-700">Pipeline is empty</h3>
+                                            <p className="mb-5 text-sm text-slate-500">Add cleaning operations or import a shared template to get started.</p>
+                                            <div className="flex flex-wrap items-center justify-center gap-3">
+                                                <button type="button" onClick={() => setShowRepoSidebar(true)} className="rounded-xl border border-emerald-200 bg-emerald-50 px-5 py-2.5 text-sm font-bold text-emerald-700 transition-colors hover:bg-emerald-100">Open Global Repo</button>
+                                                <button type="button" onClick={addRule} className="rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-bold text-white transition-colors hover:bg-emerald-700">Add First Operation</button>
                                             </div>
-                                        </motion.div>
-                                    );
-                                })}
-                            </AnimatePresence>
-
-                            {rules.length === 0 && (
-                                <div className="text-center py-14 bg-white border-2 border-dashed border-slate-200 rounded-2xl">
-                                    <AlertCircle className="mx-auto text-slate-300 mb-3" size={36} />
-                                    <h3 className="text-base font-bold text-slate-700 mb-1">Pipeline is empty</h3>
-                                    <p className="text-slate-500 text-sm mb-5">Add cleaning operations to get started.</p>
-                                    <button onClick={addRule} className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold rounded-xl transition-colors">
-                                        + Add First Operation
-                                    </button>
+                                        </div>
+                                    )}
                                 </div>
-                            )}
-                        </div>
 
-                        {rules.length > 0 && (
-                            <div className="flex justify-end pt-4 border-t border-slate-100">
-                                <button onClick={handlePreview} disabled={rules.length === 0 || loading}
-                                    className="flex items-center gap-2.5 px-6 py-3 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-200 disabled:text-slate-400 text-white rounded-xl font-bold text-sm transition-all shadow-md shadow-emerald-600/20 hover:-translate-y-0.5">
-                                    <Eye size={16} /> Preview Cleaned Data
-                                </button>
+                                {rules.length > 0 && (
+                                    <div className="flex justify-end border-t border-slate-100 pt-4">
+                                        <button type="button" onClick={handlePreview} disabled={loading} className="flex items-center gap-2.5 rounded-xl bg-emerald-600 px-6 py-3 text-sm font-bold text-white shadow-md shadow-emerald-600/20 transition-all hover:-translate-y-0.5 hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400">
+                                            <Eye size={16} /> Preview Cleaned Data
+                                        </button>
+                                    </div>
+                                )}
                             </div>
-                        )}
-                        </div>
                         )}
                     </motion.div>
                 )}
 
-                {/* Step 3: Preview */}
-                {!loading && step === 3 && previewData && (
+                {!loading && step === 3 && (
                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                        <div className="flex items-center justify-between mb-5">
+                        <div className="mb-5 flex items-center justify-between">
                             <div>
                                 <h3 className="text-lg font-bold text-slate-800">Data Preview</h3>
-                                <p className="text-sm text-slate-500 mt-1">Top 5 sample rows after applying your pipeline.</p>
+                                <p className="mt-1 text-sm text-slate-500">Top sample rows after applying your cleaning pipeline.</p>
                             </div>
                             <div className="flex items-center gap-3">
-                                <button onClick={() => { setWorkspaceTab('rules'); setStep(2); }} className="flex items-center gap-2 px-4 py-2 border border-slate-200 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-colors">
+                                <button type="button" onClick={() => { setWorkspaceTab('rules'); setStep(2); }} className="flex items-center gap-2 rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 transition-colors hover:bg-slate-50">
                                     <ArrowLeft size={15} /> Edit Pipeline
                                 </button>
-                                <button onClick={handleExecute} disabled={loading}
-                                    className="flex items-center gap-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-sm transition-all shadow-md shadow-emerald-600/20 hover:-translate-y-0.5">
+                                <button type="button" onClick={handleExecute} disabled={loading} className="flex items-center gap-2 rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-bold text-white shadow-md shadow-emerald-600/20 transition-all hover:-translate-y-0.5 hover:bg-emerald-700">
                                     <Play size={16} fill="currentColor" /> Run on Full Dataset
                                 </button>
                             </div>
                         </div>
 
-                        <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
-                            <div className="overflow-x-auto">
-                                <table className="w-full">
-                                    <thead>
-                                        <tr className="bg-slate-50 border-b border-slate-200">
-                                            {Object.keys(previewData[0] || {}).map(key => (
-                                                <th key={key} className="px-5 py-3 text-left text-[11px] uppercase tracking-widest font-bold text-slate-500 whitespace-nowrap">{key}</th>
-                                            ))}
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-slate-100">
-                                        {previewData.map((row, idx) => (
-                                            <tr key={idx} className="hover:bg-slate-50/80 transition-colors">
-                                                {Object.values(row).map((val, i) => (
-                                                    <td key={i} className="px-5 py-3 text-sm text-slate-700 font-medium">{String(val)}</td>
-                                                ))}
+                        <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+                            {previewData.length > 0 ? (
+                                <div className="overflow-x-auto">
+                                    <table className="w-full">
+                                        <thead>
+                                            <tr className="border-b border-slate-200 bg-slate-50">
+                                                {Object.keys(previewData[0]).map((key) => <th key={key} className="whitespace-nowrap px-5 py-3 text-left text-[11px] font-bold uppercase tracking-widest text-slate-500">{key}</th>)}
                                             </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
+                                        </thead>
+                                        <tbody className="divide-y divide-slate-100">
+                                            {previewData.map((row, index) => (
+                                                <tr key={index} className="transition-colors hover:bg-slate-50/80">
+                                                    {Object.values(row).map((value, valueIndex) => <td key={valueIndex} className="px-5 py-3 text-sm font-medium text-slate-700">{String(value)}</td>)}
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            ) : (
+                                <div className="px-6 py-12 text-center">
+                                    <AlertCircle className="mx-auto mb-3 text-slate-300" size={32} />
+                                    <h4 className="text-base font-bold text-slate-700">No preview rows returned</h4>
+                                    <p className="mt-2 text-sm text-slate-500">The pipeline ran, but there were no rows available in the sample output.</p>
+                                </div>
+                            )}
                         </div>
                     </motion.div>
                 )}
 
-                {/* Step 4: Complete / Export */}
                 {!loading && step === 4 && (
-                    <motion.div initial={{ scale: 0.97, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="text-center py-12">
-                        <div className="w-20 h-20 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <motion.div initial={{ scale: 0.97, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="py-12 text-center">
+                        <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-emerald-100">
                             <CheckCircle className="text-emerald-600" size={44} />
                         </div>
-                        <h3 className="text-3xl font-black text-slate-900 tracking-tight mb-3">Data Cleaned Successfully</h3>
-                        <p className="text-slate-500 text-base mb-10 max-w-md mx-auto">Your pipeline ran on the full dataset. Download your result in any format below.</p>
-
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-xl mx-auto mb-10">
-                            {[
-                                { fmt: 'csv',  label: 'CSV Format',   Icon: FileText },
-                                { fmt: 'xlsx', label: 'Excel Workbook', Icon: FileSpreadsheet },
-                                { fmt: 'json', label: 'JSON Array',   Icon: FileJson },
-                            ].map(({ fmt, label, Icon }) => (
-                                <button key={fmt} onClick={() => handleDownload(fmt)}
-                                    className="flex flex-col items-center gap-3 py-7 border-2 border-slate-200 hover:border-emerald-400 hover:bg-emerald-50 rounded-2xl transition-all group hover:-translate-y-1 hover:shadow-lg">
-                                    <div className="w-12 h-12 bg-slate-100 group-hover:bg-white rounded-xl flex items-center justify-center transition-colors shadow-sm">
-                                        <Icon className="text-slate-500 group-hover:text-emerald-600 transition-colors" size={26} />
-                                    </div>
-                                    <span className="text-sm font-bold text-slate-700 group-hover:text-emerald-700">{label}</span>
-                                </button>
-                            ))}
+                        <h3 className="mb-3 text-3xl font-black tracking-tight text-slate-900">Data Cleaned Successfully</h3>
+                        <p className="mx-auto mb-10 max-w-md text-base text-slate-500">Your pipeline ran on the full dataset. Download the cleaned result in any format below.</p>
+                        <div className="mx-auto mb-10 grid max-w-xl grid-cols-1 gap-4 sm:grid-cols-3">
+                            <DownloadCard fmt="csv" label="CSV Format" Icon={FileText} onClick={handleDownload} />
+                            <DownloadCard fmt="xlsx" label="Excel Workbook" Icon={FileSpreadsheet} onClick={handleDownload} />
+                            <DownloadCard fmt="json" label="JSON Array" Icon={FileJson} onClick={handleDownload} />
                         </div>
-
-                        <button onClick={() => { setStep(1); setRules([]); setSessionId(null); setColumns([]); setPreviewData(null); setWorkspaceTab('dataset'); if (onComplete) onComplete(); }}
-                            className="px-8 py-3 border-2 border-slate-200 hover:border-slate-300 hover:bg-slate-50 text-slate-700 rounded-xl font-bold text-sm transition-all">
+                        <button type="button" onClick={resetWorkspace} className="rounded-xl border-2 border-slate-200 px-8 py-3 text-sm font-bold text-slate-700 transition-all hover:border-slate-300 hover:bg-slate-50">
                             Start New Cleaning Job
                         </button>
                     </motion.div>
                 )}
             </div>
+
+            <RepoSidebar
+                isOpen={showRepoSidebar}
+                onClose={() => setShowRepoSidebar(false)}
+                context="cleaning"
+                onApplyRules={applyRepoOperations}
+                user={user}
+                availableColumns={columns}
+            />
         </div>
     );
 }

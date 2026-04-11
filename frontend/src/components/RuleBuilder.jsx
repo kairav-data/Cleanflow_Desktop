@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Trash2, Play, AlertCircle, CheckCircle2, History, X, Save, FolderOpen } from 'lucide-react';
+import { Plus, Trash2, Play, AlertCircle, CheckCircle2, History, X, Save, FolderOpen, BookOpen } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
+import RepoSidebar from './RepoSidebar';
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'import.meta.env.VITE_API_URL';
+const API_BASE = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || 'http://localhost:8000';
 const SAVED_RULESETS_KEY = 'cleanflow_saved_rulesets_v1';
 
 const RULE_CATEGORIES = {
@@ -62,13 +63,24 @@ const DATE_FORMATS = [
     { label: "MM/DD/YYYY HH:MM:SS", value: "%m/%d/%Y %H:%M:%S" },
 ];
 
-const RuleBuilder = ({ columns = [], onRunValidation, onSaveRules, isEmbedded = false, initialRules = [], compact = false }) => {
+const RuleBuilder = ({
+    columns = [],
+    onRunValidation,
+    onSaveRules,
+    onRulesChange,
+    isEmbedded = false,
+    initialRules = [],
+    compact = false,
+    showRepoLibrary = false,
+    user = null
+}) => {
     const [rules, setRules] = useState([]);
     const [loading, setLoading] = useState(false);
     const [pastJobs, setPastJobs] = useState([]);
     const [showHistoryModal, setShowHistoryModal] = useState(false);
     const [savedRuleSets, setSavedRuleSets] = useState([]);
     const [showSavedRulesModal, setShowSavedRulesModal] = useState(false);
+    const [showRepoSidebar, setShowRepoSidebar] = useState(false);
 
     const mapRawRulesToUiRules = (rawRules = []) =>
         rawRules.map(r => {
@@ -82,11 +94,15 @@ const RuleBuilder = ({ columns = [], onRunValidation, onSaveRules, isEmbedded = 
             };
         });
 
+    // Load initialRules once on mount only — after that RuleBuilder owns its own state
+    // and notifies parent via onRulesChange. Do NOT re-sync when initialRules changes
+    // to avoid feedback loops (parent update → prop change → re-init → onRulesChange → ...).
     useEffect(() => {
         if (initialRules && initialRules.length > 0) {
             setRules(mapRawRulesToUiRules(initialRules));
         }
-    }, [initialRules]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []); // intentionally empty — mount only
 
     useEffect(() => {
         try {
@@ -115,12 +131,17 @@ const RuleBuilder = ({ columns = [], onRunValidation, onSaveRules, isEmbedded = 
         fetchHistory();
     }, []);
 
+    // Helper that updates rules state AND notifies parent
+    const applyRules = (next) => {
+        setRules(next);
+        if (onRulesChange) onRulesChange(next);
+    };
+
     const loadRulesFromJob = (job) => {
         if (!job.rules) return;
         const mappedRules = mapRawRulesToUiRules(job.rules);
-
-        // Append rules
-        setRules(prev => [...prev, ...mappedRules]);
+        const next = [...rules, ...mappedRules];
+        applyRules(next);
         setShowHistoryModal(false);
     };
 
@@ -153,12 +174,17 @@ const RuleBuilder = ({ columns = [], onRunValidation, onSaveRules, isEmbedded = 
         if (mappedRules.length === 0) return;
 
         const shouldReplace = window.confirm('Replace current rules with this saved rule set?');
-        if (shouldReplace) {
-            setRules(mappedRules);
-        } else {
-            setRules(prev => [...prev, ...mappedRules]);
-        }
+        const next = shouldReplace ? mappedRules : [...rules, ...mappedRules];
+        applyRules(next);
         setShowSavedRulesModal(false);
+    };
+
+    const applyRepoRuleSet = (repoRules, mode = 'replace') => {
+        const mappedRules = mapRawRulesToUiRules(repoRules || []);
+        if (mappedRules.length === 0) return;
+
+        const next = mode === 'append' ? [...rules, ...mappedRules] : mappedRules;
+        applyRules(next);
     };
 
     const deleteSavedRuleSet = (ruleSetId) => {
@@ -168,7 +194,7 @@ const RuleBuilder = ({ columns = [], onRunValidation, onSaveRules, isEmbedded = 
     };
 
     const addRule = () => {
-        setRules([...rules, {
+        applyRules([...rules, {
             id: Date.now(),
             column: columns[0] || '',
             category: "Data Type & Format",
@@ -178,20 +204,19 @@ const RuleBuilder = ({ columns = [], onRunValidation, onSaveRules, isEmbedded = 
     };
 
     const removeRule = (id) => {
-        setRules(rules.filter(r => r.id !== id));
+        applyRules(rules.filter(r => r.id !== id));
     };
 
     const updateRule = (id, field, value) => {
-        // Reset params if type changes
         if (field === 'rule_type') {
-            setRules(rules.map(r => r.id === id ? { ...r, [field]: value, params: {} } : r));
+            applyRules(rules.map(r => r.id === id ? { ...r, [field]: value, params: {} } : r));
         } else {
-            setRules(rules.map(r => r.id === id ? { ...r, [field]: value } : r));
+            applyRules(rules.map(r => r.id === id ? { ...r, [field]: value } : r));
         }
     };
 
     const updateParams = (id, paramKey, paramValue) => {
-        setRules(rules.map(r => {
+        applyRules(rules.map(r => {
             if (r.id === id) {
                 return { ...r, params: { ...r.params, [paramKey]: paramValue } };
             }
@@ -226,6 +251,9 @@ const RuleBuilder = ({ columns = [], onRunValidation, onSaveRules, isEmbedded = 
     const accentButtonClass = compact
         ? 'flex items-center gap-2 px-3 py-2 bg-emerald-50 border border-emerald-200 hover:bg-emerald-100 text-emerald-700 rounded-lg font-semibold text-sm transition-colors'
         : 'flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3.5 py-2 text-sm font-semibold text-emerald-700 transition-all hover:bg-emerald-100';
+    const repoButtonClass = compact
+        ? 'flex items-center gap-2 px-3 py-2 bg-blue-50 border border-blue-200 hover:bg-blue-100 text-blue-700 rounded-lg font-semibold text-sm transition-colors'
+        : 'flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-3.5 py-2 text-sm font-semibold text-blue-700 transition-all hover:bg-blue-100';
     const modalCardClass = compact
         ? 'relative bg-white rounded-2xl shadow-2xl w-full max-w-lg p-5 max-h-[80vh] overflow-y-auto'
         : 'relative max-h-[80vh] w-full max-w-lg overflow-y-auto rounded-2xl bg-white p-6 shadow-2xl';
@@ -270,6 +298,14 @@ const RuleBuilder = ({ columns = [], onRunValidation, onSaveRules, isEmbedded = 
                     </div>
                 </div>
                 <div className={actionsClass}>
+                    {showRepoLibrary && (
+                        <button
+                            onClick={() => setShowRepoSidebar(true)}
+                            className={repoButtonClass}
+                        >
+                            <BookOpen size={compact ? 16 : 18} /> Global Repo
+                        </button>
+                    )}
                     <button
                         onClick={saveCurrentRules}
                         className={accentButtonClass}
@@ -455,14 +491,14 @@ const RuleBuilder = ({ columns = [], onRunValidation, onSaveRules, isEmbedded = 
                                     <label className="text-xs font-black text-slate-400 uppercase tracking-wider mb-2 block">Rule Category</label>
                                     <select
                                         className={`w-full ${compact ? 'p-2.5 rounded-lg text-sm' : 'p-3.5 rounded-xl'} bg-slate-50 border border-slate-200 font-semibold focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all`}
-                                        value={rule.category}
-                                        onChange={(e) => {
-                                            const newCategory = e.target.value;
-                                            const newRuleType = RULE_CATEGORIES[newCategory][0].value;
-                                            setRules(rules.map(r =>
-                                                r.id === rule.id
-                                                    ? { ...r, category: newCategory, rule_type: newRuleType, params: {} }
-                                                    : r
+                                            value={rule.category}
+                                            onChange={(e) => {
+                                                const newCategory = e.target.value;
+                                                const newRuleType = RULE_CATEGORIES[newCategory][0].value;
+                                                applyRules(rules.map(r =>
+                                                    r.id === rule.id
+                                                        ? { ...r, category: newCategory, rule_type: newRuleType, params: {} }
+                                                        : r
                                             ));
                                         }}
                                     >
@@ -652,6 +688,29 @@ const RuleBuilder = ({ columns = [], onRunValidation, onSaveRules, isEmbedded = 
                     ))}
                 </AnimatePresence>
 
+                {/* ── Inline "add rule" row shown below existing rules ── */}
+                {rules.length > 0 && (
+                    <button
+                        onClick={addRule}
+                        className="group mt-3 flex w-full items-center gap-3 rounded-xl border border-dashed border-slate-200 bg-transparent px-4 py-3 text-left transition-all duration-200 hover:border-blue-300 hover:bg-blue-50/60"
+                    >
+                        {/* "+" circle */}
+                        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-slate-300 bg-white text-slate-400 shadow-sm transition-all duration-200 group-hover:border-blue-400 group-hover:bg-blue-600 group-hover:text-white group-hover:shadow-md">
+                            <Plus size={14} />
+                        </span>
+
+                        {/* label — slides in on hover */}
+                        <span className="max-w-0 overflow-hidden whitespace-nowrap text-sm font-semibold text-blue-600 opacity-0 transition-all duration-200 group-hover:max-w-xs group-hover:opacity-100">
+                            Add another rule
+                        </span>
+
+                        {/* faint hint always visible */}
+                        <span className="ml-auto text-[11px] font-medium text-slate-400 transition-opacity duration-200 group-hover:opacity-0">
+                            Rule {rules.length + 1}
+                        </span>
+                    </button>
+                )}
+
                 {rules.length === 0 && (
                     <div className={emptyStateClass}>
                         <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full border border-slate-200 bg-white shadow-sm">
@@ -704,6 +763,15 @@ const RuleBuilder = ({ columns = [], onRunValidation, onSaveRules, isEmbedded = 
                     <span>Warning: No columns detected. Please check your file upload.</span>
                 </div>
             )}
+
+            <RepoSidebar
+                isOpen={showRepoSidebar}
+                onClose={() => setShowRepoSidebar(false)}
+                context="validation"
+                onApplyRules={applyRepoRuleSet}
+                user={user}
+                availableColumns={columns}
+            />
         </div>
     );
 };

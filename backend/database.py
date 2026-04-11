@@ -1,5 +1,6 @@
 import os
 import time
+import uuid
 from sqlalchemy import create_engine, Column, Integer, String, Boolean, Text, DateTime, text, ForeignKey
 from sqlalchemy.orm import sessionmaker, declarative_base, relationship
 from datetime import datetime
@@ -61,6 +62,43 @@ class DbConnection(Base):
     # Relationship back to user
     owner = relationship("UserPG", back_populates="connections")
 
+
+class QualityValidationRuleRepoPG(Base):
+    """Global shared validation rule sets — any user can read; authors can delete their own."""
+    __tablename__ = "quality_validation_rule_repo"
+    id = Column(String, primary_key=True)          # UUID string
+    name = Column(String, nullable=False)
+    description = Column(Text, nullable=True)
+    severity = Column(String, nullable=True)
+    space = Column(String, nullable=True)
+    category = Column(String, nullable=True)
+    logic_type = Column(String, nullable=True)
+    use_for_validation = Column(Boolean, default=True)
+    definition = Column(Text, nullable=True)
+    rules = Column(Text, nullable=False)            # JSON array
+    author_email = Column(String, nullable=True)
+    author_name = Column(String, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow)
+
+
+class CleaningOperationRepoPG(Base):
+    """Global shared cleaning operation sets — any user can read; authors can delete their own."""
+    __tablename__ = "cleaning_operation_repo"
+    id = Column(String, primary_key=True)          # UUID string
+    name = Column(String, nullable=False)
+    description = Column(Text, nullable=True)
+    severity = Column(String, nullable=True)
+    space = Column(String, nullable=True)
+    category = Column(String, nullable=True)
+    operation_kind = Column(String, nullable=True)
+    definition = Column(Text, nullable=True)
+    operations = Column(Text, nullable=False)       # JSON array
+    author_email = Column(String, nullable=True)
+    author_name = Column(String, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow)
+
 class DatabaseManager:
     def __init__(self):
         self.pg_engine = create_engine(PG_URL)
@@ -89,7 +127,51 @@ class DatabaseManager:
                     "ALTER TABLE validation_jobs ADD COLUMN IF NOT EXISTS total_rows INTEGER DEFAULT 0;",
                     "ALTER TABLE validation_jobs ADD COLUMN IF NOT EXISTS valid_rows INTEGER DEFAULT 0;",
                     "ALTER TABLE validation_jobs ADD COLUMN IF NOT EXISTS invalid_rows INTEGER DEFAULT 0;",
-                    "ALTER TABLE validation_jobs ADD COLUMN IF NOT EXISTS column_stats TEXT;"
+                    "ALTER TABLE validation_jobs ADD COLUMN IF NOT EXISTS column_stats TEXT;",
+                    "ALTER TABLE quality_validation_rule_repo ADD COLUMN IF NOT EXISTS severity VARCHAR;",
+                    "ALTER TABLE quality_validation_rule_repo ADD COLUMN IF NOT EXISTS space VARCHAR;",
+                    "ALTER TABLE quality_validation_rule_repo ADD COLUMN IF NOT EXISTS category VARCHAR;",
+                    "ALTER TABLE quality_validation_rule_repo ADD COLUMN IF NOT EXISTS logic_type VARCHAR;",
+                    "ALTER TABLE quality_validation_rule_repo ADD COLUMN IF NOT EXISTS use_for_validation BOOLEAN DEFAULT TRUE;",
+                    "ALTER TABLE quality_validation_rule_repo ADD COLUMN IF NOT EXISTS definition TEXT;",
+                    "ALTER TABLE quality_validation_rule_repo ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT NOW();",
+                    "ALTER TABLE cleaning_operation_repo ADD COLUMN IF NOT EXISTS severity VARCHAR;",
+                    "ALTER TABLE cleaning_operation_repo ADD COLUMN IF NOT EXISTS space VARCHAR;",
+                    "ALTER TABLE cleaning_operation_repo ADD COLUMN IF NOT EXISTS category VARCHAR;",
+                    "ALTER TABLE cleaning_operation_repo ADD COLUMN IF NOT EXISTS operation_kind VARCHAR;",
+                    "ALTER TABLE cleaning_operation_repo ADD COLUMN IF NOT EXISTS definition TEXT;",
+                    "ALTER TABLE cleaning_operation_repo ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT NOW();",
+                    """CREATE TABLE IF NOT EXISTS quality_validation_rule_repo (
+                        id VARCHAR PRIMARY KEY,
+                        name VARCHAR NOT NULL,
+                        description TEXT,
+                        severity VARCHAR,
+                        space VARCHAR,
+                        category VARCHAR,
+                        logic_type VARCHAR,
+                        use_for_validation BOOLEAN DEFAULT TRUE,
+                        definition TEXT,
+                        rules TEXT NOT NULL,
+                        author_email VARCHAR,
+                        author_name VARCHAR,
+                        created_at TIMESTAMP DEFAULT NOW(),
+                        updated_at TIMESTAMP DEFAULT NOW()
+                    );""",
+                    """CREATE TABLE IF NOT EXISTS cleaning_operation_repo (
+                        id VARCHAR PRIMARY KEY,
+                        name VARCHAR NOT NULL,
+                        description TEXT,
+                        severity VARCHAR,
+                        space VARCHAR,
+                        category VARCHAR,
+                        operation_kind VARCHAR,
+                        definition TEXT,
+                        operations TEXT NOT NULL,
+                        author_email VARCHAR,
+                        author_name VARCHAR,
+                        created_at TIMESTAMP DEFAULT NOW(),
+                        updated_at TIMESTAMP DEFAULT NOW()
+                    );"""
                 ]
                 
                 for query in migration_queries:
@@ -232,6 +314,128 @@ class DatabaseManager:
             if module:
                 query = query.filter(ValidationJob.module == module)
             deleted = query.delete()
+            db.commit()
+            return deleted
+        finally:
+            db.close()
+
+    # --- Global Validation Rule Repo ---
+
+    async def create_rule_repo(self, data: dict):
+        db = self.SessionLocal()
+        try:
+            entry = QualityValidationRuleRepoPG(
+                id=data['id'],
+                name=data['name'],
+                description=data.get('description', ''),
+                severity=data.get('severity', 'Standard'),
+                space=data.get('space', 'Global Repository'),
+                category=data.get('category', 'Validity'),
+                logic_type=data.get('logic_type', 'condition'),
+                use_for_validation=data.get('use_for_validation', True),
+                definition=json.dumps(data.get('definition') or {}),
+                rules=json.dumps(data.get('rules', [])),
+                author_email=data.get('author_email'),
+                author_name=data.get('author_name'),
+                updated_at=datetime.utcnow(),
+            )
+            db.add(entry)
+            db.commit()
+        finally:
+            db.close()
+
+    async def get_all_rule_repos(self):
+        db = self.SessionLocal()
+        rows = db.query(QualityValidationRuleRepoPG).order_by(QualityValidationRuleRepoPG.created_at.desc()).all()
+        result = [
+            {
+                "id": r.id,
+                "name": r.name,
+                "description": r.description or '',
+                "severity": r.severity or 'Standard',
+                "space": r.space or 'Global Repository',
+                "category": r.category or 'Validity',
+                "logic_type": r.logic_type or 'condition',
+                "use_for_validation": True if r.use_for_validation is None else bool(r.use_for_validation),
+                "definition": json.loads(r.definition) if r.definition else {},
+                "rules": json.loads(r.rules) if r.rules else [],
+                "author_email": r.author_email or '',
+                "author_name": r.author_name or 'Anonymous',
+                "created_at": r.created_at.isoformat() if r.created_at else '',
+                "updated_at": (r.updated_at or r.created_at).isoformat() if (r.updated_at or r.created_at) else ''
+            }
+            for r in rows
+        ]
+        db.close()
+        return result
+
+    async def delete_rule_repo(self, repo_id: str, email: str):
+        db = self.SessionLocal()
+        try:
+            deleted = db.query(QualityValidationRuleRepoPG).filter(
+                QualityValidationRuleRepoPG.id == repo_id,
+                QualityValidationRuleRepoPG.author_email == email
+            ).delete()
+            db.commit()
+            return deleted
+        finally:
+            db.close()
+
+    # --- Global Cleaning Operation Repo ---
+
+    async def create_cleaning_op_repo(self, data: dict):
+        db = self.SessionLocal()
+        try:
+            entry = CleaningOperationRepoPG(
+                id=data['id'],
+                name=data['name'],
+                description=data.get('description', ''),
+                severity=data.get('severity', 'Standard'),
+                space=data.get('space', 'Global Repository'),
+                category=data.get('category', 'Standardization'),
+                operation_kind=data.get('operation_kind', 'replace_value'),
+                definition=json.dumps(data.get('definition') or {}),
+                operations=json.dumps(data.get('operations', [])),
+                author_email=data.get('author_email'),
+                author_name=data.get('author_name'),
+                updated_at=datetime.utcnow(),
+            )
+            db.add(entry)
+            db.commit()
+        finally:
+            db.close()
+
+    async def get_all_cleaning_op_repos(self):
+        db = self.SessionLocal()
+        rows = db.query(CleaningOperationRepoPG).order_by(CleaningOperationRepoPG.created_at.desc()).all()
+        result = [
+            {
+                "id": r.id,
+                "name": r.name,
+                "description": r.description or '',
+                "severity": r.severity or 'Standard',
+                "space": r.space or 'Global Repository',
+                "category": r.category or 'Standardization',
+                "operation_kind": r.operation_kind or 'replace_value',
+                "definition": json.loads(r.definition) if r.definition else {},
+                "operations": json.loads(r.operations) if r.operations else [],
+                "author_email": r.author_email or '',
+                "author_name": r.author_name or 'Anonymous',
+                "created_at": r.created_at.isoformat() if r.created_at else '',
+                "updated_at": (r.updated_at or r.created_at).isoformat() if (r.updated_at or r.created_at) else ''
+            }
+            for r in rows
+        ]
+        db.close()
+        return result
+
+    async def delete_cleaning_op_repo(self, repo_id: str, email: str):
+        db = self.SessionLocal()
+        try:
+            deleted = db.query(CleaningOperationRepoPG).filter(
+                CleaningOperationRepoPG.id == repo_id,
+                CleaningOperationRepoPG.author_email == email
+            ).delete()
             db.commit()
             return deleted
         finally:

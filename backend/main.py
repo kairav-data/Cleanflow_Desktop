@@ -35,6 +35,7 @@ from history import (
 )
 from payment import router as payment_router
 from chatbot import chat_router
+from repo_router import router as repo_router
 # --- Startup/Shutdown Logic ---
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -90,6 +91,7 @@ app.include_router(payment_router)
 app.include_router(history_router)
 app.include_router(connections_router)
 app.include_router(chat_router)
+app.include_router(repo_router)
 
 # Store active sessions in memory
 sessions = {}

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import {
-    Phone, Briefcase, Globe, Building2, Eye, EyeOff, Lock, User, AlertCircle, CheckCircle2
+    Phone, Briefcase, Globe, Building2, Eye, EyeOff, Lock, User, AlertCircle, CheckCircle2, ChevronDown
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -18,11 +18,29 @@ const COUNTRY_CODES = [
     { code: '+971', label: 'UAE (+971)' },
 ];
 
+const PROFESSIONS = [
+    'Data Engineer',
+    'Data Scientist',
+    'Analytics Lead',
+    'Operations Manager',
+    'Product Manager',
+    'Founder',
+    'Other',
+];
+
 /* ── clean white input base class ── */
 const inputCls = (hasIcon = false) =>
     `w-full ${hasIcon ? 'pl-10' : 'px-4'} pr-4 py-3 rounded-full text-[15px] font-medium
      bg-white border border-slate-200 text-slate-900 placeholder:text-slate-400
      focus:outline-none focus:border-slate-300 focus:ring-4 focus:ring-slate-50
+     transition-all duration-200 appearance-none`;
+
+const selectCls = (hasIcon = false, hasValue = true) =>
+    `w-full ${hasIcon ? 'pl-10' : 'px-4'} pr-11 py-3.5 rounded-[1.15rem] text-[15px]
+     ${hasValue ? 'text-slate-900' : 'text-slate-400'} font-semibold
+     bg-gradient-to-b from-white to-slate-50/90 border border-slate-200
+     shadow-[0_10px_30px_rgba(15,23,42,0.04)] hover:border-slate-300
+     focus:outline-none focus:border-sky-300 focus:ring-4 focus:ring-sky-50
      transition-all duration-200 appearance-none`;
 
 /* ── Field Wrapper ── */
@@ -35,6 +53,29 @@ const Field = ({ icon: Icon, children }) => (
             />
         )}
         {children}
+    </div>
+);
+
+const SelectField = ({ icon: Icon, value, onChange, children, className = '', ...props }) => (
+    <div className="relative mb-4">
+        {Icon && (
+            <Icon
+                size={16}
+                className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none z-10"
+            />
+        )}
+        <select
+            value={value}
+            onChange={onChange}
+            className={`${selectCls(Boolean(Icon), Boolean(value))} ${className}`}
+            {...props}
+        >
+            {children}
+        </select>
+        <ChevronDown
+            size={16}
+            className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-slate-400"
+        />
     </div>
 );
 
@@ -281,21 +322,17 @@ const AuthModal = ({ isOpen, onClose, onLoginSuccess, defaultMode = 'login' }) =
                                                     </Field>
                                                 </div>
                                                 <div className="grid grid-cols-2 gap-3">
-                                                    <Field icon={Briefcase}>
-                                                        <select
-                                                            value={profession}
-                                                            onChange={(e) => setProfession(e.target.value)}
-                                                            className={inputCls(true)}
-                                                            required
-                                                        >
-                                                            <option value="" disabled>Profession</option>
-                                                            <option>Engineer</option>
-                                                            <option>Data Scientist</option>
-                                                            <option>Product Manager</option>
-                                                            <option>Analyst</option>
-                                                            <option>Other</option>
-                                                        </select>
-                                                    </Field>
+                                                    <SelectField
+                                                        icon={Briefcase}
+                                                        value={profession}
+                                                        onChange={(e) => setProfession(e.target.value)}
+                                                        required
+                                                    >
+                                                        <option value="" disabled>Select profession</option>
+                                                        {PROFESSIONS.map((item) => (
+                                                            <option key={item} value={item}>{item}</option>
+                                                        ))}
+                                                    </SelectField>
                                                     <Field icon={Globe}>
                                                         <input
                                                             type="text"
@@ -308,18 +345,18 @@ const AuthModal = ({ isOpen, onClose, onLoginSuccess, defaultMode = 'login' }) =
                                                     </Field>
                                                 </div>
                                                 <div className="flex gap-2">
-                                                    <div className="relative w-[40%]">
-                                                        <Phone size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none z-10" />
-                                                        <select
+                                                    <div className="w-[40%]">
+                                                        <SelectField
+                                                            icon={Phone}
                                                             value={phoneCountryCode}
                                                             onChange={(e) => setPhoneCountryCode(e.target.value)}
-                                                            className={inputCls(true)}
+                                                            className="mb-0"
                                                             required
                                                         >
-                                                            {COUNTRY_CODES.map(c => (
+                                                            {COUNTRY_CODES.map((c) => (
                                                                 <option key={c.code} value={c.code}>{c.label}</option>
                                                             ))}
-                                                        </select>
+                                                        </SelectField>
                                                     </div>
                                                     <div className="flex-1">
                                                         <Field>

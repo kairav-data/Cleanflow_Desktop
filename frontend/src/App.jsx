@@ -18,9 +18,6 @@ import ChatBot from './components/ChatBot';
 // Feature Builders
 import { EnrichmentBuilder, ScraperBuilder, SchemaMapper, DataMatchingBuilder, PricingIntelligenceBuilder, PipelineBuilder, SchedulerBuilder, PipelineRuns, DataVisualizer, GlobalRepositoryBuilder } from './features';
 
-// Assets
-import Logo from './assets/logo.png';
-
 const API_BASE = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || 'http://localhost:8000';
 const Motion = motion;
 
@@ -875,7 +872,7 @@ function App() {
 
             {/* Mobile Header Toggle */}
             <div className="fixed top-0 z-40 flex h-14 w-full items-center justify-between border-b border-gray-800 bg-black px-3.5 lg:hidden">
-                <img src={Logo} alt="CleanFlow" className="h-7 w-auto brightness-0 invert" />
+                <span className="uncial-antiqua-regular text-[24px] leading-none text-white">Cleanflow</span>
                 <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="p-2 text-gray-300 hover:text-white transition-colors">
                     {isSidebarOpen ? <X size={22} /> : <Menu size={22} />}
                 </button>
@@ -884,7 +881,12 @@ function App() {
             {/* Left Vertical Sidebar Workspace */}
             <nav className={`fixed top-0 left-0 z-50 flex h-screen w-[244px] flex-col border-r border-gray-800 bg-black transform transition-transform duration-300 ease-in-out lg:static ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
                 <div className="flex h-16 shrink-0 items-center border-b border-gray-800 px-5 pt-14 lg:pt-0">
-                    <img src={Logo} alt="CleanFlow" className="h-7 w-auto cursor-pointer brightness-0 invert opacity-90" onClick={() => handleFeatureAccess('dashboard')} />
+                    <span
+                        className="uncial-antiqua-regular cursor-pointer text-[24px] leading-none text-white opacity-90 transition-opacity hover:opacity-100"
+                        onClick={() => handleFeatureAccess('dashboard')}
+                    >
+                        Cleanflow
+                    </span>
                 </div>
 
                 <div className="sidebar-scrollbar flex-1 space-y-6 overflow-y-auto px-3.5 py-5">

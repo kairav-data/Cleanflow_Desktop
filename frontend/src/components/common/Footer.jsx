@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { ArrowRight, Youtube, Linkedin, Twitter } from 'lucide-react';
-import Logo from '../../assets/logo.png';
 
 const Footer = () => {
   const [email, setEmail] = useState('');
@@ -22,11 +21,7 @@ const Footer = () => {
         {/* Left Section */}
         <div className="max-w-xs">
           <div className="mb-8">
-            <img
-              src={Logo}
-              alt="CleanFlow Logo"
-              className="h-8 w-auto brightness-0 invert"
-            />
+            <span className="uncial-antiqua-regular text-[30px] leading-none text-white">Cleanflow</span>
           </div>
           
           <h2 className="text-lg font-medium mb-6 leading-relaxed">
@@ -70,7 +65,7 @@ const Footer = () => {
           <div>
             <h3 className="text-[11px] font-bold uppercase tracking-wider mb-6 text-white">Products</h3>
             <ul className="space-y-4">
-              <li><a href="#" className="text-[13px] text-gray-400 hover:text-white transition-colors">CleanFlow</a></li>
+              <li><a href="#" className="uncial-antiqua-regular text-[18px] leading-none text-gray-300 hover:text-white transition-colors">Cleanflow</a></li>
             </ul>
           </div>
         </div>

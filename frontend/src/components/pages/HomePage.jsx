@@ -366,7 +366,9 @@ export default function HomePage({ startValidation, onViewPricing, handleFeature
           <div className="relative z-10 border-t border-slate-100 bg-slate-50/60 p-5 md:p-8">
             <div className="mb-5 grid grid-cols-4 items-center gap-3 text-sm">
               <div className="hidden md:block" />
-              <div className="rounded-xl border border-sky-200 bg-sky-50 px-3 py-2.5 text-center text-xs font-black uppercase tracking-[0.16em] text-sky-700">CleanFlow</div>
+              <div className="rounded-xl border border-sky-200 bg-sky-50 px-3 py-3 text-center text-sky-700">
+                <span className="uncial-antiqua-regular text-[18px] leading-none">Cleanflow</span>
+              </div>
               <div className="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-center font-bold text-slate-500">Excel</div>
               <div className="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-center font-bold text-slate-500">Google Sheets</div>
             </div>
@@ -387,9 +389,9 @@ export default function HomePage({ startValidation, onViewPricing, handleFeature
 
       {/* ── CTA Banner ─────────────────────────────────────── */}
       <section className="w-full max-w-7xl mx-auto px-6 pb-16">
-        <div className="relative overflow-hidden rounded-[28px] bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-10 text-center shadow-2xl md:p-14">
-          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(52,211,153,0.18),transparent_60%)]" />
-          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_right,rgba(56,189,248,0.15),transparent_60%)]" />
+        <div className="relative overflow-hidden rounded-[28px] bg-[linear-gradient(135deg,#121413_0%,#181b1a_52%,#0b0d0c_100%)] p-10 text-center shadow-[0_30px_80px_rgba(0,0,0,0.18)] md:p-14">
+          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(255,255,255,0.06),transparent_58%)]" />
+          <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-black/45 to-transparent opacity-80" />
           <div className="relative z-10">
             <span className="mb-4 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.18em] text-slate-300">
               <TrendingUp size={12} /> Trusted by data teams worldwide

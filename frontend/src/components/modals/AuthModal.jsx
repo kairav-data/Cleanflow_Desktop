@@ -1,12 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import {
-    X, Mail, Lock, User, ArrowRight, AlertCircle, CheckCircle2,
-    Phone, Briefcase, Globe, Building2, Eye, EyeOff, Sparkles, ShieldCheck
+    Phone, Briefcase, Globe, Building2, Eye, EyeOff, Lock, User, AlertCircle, CheckCircle2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL;
+import AuthImage from '../../assets/auth_platform_art.png';
+
+const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
 
 const COUNTRY_CODES = [
     { code: '+1',   label: 'US/CA (+1)' },
@@ -17,40 +18,24 @@ const COUNTRY_CODES = [
     { code: '+971', label: 'UAE (+971)' },
 ];
 
-/* ── dark input base class ── */
-const inputCls = (hasIcon = true) =>
-    `w-full ${hasIcon ? 'pl-10' : 'px-4'} pr-4 py-3 rounded-xl text-sm font-medium
-     bg-[#0d1424] border border-slate-700/70 text-slate-100 placeholder:text-slate-600
-     focus:outline-none focus:border-emerald-500/60 focus:ring-2 focus:ring-emerald-500/15
+/* ── clean white input base class ── */
+const inputCls = (hasIcon = false) =>
+    `w-full ${hasIcon ? 'pl-10' : 'px-4'} pr-4 py-3 rounded-full text-[15px] font-medium
+     bg-white border border-slate-200 text-slate-900 placeholder:text-slate-400
+     focus:outline-none focus:border-slate-300 focus:ring-4 focus:ring-slate-50
      transition-all duration-200 appearance-none`;
 
-/* ── labelled field wrapper ── */
-const Field = ({ label, icon: Icon, children }) => (
-    <div className="space-y-1.5">
-        <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.14em]">{label}</label>
-        <div className="relative">
-            {Icon && (
-                <Icon
-                    size={14}
-                    className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none z-10"
-                />
-            )}
-            {children}
-        </div>
-    </div>
-);
-
-/* ── animated content block ── */
-const SlidePanel = ({ children, dir = 0 }) => (
-    <motion.div
-        initial={{ opacity: 0, x: dir * 28 }}
-        animate={{ opacity: 1, x: 0 }}
-        exit={{ opacity: 0, x: dir * -28 }}
-        transition={{ duration: 0.22, ease: [0.4, 0, 0.2, 1] }}
-        className="space-y-4"
-    >
+/* ── Field Wrapper ── */
+const Field = ({ icon: Icon, children }) => (
+    <div className="relative mb-4">
+        {Icon && (
+            <Icon
+                size={16}
+                className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none z-10"
+            />
+        )}
         {children}
-    </motion.div>
+    </div>
 );
 
 const AuthModal = ({ isOpen, onClose, onLoginSuccess, defaultMode = 'login' }) => {
@@ -69,7 +54,6 @@ const AuthModal = ({ isOpen, onClose, onLoginSuccess, defaultMode = 'login' }) =
     const [error, setError]                       = useState('');
     const [successMsg, setSuccessMsg]             = useState('');
     const [loading, setLoading]                   = useState(false);
-    const [tabDir, setTabDir]                     = useState(0); // -1 = left, 1 = right
 
     useEffect(() => {
         if (!isOpen) return;
@@ -84,13 +68,6 @@ const AuthModal = ({ isOpen, onClose, onLoginSuccess, defaultMode = 'login' }) =
     if (!isOpen) return null;
 
     const reset = () => { setError(''); setSuccessMsg(''); };
-
-    const switchTab = (toLogin) => {
-        if (toLogin === isLogin) return;
-        setTabDir(toLogin ? -1 : 1);
-        setIsLogin(toLogin);
-        reset();
-    };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -151,7 +128,7 @@ const AuthModal = ({ isOpen, onClose, onLoginSuccess, defaultMode = 'login' }) =
             }
         } catch (err) {
             const detail = err.response?.data?.detail;
-            setError(Array.isArray(detail) ? detail[0].msg : detail || 'Connection error. Is the server running?');
+            setError(Array.isArray(detail) ? detail[0].msg : detail || 'Connection error.');
         } finally {
             setLoading(false);
         }
@@ -166,279 +143,173 @@ const AuthModal = ({ isOpen, onClose, onLoginSuccess, defaultMode = 'login' }) =
         } finally { setLoading(false); }
     };
 
-    /* ── derived labels ── */
-    const title    = showOtp ? 'Verify your email' : isLogin ? 'Welcome back'    : 'Get started free';
-    const subtitle = showOtp
-        ? `Enter the 6-digit code sent to ${email}`
-        : isLogin
-            ? 'Sign in to your CleanFlow workspace'
-            : 'No credit card needed. 14-day free trial.';
-
     return (
-        /* Outer overlay — scrollable so modal never gets clipped */
-        <div className="fixed inset-0 z-[100] flex items-start justify-center overflow-y-auto py-8 px-4">
-
-            {/* Backdrop */}
-            <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="fixed inset-0 bg-slate-950/85 backdrop-blur-md"
+        <div className="fixed inset-0 z-[200] flex bg-white w-screen h-screen overflow-hidden">
+            {/* Close Button */}
+            <button 
                 onClick={onClose}
-            />
-
-            {/* Card */}
-            <motion.div
-                initial={{ opacity: 0, scale: 0.96, y: 20 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.95, y: 16 }}
-                transition={{ type: 'spring', damping: 30, stiffness: 360 }}
-                className="relative w-full max-w-md my-auto overflow-hidden rounded-[28px]
-                           bg-[#0c1320] border border-white/[0.07]
-                           shadow-[0_32px_80px_rgba(0,0,0,0.7),0_0_0_1px_rgba(255,255,255,0.04)]"
-                style={{ isolation: 'isolate' }}
+                className="absolute top-6 right-6 z-[210] p-3 rounded-full bg-slate-50 hover:bg-slate-100 text-slate-500 hover:text-slate-900 transition-colors"
+                title="Back to Landing Page"
             >
-                {/* Emerald glow blob */}
-                <div className="absolute -top-24 left-1/2 -translate-x-1/2 w-80 h-48 rounded-full
-                                bg-emerald-500/10 blur-3xl pointer-events-none" />
-
-                {/* Top accent stripe */}
-                <div className="h-px w-full bg-gradient-to-r from-transparent via-emerald-500/50 to-transparent" />
-
-                {/* ── Header ── */}
-                <div className="px-8 pt-8 pb-6">
-                    {/* Brand chip */}
-                    <div className="flex items-center justify-between mb-5">
-                        <div className="flex items-center gap-2">
-                            <div className="p-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
-                                {showOtp
-                                    ? <ShieldCheck size={13} className="text-emerald-400" />
-                                    : <Sparkles    size={13} className="text-emerald-400" />
-                                }
-                            </div>
-                            <span className="text-[10px] font-black text-emerald-400 uppercase tracking-[0.18em]">
-                                CleanFlow
-                            </span>
-                        </div>
-                        <button
-                            onClick={onClose}
-                            className="p-2 rounded-xl text-slate-500 hover:text-slate-200
-                                       hover:bg-white/5 transition-all duration-150"
-                        >
-                            <X size={17} />
-                        </button>
-                    </div>
-
-                    {/* Title */}
-                    <h2 className="text-[1.6rem] font-black text-white tracking-tight leading-tight">
-                        {title}
-                    </h2>
-                    <p className="text-slate-500 text-sm font-medium mt-1">{subtitle}</p>
+                <div className="flex gap-2 items-center font-bold text-sm">
+                   Close
                 </div>
+            </button>
 
-                {/* ── Tab switcher ── */}
-                {!showOtp && (
-                    <div className="px-8 mb-1">
-                        <div className="flex gap-1 p-1 bg-white/[0.04] rounded-2xl border border-white/[0.06]">
-                            {[
-                                { label: 'Sign In',        toLogin: true  },
-                                { label: 'Create Account', toLogin: false },
-                            ].map(({ label, toLogin }) => {
-                                const active = isLogin === toLogin;
-                                return (
-                                    <button
-                                        key={label}
-                                        type="button"
-                                        onClick={() => switchTab(toLogin)}
-                                        className={`relative flex-1 py-2.5 rounded-xl text-sm font-bold
-                                                    transition-colors duration-200
-                                                    ${active ? 'text-slate-950' : 'text-slate-500 hover:text-slate-300'}`}
-                                    >
-                                        {active && (
-                                            <motion.div
-                                                layoutId="auth-tab-pill"
-                                                className="absolute inset-0 rounded-xl bg-white"
-                                                transition={{ type: 'spring', damping: 28, stiffness: 380 }}
-                                            />
-                                        )}
-                                        <span className="relative z-10">{label}</span>
-                                    </button>
-                                );
-                            })}
-                        </div>
+            {/* Left Image Section */}
+            <div className="hidden lg:block lg:w-1/2 h-full relative border-r border-slate-100">
+                <img src={AuthImage} alt="Cleanflow Platform" className="absolute inset-0 w-full h-full object-cover" />
+            </div>
+
+            {/* Right Form Section */}
+            <div className="w-full lg:w-1/2 h-full overflow-y-auto">
+                <div className="min-h-full flex flex-col justify-center px-10 py-12 max-w-[480px] mx-auto relative">
+                    
+                    {/* Header */}
+                    <div className="text-center mb-8">
+                        <h2 className="text-[32px] font-medium tracking-tight text-[#1c1c1c] mb-[2px]">
+                            {showOtp ? 'Verify your email' : isLogin ? 'Login to your account' : 'Create an account'}
+                        </h2>
                     </div>
-                )}
 
-                {/* ── Form body ── */}
-                <div className="px-8 pb-0">
-                    <form onSubmit={handleSubmit}>
+                    <form onSubmit={handleSubmit} className="w-full">
+                        {!showOtp && (
+                            <>
+                                {/* SSO Buttons */}
+                                <div className="flex gap-4 mb-6">
+                                    <button 
+                                        type="button"
+                                        className="flex-1 flex items-center justify-center gap-2.5 py-2.5 rounded-full border border-slate-200 hover:bg-slate-50 hover:border-slate-300 transition-colors text-[13px] font-bold text-[#1c1c1c] whitespace-nowrap shadow-sm"
+                                    >
+                                        <svg width="18" height="18" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                            <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+                                            <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                                            <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+                                            <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+                                        </svg>
+                                        Google
+                                    </button>
+                                    <button 
+                                        type="button"
+                                        className="flex-1 flex items-center justify-center gap-2.5 py-2.5 rounded-full border border-slate-200 hover:bg-slate-50 hover:border-slate-300 transition-colors text-[13px] font-bold text-[#1c1c1c] whitespace-nowrap shadow-sm"
+                                    >
+                                        <svg width="18" height="18" viewBox="0 0 21 21" xmlns="http://www.w3.org/2000/svg">
+                                            <path fill="#f25022" d="M1 1h9v9H1z"/>
+                                            <path fill="#00a4ef" d="M1 11h9v9H1z"/>
+                                            <path fill="#7fba00" d="M11 1h9v9h-9z"/>
+                                            <path fill="#ffb900" d="M11 11h9v9h-9z"/>
+                                        </svg>
+                                        Microsoft
+                                    </button>
+                                </div>
 
-                        {/* Animated panel swap */}
-                        <div className="overflow-hidden">
-                            <AnimatePresence mode="wait" initial={false}>
+                                {/* Divider */}
+                                <div className="flex items-center gap-4 mb-6">
+                                    <div className="h-px bg-slate-100 flex-1"></div>
+                                    <span className="text-[11px] font-bold text-slate-400 uppercase">OR</span>
+                                    <div className="h-px bg-slate-100 flex-1"></div>
+                                </div>
+                            </>
+                        )}
 
-                                {/* OTP step */}
-                                {showOtp && (
-                                    <SlidePanel key="otp" dir={1}>
-                                        <div className="pt-6 space-y-4">
-                                            <Field label="6-Digit Verification Code" icon={Lock}>
-                                                <input
-                                                    type="text"
-                                                    value={otp}
-                                                    onChange={(e) => setOtp(e.target.value)}
-                                                    className={`${inputCls(true)} text-center tracking-[0.7em] text-xl font-black`}
-                                                    placeholder="· · · · · ·"
-                                                    maxLength={6}
-                                                    required
-                                                    autoFocus
-                                                />
-                                            </Field>
-                                            <div className="flex justify-between">
-                                                <button
-                                                    type="button"
-                                                    onClick={() => { setShowOtp(false); reset(); setOtp(''); }}
-                                                    className="text-xs text-slate-500 hover:text-slate-300 font-semibold transition-colors"
-                                                >
-                                                    ← Back
-                                                </button>
-                                                <button
-                                                    type="button"
-                                                    onClick={handleResendOtp}
-                                                    disabled={loading}
-                                                    className="text-xs text-emerald-400 hover:text-emerald-300 font-bold transition-colors disabled:opacity-40"
-                                                >
-                                                    Resend Code
-                                                </button>
-                                            </div>
+                        <AnimatePresence mode="wait">
+                            <motion.div
+                                key={showOtp ? 'otp' : isLogin ? 'login' : 'signup'}
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -10 }}
+                            >
+                                {showOtp ? (
+                                    <>
+                                        <p className="text-center text-sm text-slate-500 mb-6">
+                                            Enter the 6-digit code sent to {email}
+                                        </p>
+                                        <Field icon={Lock}>
+                                            <input
+                                                type="text"
+                                                value={otp}
+                                                onChange={(e) => setOtp(e.target.value)}
+                                                className={`${inputCls(true)} text-center tracking-[0.7em] text-xl font-black`}
+                                                placeholder="· · · · · ·"
+                                                maxLength={6}
+                                                required
+                                                autoFocus
+                                            />
+                                        </Field>
+                                        <div className="flex justify-between px-2 mb-4">
+                                            <button
+                                                type="button"
+                                                onClick={() => { setShowOtp(false); reset(); setOtp(''); }}
+                                                className="text-[13px] text-slate-500 hover:text-slate-700 font-semibold transition-colors"
+                                            >
+                                                ← Back
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={handleResendOtp}
+                                                disabled={loading}
+                                                className="text-[13px] text-slate-900 hover:text-black font-bold transition-colors"
+                                            >
+                                                Resend Code
+                                            </button>
                                         </div>
-                                    </SlidePanel>
-                                )}
-
-                                {/* Sign In */}
-                                {!showOtp && isLogin && (
-                                    <SlidePanel key="login" dir={tabDir}>
-                                        <div className="pt-5 space-y-4">
-                                            <Field label="Email" icon={Mail}>
-                                                <input
-                                                    type="email"
-                                                    value={email}
-                                                    onChange={(e) => setEmail(e.target.value)}
-                                                    className={inputCls()}
-                                                    placeholder="you@company.com"
-                                                    required
-                                                    autoFocus
-                                                />
-                                            </Field>
-                                            <Field label="Password" icon={Lock}>
-                                                <input
-                                                    type={showPwd ? 'text' : 'password'}
-                                                    value={password}
-                                                    onChange={(e) => setPassword(e.target.value)}
-                                                    className={`${inputCls()} pr-10`}
-                                                    placeholder="••••••••"
-                                                    required
-                                                />
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setShowPwd(!showPwd)}
-                                                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors"
-                                                >
-                                                    {showPwd ? <EyeOff size={14} /> : <Eye size={14} />}
-                                                </button>
-                                            </Field>
-                                        </div>
-                                    </SlidePanel>
-                                )}
-
-                                {/* Create Account */}
-                                {!showOtp && !isLogin && (
-                                    <SlidePanel key="signup" dir={tabDir}>
-                                        <div className="pt-5 space-y-4">
-                                            <div className="grid grid-cols-2 gap-3">
-                                                <Field label="Full Name" icon={User}>
-                                                    <input
-                                                        type="text"
-                                                        value={fullName}
-                                                        onChange={(e) => setFullName(e.target.value)}
-                                                        className={inputCls()}
-                                                        placeholder="Jane Smith"
-                                                        required
-                                                        autoFocus
-                                                    />
-                                                </Field>
-                                                <Field label="Company" icon={Building2}>
-                                                    <input
-                                                        type="text"
-                                                        value={companyName}
-                                                        onChange={(e) => setCompanyName(e.target.value)}
-                                                        className={inputCls()}
-                                                        placeholder="Acme Corp"
-                                                        required
-                                                    />
-                                                </Field>
-                                            </div>
-
-                                            <Field label="Work Email" icon={Mail}>
-                                                <input
-                                                    type="email"
-                                                    value={email}
-                                                    onChange={(e) => setEmail(e.target.value)}
-                                                    className={inputCls()}
-                                                    placeholder="you@company.com"
-                                                    required
-                                                />
-                                            </Field>
-
-                                            <Field label="Password" icon={Lock}>
-                                                <input
-                                                    type={showPwd ? 'text' : 'password'}
-                                                    value={password}
-                                                    onChange={(e) => setPassword(e.target.value)}
-                                                    className={`${inputCls()} pr-10`}
-                                                    placeholder="Create a strong password"
-                                                    required
-                                                />
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setShowPwd(!showPwd)}
-                                                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors"
-                                                >
-                                                    {showPwd ? <EyeOff size={14} /> : <Eye size={14} />}
-                                                </button>
-                                            </Field>
-
-                                            <div className="grid grid-cols-2 gap-3">
-                                                <Field label="Profession" icon={Briefcase}>
-                                                    <select
-                                                        value={profession}
-                                                        onChange={(e) => setProfession(e.target.value)}
-                                                        className={inputCls()}
-                                                        required
-                                                    >
-                                                        <option value="" disabled>Select…</option>
-                                                        <option>Engineer</option>
-                                                        <option>Data Scientist</option>
-                                                        <option>Product Manager</option>
-                                                        <option>Analyst</option>
-                                                        <option>Other</option>
-                                                    </select>
-                                                </Field>
-                                                <Field label="Country" icon={Globe}>
-                                                    <input
-                                                        type="text"
-                                                        value={country}
-                                                        onChange={(e) => setCountry(e.target.value)}
-                                                        className={inputCls()}
-                                                        placeholder="India"
-                                                        required
-                                                    />
-                                                </Field>
-                                            </div>
-
-                                            <Field label="Mobile Number" icon={Phone}>
+                                    </>
+                                ) : (
+                                    <>
+                                        {!isLogin && (
+                                            <>
+                                                <div className="grid grid-cols-2 gap-3">
+                                                    <Field icon={User}>
+                                                        <input
+                                                            type="text"
+                                                            value={fullName}
+                                                            onChange={(e) => setFullName(e.target.value)}
+                                                            className={inputCls(true)}
+                                                            placeholder="Full Name"
+                                                            required
+                                                        />
+                                                    </Field>
+                                                    <Field icon={Building2}>
+                                                        <input
+                                                            type="text"
+                                                            value={companyName}
+                                                            onChange={(e) => setCompanyName(e.target.value)}
+                                                            className={inputCls(true)}
+                                                            placeholder="Company"
+                                                            required
+                                                        />
+                                                    </Field>
+                                                </div>
+                                                <div className="grid grid-cols-2 gap-3">
+                                                    <Field icon={Briefcase}>
+                                                        <select
+                                                            value={profession}
+                                                            onChange={(e) => setProfession(e.target.value)}
+                                                            className={inputCls(true)}
+                                                            required
+                                                        >
+                                                            <option value="" disabled>Profession</option>
+                                                            <option>Engineer</option>
+                                                            <option>Data Scientist</option>
+                                                            <option>Product Manager</option>
+                                                            <option>Analyst</option>
+                                                            <option>Other</option>
+                                                        </select>
+                                                    </Field>
+                                                    <Field icon={Globe}>
+                                                        <input
+                                                            type="text"
+                                                            value={country}
+                                                            onChange={(e) => setCountry(e.target.value)}
+                                                            className={inputCls(true)}
+                                                            placeholder="Country"
+                                                            required
+                                                        />
+                                                    </Field>
+                                                </div>
                                                 <div className="flex gap-2">
-                                                    <div className="relative w-[38%]">
-                                                        <Phone size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none z-10" />
+                                                    <div className="relative w-[40%]">
+                                                        <Phone size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none z-10" />
                                                         <select
                                                             value={phoneCountryCode}
                                                             onChange={(e) => setPhoneCountryCode(e.target.value)}
@@ -450,114 +321,106 @@ const AuthModal = ({ isOpen, onClose, onLoginSuccess, defaultMode = 'login' }) =
                                                             ))}
                                                         </select>
                                                     </div>
-                                                    <input
-                                                        type="tel"
-                                                        inputMode="tel"
-                                                        value={phoneLocalNumber}
-                                                        onChange={(e) => setPhoneLocalNumber(e.target.value)}
-                                                        className={`${inputCls(false)} flex-1`}
-                                                        placeholder="9876543210"
-                                                        required
-                                                    />
+                                                    <div className="flex-1">
+                                                        <Field>
+                                                            <input
+                                                                type="tel"
+                                                                value={phoneLocalNumber}
+                                                                onChange={(e) => setPhoneLocalNumber(e.target.value)}
+                                                                className={inputCls()}
+                                                                placeholder="Mobile Number"
+                                                                required
+                                                            />
+                                                        </Field>
+                                                    </div>
                                                 </div>
-                                            </Field>
-                                        </div>
-                                    </SlidePanel>
+                                            </>
+                                        )}
+                                        
+                                        <Field>
+                                            <input
+                                                type="email"
+                                                value={email}
+                                                onChange={(e) => setEmail(e.target.value)}
+                                                className={inputCls()}
+                                                placeholder="Email"
+                                                required
+                                            />
+                                        </Field>
+
+                                        <Field>
+                                            <input
+                                                type={showPwd ? 'text' : 'password'}
+                                                value={password}
+                                                onChange={(e) => setPassword(e.target.value)}
+                                                className={inputCls()}
+                                                placeholder={isLogin ? "Password" : "Create Password"}
+                                                required
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowPwd(!showPwd)}
+                                                className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+                                            >
+                                                {showPwd ? <EyeOff size={16} /> : <Eye size={16} />}
+                                            </button>
+                                        </Field>
+                                    </>
                                 )}
-
-                            </AnimatePresence>
-                        </div>
-
-                        {/* Alerts */}
-                        <AnimatePresence>
-                            {error && (
-                                <motion.div
-                                    key="err"
-                                    initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
-                                    className="mt-4 flex items-start gap-2.5 text-red-400 text-xs font-semibold
-                                               bg-red-500/[0.08] border border-red-500/20 px-4 py-3 rounded-xl"
-                                >
-                                    <AlertCircle size={14} className="shrink-0 mt-0.5" />
-                                    {error}
-                                </motion.div>
-                            )}
-                            {successMsg && (
-                                <motion.div
-                                    key="ok"
-                                    initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
-                                    className="mt-4 flex items-start gap-2.5 text-emerald-400 text-xs font-semibold
-                                               bg-emerald-500/[0.08] border border-emerald-500/20 px-4 py-3 rounded-xl"
-                                >
-                                    <CheckCircle2 size={14} className="shrink-0 mt-0.5" />
-                                    {successMsg}
-                                </motion.div>
-                            )}
+                            </motion.div>
                         </AnimatePresence>
 
-                        {/* CTA */}
-                        <div className="mt-6">
-                            <button
-                                type="submit"
-                                disabled={loading}
-                                className="w-full py-3.5 rounded-2xl font-black text-sm tracking-wide
-                                           bg-emerald-500 text-slate-950
-                                           hover:bg-emerald-400 hover:-translate-y-0.5
-                                           shadow-[0_0_28px_rgba(52,211,153,0.22)]
-                                           hover:shadow-[0_0_36px_rgba(52,211,153,0.35)]
-                                           transition-all duration-200
-                                           disabled:opacity-50 disabled:pointer-events-none
-                                           flex items-center justify-center gap-2"
-                            >
-                                {loading ? (
-                                    <>
-                                        <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
-                                            <circle className="opacity-25" cx="12" cy="12" r="10"
-                                                stroke="currentColor" strokeWidth="4" />
-                                            <path className="opacity-75" fill="currentColor"
-                                                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                                        </svg>
-                                        Processing…
-                                    </>
-                                ) : (
-                                    <>
-                                        {showOtp
-                                            ? 'Verify & Continue'
-                                            : isLogin
-                                                ? 'Sign In to CleanFlow'
-                                                : 'Create My Account'}
-                                        <ArrowRight size={15} />
-                                    </>
-                                )}
-                            </button>
-                        </div>
+                        {/* Alerts */}
+                        {error && (
+                            <div className="mb-4 flex items-start gap-2.5 text-red-600 text-[13px] font-semibold bg-red-50 border border-red-100 px-4 py-3 rounded-xl shadow-sm">
+                                <AlertCircle size={16} className="shrink-0 mt-0.5" />
+                                {error}
+                            </div>
+                        )}
+                        {successMsg && (
+                            <div className="mb-4 flex items-start gap-2.5 text-emerald-600 text-[13px] font-semibold bg-emerald-50 border border-emerald-100 px-4 py-3 rounded-xl shadow-sm">
+                                <CheckCircle2 size={16} className="shrink-0 mt-0.5" />
+                                {successMsg}
+                            </div>
+                        )}
 
-                        {/* Legal note (signup only) */}
-                        {!isLogin && !showOtp && (
-                            <p className="text-center text-[10.5px] text-slate-600 mt-3 leading-relaxed pb-2">
-                                By signing up you agree to our{' '}
-                                <span className="text-slate-500 font-semibold cursor-pointer hover:text-slate-400 transition-colors">Terms</span>
-                                {' '}and{' '}
-                                <span className="text-slate-500 font-semibold cursor-pointer hover:text-slate-400 transition-colors">Privacy Policy</span>.
-                            </p>
+                        {/* Submit */}
+                        <button
+                            type="submit"
+                            disabled={loading}
+                            className="w-full py-3.5 rounded-full font-bold text-[14px]
+                                       bg-[#f5f5f5] text-slate-800 border border-slate-200
+                                       hover:bg-[#ebebeb] hover:border-slate-300
+                                       transition-all duration-200
+                                       disabled:opacity-60 disabled:pointer-events-none
+                                       flex items-center justify-center gap-2 mt-4"
+                        >
+                            {loading ? 'Processing…' : 'Continue'}
+                        </button>
+                        
+                        {/* Toggle Link */}
+                        {!showOtp && (
+                            <div className="mt-8 text-center text-[13px] font-semibold text-slate-500">
+                                {isLogin ? "Don't have an account? " : "Already have an account? "}
+                                <button
+                                    type="button"
+                                    onClick={() => { setIsLogin(!isLogin); reset(); }}
+                                    className="text-slate-900 border-b border-slate-900 pb-0.5 hover:text-slate-600 transition-colors"
+                                >
+                                    {isLogin ? 'Create one' : 'Login'}
+                                </button>
+                            </div>
                         )}
                     </form>
+                    
+                    {/* Footer branding */}
+                    <div className="absolute bottom-6 left-0 right-0 text-center flex flex-col items-center">
+                       <span className="text-[10px] font-bold text-slate-400">
+                           <span className="text-slate-700">IN</span> Crafted with Care. For India, from India
+                       </span>
+                    </div>
                 </div>
-
-                {/* ── Bottom trust strip ── */}
-                <div className="mx-8 my-5 px-5 py-3.5 rounded-2xl bg-white/[0.03] border border-white/[0.06]
-                                flex items-center justify-center gap-3">
-                    {[
-                        { emoji: '🔒', text: '256-bit TLS' },
-                        { emoji: '🛡️', text: 'SOC 2 Type II' },
-                        { emoji: '🌍', text: 'GDPR Ready' },
-                    ].map(({ emoji, text }) => (
-                        <div key={text} className="flex items-center gap-1.5">
-                            <span className="text-xs">{emoji}</span>
-                            <span className="text-[10px] font-semibold text-slate-600">{text}</span>
-                        </div>
-                    ))}
-                </div>
-            </motion.div>
+            </div>
         </div>
     );
 };

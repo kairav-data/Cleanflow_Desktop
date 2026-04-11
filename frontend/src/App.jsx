@@ -252,11 +252,13 @@ function App() {
                     className="w-full max-w-7xl mx-auto pb-16"
                 >
                     {/* Hero Section */}
-                    <div className="mb-8 relative overflow-hidden rounded-[28px] border border-slate-800/80 shadow-xl" style={{ background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%)' }}>
-                        {/* Ambient glow blobs */}
-                        <div className="absolute top-0 left-1/4 h-80 w-80 rounded-full bg-emerald-500/10 blur-3xl pointer-events-none" />
-                        <div className="absolute bottom-0 right-1/4 h-72 w-72 rounded-full bg-sky-500/10 blur-3xl pointer-events-none" />
-                        <div className="absolute -top-10 -right-10 opacity-5"><Sparkles size={200} className="text-white" /></div>
+                    <div className="mb-8 relative overflow-hidden rounded-[28px] border border-gray-800 shadow-2xl bg-[#030303]">
+                        {/* Ambient glow blobs for an impressive color gradient */}
+                        <div className="absolute inset-0" style={{ background: 'linear-gradient(135deg, #050505 0%, #0a0a0a 50%, #020202 100%)' }} />
+                        <div className="absolute top-0 left-1/4 h-[400px] w-[400px] rounded-full bg-purple-500/20 blur-[100px] pointer-events-none mix-blend-screen" />
+                        <div className="absolute bottom-0 right-1/4 h-[400px] w-[400px] rounded-full bg-emerald-500/20 blur-[100px] pointer-events-none mix-blend-screen" />
+                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-[500px] w-[500px] bg-blue-600/10 blur-[120px] pointer-events-none mix-blend-screen" />
+                        <div className="absolute -top-10 -right-10 opacity-[0.04]"><Sparkles size={250} className="text-white" /></div>
 
                         <div className="relative z-10 px-6 py-8 md:px-8 md:py-9">
                             <div className="flex flex-col gap-7 lg:flex-row lg:items-center lg:justify-between">
@@ -797,40 +799,21 @@ function App() {
     // Unauthenticated / Landing Page Render
     if (!user) {
         return (
-            <div className={`min-h-screen font-sans overflow-x-hidden transition-colors duration-500 ${(activeTab === 'home' || activeTab === 'pricing') ? 'bg-slate-950 text-slate-50' : 'bg-white text-slate-900'}`}>
+            <div className="min-h-screen font-sans overflow-x-hidden bg-white text-slate-900">
                 {/* Navigation */}
-                <nav className={`fixed top-0 z-50 w-full border-b backdrop-blur-md transition-colors duration-500 ${(activeTab === 'home' || activeTab === 'pricing') ? 'bg-slate-950/80 border-slate-800' : 'bg-white/80 border-slate-200'}`}>
-                    <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-5 lg:px-6">
+                <nav className="fixed top-0 z-50 w-full bg-white/90 backdrop-blur-md">
+                    <div className="mx-auto flex h-24 max-w-[1200px] items-center justify-between px-6 lg:px-8">
                         <div className="flex items-center gap-6">
-                            <div className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity" onClick={goToLanding}>
-                                <img src={Logo} alt="CleanFlow" className={`h-8 w-auto transition-all ${(activeTab === 'home' || activeTab === 'pricing') ? 'brightness-0 invert' : 'brightness-0'}`} />
-                            </div>
-                            <div className="hidden md:flex items-center gap-5">
-                                {['Solutions', 'Resources', 'Pricing'].map((item) => (
-                                    <button
-                                        key={item}
-                                        onClick={() => {
-                                            if (item === 'Pricing') setActiveTab('pricing');
-                                        }}
-                                        className={`text-sm font-medium transition-colors ${(activeTab === 'home' || activeTab === 'pricing') ? 'text-slate-300 hover:text-white' : 'text-slate-600 hover:text-slate-900'}`}
-                                    >
-                                        {item}
-                                    </button>
-                                ))}
+                            <div className="flex items-center gap-2 cursor-pointer transition-opacity" onClick={goToLanding}>
+                                <span className="uncial-antiqua-regular text-[28px] text-black leading-none">Cleanflow</span>
                             </div>
                         </div>
                         <div className="flex items-center gap-3">
                             <button
                                 onClick={() => { setAuthDefaultMode('login'); setIsAuthOpen(true); }}
-                                className={`px-3 py-2 text-sm font-semibold transition-colors ${(activeTab === 'home' || activeTab === 'pricing') ? 'text-slate-300 hover:text-white' : 'text-slate-600 hover:text-slate-900'}`}
+                                className="rounded-full bg-[#1c1c1c] shadow-[0_4px_14px_0_rgb(0,0,0,0.39)] hover:shadow-[0_6px_20px_rgba(0,0,0,0.23)] hover:bg-[#000000] px-8 py-2.5 text-[15px] font-medium text-white transition-all hover:scale-[1.02]"
                             >
-                                Log in
-                            </button>
-                            <button
-                                onClick={() => { setAuthDefaultMode('signup'); setIsAuthOpen(true); }}
-                                className={`rounded-lg px-5 py-2.5 text-sm font-semibold transition-all ${(activeTab === 'home' || activeTab === 'pricing') ? 'bg-emerald-500 text-slate-950 shadow-[0_0_15px_rgba(16,185,129,0.24)] hover:bg-emerald-400' : 'bg-slate-900 text-white shadow-md shadow-slate-900/15 hover:bg-slate-800'}`}
-                            >
-                                Get Started
+                                Sign up
                             </button>
                         </div>
                     </div>
@@ -888,10 +871,10 @@ function App() {
 
     // Authenticated Sidebar Workspace Layout (Databricks-style)
     return (
-        <div className="flex h-screen w-full overflow-hidden bg-[#0f172a] font-sans">
+        <div className="flex h-screen w-full overflow-hidden bg-black font-sans">
 
             {/* Mobile Header Toggle */}
-            <div className="fixed top-0 z-40 flex h-14 w-full items-center justify-between border-b border-gray-800 bg-[#0f172a] px-3.5 lg:hidden">
+            <div className="fixed top-0 z-40 flex h-14 w-full items-center justify-between border-b border-gray-800 bg-black px-3.5 lg:hidden">
                 <img src={Logo} alt="CleanFlow" className="h-7 w-auto brightness-0 invert" />
                 <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="p-2 text-gray-300 hover:text-white transition-colors">
                     {isSidebarOpen ? <X size={22} /> : <Menu size={22} />}
@@ -899,7 +882,7 @@ function App() {
             </div>
 
             {/* Left Vertical Sidebar Workspace */}
-            <nav className={`fixed top-0 left-0 z-50 flex h-screen w-[244px] flex-col border-r border-gray-800 bg-[#0f172a] transform transition-transform duration-300 ease-in-out lg:static ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
+            <nav className={`fixed top-0 left-0 z-50 flex h-screen w-[244px] flex-col border-r border-gray-800 bg-black transform transition-transform duration-300 ease-in-out lg:static ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
                 <div className="flex h-16 shrink-0 items-center border-b border-gray-800 px-5 pt-14 lg:pt-0">
                     <img src={Logo} alt="CleanFlow" className="h-7 w-auto cursor-pointer brightness-0 invert opacity-90" onClick={() => handleFeatureAccess('dashboard')} />
                 </div>
@@ -993,7 +976,7 @@ function App() {
                 </div>
 
                 {/* Bottom Profile Section */}
-                <div className="shrink-0 border-t border-gray-800 bg-[#0d131f] p-3.5">
+                <div className="shrink-0 border-t border-gray-800 bg-[#0a0a0a] p-3.5">
                     <div className="flex items-center justify-between">
                         <button onClick={() => handleFeatureAccess('profile')} className="group flex flex-1 items-center gap-3 overflow-hidden rounded-lg px-2 py-1.5 transition-colors hover:bg-[#1f2937]">
                             <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-600 text-xs font-bold text-white">

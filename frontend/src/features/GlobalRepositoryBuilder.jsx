@@ -742,9 +742,13 @@ export default function GlobalRepositoryBuilder({ user = null }) {
                 <motion.section
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="relative overflow-hidden rounded-[34px] border border-slate-800/80 bg-[linear-gradient(135deg,#0f172a_0%,#13263f_46%,#0b1120_100%)] px-6 py-7 shadow-2xl"
+                    className="relative overflow-hidden rounded-[34px] border border-gray-800 bg-[#030303] px-6 py-7 shadow-2xl"
                 >
-                    <div className={`absolute inset-0 bg-gradient-to-r ${config.panelGlowClass}`} />
+                    <div className="absolute inset-0" style={{ background: 'linear-gradient(135deg, #050505 0%, #0a0a0a 50%, #020202 100%)' }} />
+                    <div className="absolute top-0 left-1/4 h-[400px] w-[400px] rounded-full bg-purple-500/20 blur-[100px] pointer-events-none mix-blend-screen" />
+                    <div className="absolute bottom-0 right-1/4 h-[400px] w-[400px] rounded-full bg-emerald-500/20 blur-[100px] pointer-events-none mix-blend-screen" />
+                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-[500px] w-[500px] bg-blue-600/10 blur-[120px] pointer-events-none mix-blend-screen" />
+                    <div className={`absolute inset-0 bg-gradient-to-r ${config.panelGlowClass} opacity-50`} />
                     <div className="relative grid gap-6 xl:grid-cols-[1.6fr,1fr] xl:items-end">
                         <div>
                             <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[11px] font-black uppercase tracking-[0.18em] text-slate-200">

@@ -14,12 +14,17 @@ import {
     Plus,
     Sparkles,
     Trash2,
+    History,
+    Save,
+    FolderOpen,
+    X,
 } from 'lucide-react';
 import { DataConnection, DatasetViewer, WorkspaceTabs } from '../components';
 import RepoSidebar from '../components/RepoSidebar';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || 'http://localhost:8000';
 const STEPS = ['Upload', 'Configure', 'Results'];
+const SAVED_CLEANING_KEY = 'cleanflow_saved_cleaning_ops_v1';
 
 const createOperationDraft = (columns = [], operations = []) => ({
     id: `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
@@ -59,6 +64,38 @@ export default function EnrichmentBuilder({ sessionId: initialSessionId, columns
     const [step, setStep] = useState(initialSessionId ? 2 : 1);
     const [workspaceTab, setWorkspaceTab] = useState('dataset');
     const [showRepoSidebar, setShowRepoSidebar] = useState(false);
+    
+    // Config persistence state
+    const [pastJobs, setPastJobs] = useState([]);
+    const [showHistoryModal, setShowHistoryModal] = useState(false);
+    const [savedRuleSets, setSavedRuleSets] = useState([]);
+    const [showSavedRulesModal, setShowSavedRulesModal] = useState(false);
+
+    useEffect(() => {
+        try {
+            const saved = JSON.parse(localStorage.getItem(SAVED_CLEANING_KEY) || '[]');
+            setSavedRuleSets(Array.isArray(saved) ? saved : []);
+        } catch {
+            setSavedRuleSets([]);
+        }
+    }, []);
+
+    useEffect(() => {
+        const fetchHistory = async () => {
+            try {
+                const token = localStorage.getItem('token');
+                if (!token) return;
+                const res = await axios.get(`${API_BASE}/history/jobs`, {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                const withRules = (res.data || []).filter(j => j.module === 'enrichment' && j.rules && j.rules.length > 0);
+                setPastJobs(withRules);
+            } catch (err) {
+                console.error("Failed to fetch history:", err);
+            }
+        };
+        fetchHistory();
+    }, []);
 
     useEffect(() => {
         const fetchOperations = async () => {
@@ -103,6 +140,54 @@ export default function EnrichmentBuilder({ sessionId: initialSessionId, columns
         setRules((current) => (mode === 'append' ? [...current, ...mapped] : mapped));
         setWorkspaceTab('rules');
         setStep(2);
+    };
+
+    const saveCurrentRules = () => {
+        if (rules.length === 0) {
+            alert('Add at least one operation before saving.');
+            return;
+        }
+
+        const name = window.prompt('Enter a name for this cleaning template:');
+        if (!name || !name.trim()) return;
+
+        const payloadRules = rules.map(({ column, operation, params }) => ({ column, operation, params }));
+        const next = [
+            {
+                id: `cleaningset_${Date.now()}`,
+                name: name.trim(),
+                rules: payloadRules,
+                created_at: new Date().toISOString()
+            },
+            ...savedRuleSets
+        ];
+
+        setSavedRuleSets(next);
+        localStorage.setItem(SAVED_CLEANING_KEY, JSON.stringify(next));
+    };
+
+    const applySavedRuleSet = (ruleSet) => {
+        const mappedRules = mapImportedOperations(ruleSet.rules || [], columns, operations);
+        if (mappedRules.length === 0) return;
+
+        const shouldReplace = window.confirm('Replace current pipeline with this saved template?');
+        const next = shouldReplace ? mappedRules : [...rules, ...mappedRules];
+        setRules(next);
+        setShowSavedRulesModal(false);
+    };
+
+    const deleteSavedRuleSet = (ruleSetId) => {
+        const next = savedRuleSets.filter(s => s.id !== ruleSetId);
+        setSavedRuleSets(next);
+        localStorage.setItem(SAVED_CLEANING_KEY, JSON.stringify(next));
+    };
+
+    const loadRulesFromJob = (job) => {
+        if (!job.rules) return;
+        const mappedRules = mapImportedOperations(job.rules, columns, operations);
+        const next = [...rules, ...mappedRules];
+        setRules(next);
+        setShowHistoryModal(false);
     };
 
     const handlePreview = async () => {
@@ -331,6 +416,19 @@ export default function EnrichmentBuilder({ sessionId: initialSessionId, columns
                                         <button type="button" onClick={() => setShowRepoSidebar(true)} className="flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-700 transition-colors hover:bg-emerald-100">
                                             <BookOpen size={16} /> Global Repo
                                         </button>
+                                        <button type="button" onClick={saveCurrentRules} className="flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-700 transition-colors hover:bg-emerald-100">
+                                            <Save size={16} /> Save Config
+                                        </button>
+                                        {savedRuleSets.length > 0 && (
+                                            <button type="button" onClick={() => setShowSavedRulesModal(true)} className="flex items-center gap-2 rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-2 text-sm font-semibold text-indigo-700 transition-colors hover:bg-indigo-100">
+                                                <FolderOpen size={16} /> Use Template
+                                            </button>
+                                        )}
+                                        {pastJobs.length > 0 && (
+                                            <button type="button" onClick={() => setShowHistoryModal(true)} className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-100">
+                                                <History size={16} /> Load Previous
+                                            </button>
+                                        )}
                                         <button type="button" onClick={addRule} className="flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-sm shadow-emerald-600/20 transition-colors hover:bg-emerald-700">
                                             <Plus size={16} /> Add Operation
                                         </button>
@@ -477,6 +575,107 @@ export default function EnrichmentBuilder({ sessionId: initialSessionId, columns
                 user={user}
                 availableColumns={columns}
             />
+
+            {/* History and Templates Modals */}
+            <AnimatePresence>
+                {showSavedRulesModal && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
+                            onClick={() => setShowSavedRulesModal(false)}
+                        />
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                            className="relative max-h-[80vh] w-full max-w-lg overflow-y-auto rounded-2xl bg-white p-6 shadow-2xl"
+                        >
+                            <div className="flex justify-between items-center mb-6">
+                                <h3 className="text-xl font-bold text-slate-900">Saved Operations</h3>
+                                <button onClick={() => setShowSavedRulesModal(false)} className="text-slate-400 hover:text-slate-600">
+                                    <X size={20} />
+                                </button>
+                            </div>
+
+                            <div className="space-y-3">
+                                {savedRuleSets.map((set) => (
+                                    <div key={set.id} className="p-4 border border-slate-200 rounded-xl">
+                                        <div className="flex items-start justify-between gap-3">
+                                            <div>
+                                                <h4 className="font-bold text-slate-800">{set.name}</h4>
+                                                <p className="text-xs text-slate-500 mt-1">
+                                                    {new Date(set.created_at).toLocaleString()} • {set.rules?.length || 0} operations
+                                                </p>
+                                            </div>
+                                            <button
+                                                onClick={() => deleteSavedRuleSet(set.id)}
+                                                className="text-xs px-2 py-1 rounded-lg bg-red-50 text-red-600 hover:bg-red-100"
+                                            >
+                                                Delete
+                                            </button>
+                                        </div>
+                                        <button
+                                            onClick={() => applySavedRuleSet(set)}
+                                            className="w-full mt-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-medium text-sm transition-colors"
+                                        >
+                                            Use This Template
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+                {showHistoryModal && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
+                            onClick={() => setShowHistoryModal(false)}
+                        />
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                            className="relative max-h-[80vh] w-full max-w-lg overflow-y-auto rounded-2xl bg-white p-6 shadow-2xl"
+                        >
+                            <div className="flex justify-between items-center mb-6">
+                                <h3 className="text-xl font-bold text-slate-900">Past Cleaning Pipelines</h3>
+                                <button onClick={() => setShowHistoryModal(false)} className="text-slate-400 hover:text-slate-600">
+                                    <X size={20} />
+                                </button>
+                            </div>
+
+                            <div className="space-y-3">
+                                {pastJobs.map((job) => (
+                                    <div key={job.id} className="p-4 border border-slate-200 rounded-xl hover:border-emerald-500/50 transition-colors group">
+                                        <div className="flex justify-between items-start mb-2">
+                                            <div>
+                                                <h4 className="font-bold text-slate-800">{job.file_name || job.filename}</h4>
+                                                <p className="text-xs text-slate-500">{new Date(job.created_at).toLocaleString()}</p>
+                                            </div>
+                                            <span className="bg-slate-100 text-slate-600 text-xs font-bold px-2 py-1 rounded-lg">
+                                                {job.rules.length} operations
+                                            </span>
+                                        </div>
+                                        <button
+                                            onClick={() => loadRulesFromJob(job)}
+                                            className="w-full mt-3 py-2 bg-slate-50 group-hover:bg-emerald-600 group-hover:text-white text-slate-600 rounded-lg font-medium text-sm transition-colors"
+                                        >
+                                            Apply Operations
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
         </div>
     );
 }

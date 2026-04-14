@@ -36,6 +36,7 @@ from history import (
 from payment import router as payment_router
 from chatbot import chat_router
 from repo_router import router as repo_router
+from pipeline_router import router as pipeline_router
 # --- Startup/Shutdown Logic ---
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -92,6 +93,7 @@ app.include_router(history_router)
 app.include_router(connections_router)
 app.include_router(chat_router)
 app.include_router(repo_router)
+app.include_router(pipeline_router)
 
 # Store active sessions in memory
 sessions = {}
@@ -1085,7 +1087,16 @@ async def execute_pipeline(session_id: str, config: dict):
     
     if not result.get("success"):
         raise HTTPException(status_code=400, detail=result.get("error", "Pipeline execution failed"))
-        
+
+    output_df = result.pop("output_df", None)
+    if output_df is not None:
+        output_engine = ValidationEngine()
+        output_columns = output_engine.load_data(dataframe=output_df)
+        sessions[output_engine.session_id] = output_engine
+        result["output_session_id"] = output_engine.session_id
+        result["output_columns"] = output_columns
+        result["output_row_count"] = len(output_df)
+
     return result
 
 if __name__ == "__main__":

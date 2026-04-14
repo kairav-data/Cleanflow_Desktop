@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, useMemo } from 'react';
+import { useState, useRef, useCallback, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
 import * as XLSX from 'xlsx';
@@ -864,21 +864,27 @@ function DashboardWorkspace({ analysis, dashboardSummary, filename, activeView, 
 }
 
 // ── Main Component ────────────────────────────────────────────────────────────
-export default function DataVisualizer() {
-    const [step, setStep] = useState(1);
+export default function DataVisualizer({
+    initialSessionId = null,
+    initialFilename = '',
+    initialRowCount = 0,
+    initialPrompt = '',
+    onClose = null,
+}) {
+    const [step, setStep] = useState(initialSessionId ? 2 : 1);
     const [delimiter, setDelimiter] = useState(',');
     const [customDelim, setCustomDelim] = useState('');
     const [file, setFile] = useState(null);
     const [dragging, setDragging] = useState(false);
     const [uploading, setUploading] = useState(false);
     const [analyzing, setAnalyzing] = useState(false);
-    const [sessionId, setSessionId] = useState(null);
-    const [filename, setFilename] = useState('');
-    const [rowCount, setRowCount] = useState(0);
+    const [sessionId, setSessionId] = useState(initialSessionId || null);
+    const [filename, setFilename] = useState(initialFilename || '');
+    const [rowCount, setRowCount] = useState(initialRowCount || 0);
     const [analysis, setAnalysis] = useState(null);
     const [error, setError] = useState('');
     const [activeView, setActiveView] = useState('charts');
-    const [prompt, setPrompt] = useState('');
+    const [prompt, setPrompt] = useState(initialPrompt || '');
     const [regenerating, setRegenerating] = useState(false);
     const [expandedChart, setExpandedChart] = useState(null);
 
@@ -912,6 +918,46 @@ export default function DataVisualizer() {
     };
 
     // ── Upload + Generate ────────────────────────────────────────────────────
+    const analyzeExistingSession = useCallback(async (sid, options = {}) => {
+        if (!sid) return;
+
+        const {
+            prompt: nextPrompt = '',
+            filename: nextFilename = '',
+            rowCount: nextRowCount = 0,
+        } = options;
+
+        setError('');
+        setAnalysis(null);
+        setExpandedChart(null);
+        setActiveView('charts');
+        setStep(2);
+        setSessionId(sid);
+        setFilename(nextFilename || 'Pipeline Output');
+        setRowCount(nextRowCount || 0);
+        setPrompt(nextPrompt);
+        setAnalyzing(true);
+
+        try {
+            const data = await runAnalyzeAI(sid, nextPrompt);
+            setAnalysis(data);
+        } catch (err) {
+            setError(err.response?.data?.detail || err.message || 'Unable to analyze this dataset.');
+        } finally {
+            setAnalyzing(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        if (!initialSessionId) return;
+
+        analyzeExistingSession(initialSessionId, {
+            prompt: initialPrompt,
+            filename: initialFilename,
+            rowCount: initialRowCount,
+        });
+    }, [analyzeExistingSession, initialFilename, initialPrompt, initialRowCount, initialSessionId]);
+
     const handleUploadAndAnalyze = async () => {
         if (!file) return;
         setError(''); setUploading(true);
@@ -974,7 +1020,7 @@ export default function DataVisualizer() {
     // ── Reset ─────────────────────────────────────────────────────────────────
     const handleReset = () => {
         setStep(1); setFile(null); setSessionId(null); setFilename('');
-        setAnalysis(null); setError(''); setActiveView('charts');
+        setRowCount(0); setAnalysis(null); setError(''); setActiveView('charts');
         setPrompt(''); setExpandedChart(null);
     };
 
@@ -1069,7 +1115,7 @@ export default function DataVisualizer() {
                 </div>
 
                 {/* Steps */}
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap justify-end">
                     {steps.map((s, i) => (
                         <div key={s.n} className="flex items-center gap-2">
                             <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${step === s.n ? 'bg-violet-600 text-white shadow-sm shadow-violet-300'
@@ -1081,6 +1127,15 @@ export default function DataVisualizer() {
                             {i < steps.length - 1 && <ChevronRight size={13} className="text-slate-300" />}
                         </div>
                     ))}
+                    {onClose && (
+                        <button
+                            onClick={onClose}
+                            className="ml-1 flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-400 transition-all hover:border-red-200 hover:bg-red-50 hover:text-red-500"
+                            title="Close visualizer"
+                        >
+                            <X size={16} />
+                        </button>
+                    )}
                 </div>
             </div>
 
@@ -1232,6 +1287,55 @@ export default function DataVisualizer() {
                     )}
 
                     {/* ── STEP 2: DASHBOARD ── */}
+                    {step === 2 && !analysis && (
+                        <motion.div
+                            key="viz-loading"
+                            initial={{ opacity: 0, y: 12 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -12 }}
+                            className="w-full p-6 md:p-8"
+                        >
+                            <div className="mx-auto max-w-3xl rounded-[28px] border border-slate-100 bg-white p-8 shadow-xl shadow-slate-200/60">
+                                <div className="flex flex-col items-center text-center">
+                                    <div className="mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-500 to-indigo-600 shadow-lg shadow-violet-200">
+                                        {analyzing
+                                            ? <RefreshCw size={26} className="animate-spin text-white" />
+                                            : <AlertCircle size={26} className="text-white" />}
+                                    </div>
+                                    <h2 className="text-2xl font-black text-slate-900">
+                                        {analyzing ? 'Opening pipeline output' : 'Visualizer could not load'}
+                                    </h2>
+                                    <p className="mt-2 max-w-xl text-sm font-medium text-slate-400">
+                                        {analyzing
+                                            ? `Preparing the full AI visualizer for ${filename || 'your pipeline dataset'} so you can explore charts, columns, prompts, and raw rows in one place.`
+                                            : (error || 'Try reloading the pipeline output visualization.')}
+                                    </p>
+                                </div>
+
+                                {!analyzing && (
+                                    <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+                                        <button
+                                            onClick={() => analyzeExistingSession(sessionId, {
+                                                prompt,
+                                                filename,
+                                                rowCount,
+                                            })}
+                                            className="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-violet-600 to-indigo-600 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-violet-200 transition-all hover:from-violet-500 hover:to-indigo-500"
+                                        >
+                                            <RefreshCw size={15} /> Retry Analysis
+                                        </button>
+                                        <button
+                                            onClick={handleReset}
+                                            className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-500 transition-all hover:bg-slate-50"
+                                        >
+                                            <RotateCcw size={15} /> New Dataset
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+                        </motion.div>
+                    )}
+
                     {step === 2 && analysis && (
                         <motion.div key="viz" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
                             className="w-full p-6 md:p-8">

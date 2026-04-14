@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import {
   ReactFlow,
   ReactFlowProvider,
@@ -13,23 +14,24 @@ import {
   MarkerType,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import { Database, Sparkles, ShieldCheck, Download, Play, CheckCircle, X, Plus, Trash2, AlertCircle, Globe, GitMerge, Shuffle, BarChart3, Activity, TrendingUp, PieChart as PieIcon, RefreshCw, ChevronDown, ChevronUp, Zap, Settings } from 'lucide-react';
+import { Database, Sparkles, ShieldCheck, Download, Play, CheckCircle, X, Plus, Trash2, AlertCircle, Globe, GitMerge, Shuffle, BarChart3, Activity, TrendingUp, PieChart as PieIcon, RefreshCw, ChevronDown, ChevronUp, Zap, Settings, Filter, Calculator, Link, Files, Repeat, GitBranch, Mail, Webhook, Save, FolderOpen, Clock, CalendarDays } from 'lucide-react';
 import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
-import {
-  BarChart, Bar, LineChart, Line, AreaChart, Area,
-  PieChart, Pie, Cell, ScatterChart, Scatter,
-  XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
-} from 'recharts';
 
 // Component Imports
 import { DataConnection, RuleBuilder } from '../components';
+import DataVisualizer from './DataVisualizer';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'import.meta.env.VITE_API_URL';
 const PIPELINE_RUNS_KEY = 'cleanflow_pipeline_runs_v1';
 
 let id = 0;
-const getId = () => `node_${id++}`;
+const getId = () => {
+  if (typeof globalThis !== 'undefined' && globalThis.crypto?.randomUUID) {
+    return `node_${globalThis.crypto.randomUUID()}`;
+  }
+  return `node_${Date.now()}_${id++}`;
+};
 
 const SCRAPER_TEMPLATES = [
   { id: 'amazon_product', name: 'Amazon Product' },
@@ -52,6 +54,14 @@ const getNodeKind = (label = '') => {
   if (normalized.includes('validation')) return 'validation';
   if (normalized.includes('mapping')) return 'mapper';
   if (normalized.includes('matching')) return 'matching';
+  if (normalized.includes('filter')) return 'filter';
+  if (normalized.includes('aggregate')) return 'aggregate';
+  if (normalized.includes('join')) return 'join';
+  if (normalized.includes('deduplicate')) return 'deduplicate';
+  if (normalized.includes('loop')) return 'loop';
+  if (normalized.includes('conditional')) return 'conditional';
+  if (normalized.includes('email')) return 'email';
+  if (normalized.includes('webhook')) return 'webhook';
   if (normalized.includes('export')) return 'export';
   return 'unknown';
 };
@@ -72,6 +82,15 @@ const isNodeConfigured = (node) => {
   if (kind === 'scraper') {
     return !!node.data?.template && (((node.data?.urls || []).length > 0) || !!node.data?.url?.trim());
   }
+  if (kind === 'filter') return Array.isArray(node.data?.filterRules) && node.data.filterRules.length > 0;
+  if (kind === 'aggregate') return !!node.data?.groupByColumn && !!node.data?.aggFunction;
+  if (kind === 'join') return !!node.data?.leftKey && !!node.data?.rightKey;
+  if (kind === 'deduplicate') return Array.isArray(node.data?.subsetColumns) && node.data.subsetColumns.length > 0;
+  if (kind === 'loop') return !!node.data?.chunkSize;
+  if (kind === 'conditional') return !!node.data?.conditionExpression;
+  if (kind === 'email') return !!node.data?.toEmail;
+  if (kind === 'webhook') return !!node.data?.webhookUrl;
+  
   if (kind === 'export') return true;
   return false;
 };
@@ -81,13 +100,14 @@ const PipelineNode = ({ id: nodeId, data, selected }) => {
   const configured = isNodeConfigured({ id: nodeId, data });
   const kind = getNodeKind(data.label || '');
 
-  const icon = kind === 'dataset' ? <Database size={15} />
-    : kind === 'scraper' ? <Globe size={15} />
-    : kind === 'cleaner' ? <Sparkles size={15} />
-    : kind === 'validation' ? <ShieldCheck size={15} />
-    : kind === 'mapper' ? <GitMerge size={15} />
-    : kind === 'matching' ? <Shuffle size={15} />
-    : <Download size={15} />;
+  const iconMap = {
+      dataset: <Database size={15} />, scraper: <Globe size={15} />, cleaner: <Sparkles size={15} />,
+      validation: <ShieldCheck size={15} />, mapper: <GitMerge size={15} />, matching: <Shuffle size={15} />,
+      filter: <Filter size={15} />, aggregate: <Calculator size={15} />, join: <Link size={15} />,
+      deduplicate: <Files size={15} />, loop: <Repeat size={15} />, conditional: <GitBranch size={15} />,
+      email: <Mail size={15} />, webhook: <Webhook size={15} />, export: <Download size={15} />
+  };
+  const icon = iconMap[kind] || iconMap.export;
 
   const borderColor = configured ? '#10b981' : '#f59e0b';
   const bgColor     = configured ? '#f0fdf4' : '#fffbeb';
@@ -168,6 +188,7 @@ export const PipelineBuilder = ({ onComplete }) => {
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const [reactFlowInstance, setReactFlowInstance] = useState(null);
   const [activeSessionId, setActiveSessionId] = useState(null);
+  const [outputSessionId, setOutputSessionId] = useState(null);
   const [activeNode, setActiveNode] = useState(null);
   const [pipelineColumns, setPipelineColumns] = useState([]);  // columns from uploaded dataset
   
@@ -176,106 +197,28 @@ export const PipelineBuilder = ({ onComplete }) => {
   const [downloadUrl, setDownloadUrl] = useState(null);
   const [logsExpanded, setLogsExpanded] = useState(true);
 
-  // AI Visualizer state
-  const [vizAnalysis, setVizAnalysis] = useState(null);
-  const [vizLoading, setVizLoading] = useState(false);
-  const [vizError, setVizError] = useState('');
+  // Backend state for Pipeline Saving/Scheduling
+  const [pipelineName, setPipelineName] = useState('Untitled Pipeline');
+  const [pipelineId, setPipelineId] = useState(null);
+  const [showLoadDrawer, setShowLoadDrawer] = useState(false);
+  const [showScheduleModal, setShowScheduleModal] = useState(false);
+  const [savedPipelines, setSavedPipelines] = useState([]);
+  const [isSaving, setIsSaving] = useState(false);
+
+  // AI Visualizer overlay state
   const [showViz, setShowViz] = useState(false);
-
-  const CHART_COLORS = ['#6366f1','#10b981','#f59e0b','#ef4444','#8b5cf6','#06b6d4','#f97316','#84cc16'];
-  const GRADIENT_PAIRS = [['#6366f1','#818cf8'],['#10b981','#34d399'],['#f59e0b','#fbbf24'],['#ef4444','#f87171'],['#8b5cf6','#a78bfa'],['#06b6d4','#22d3ee']];
-
-  const VizTooltip = ({ active, payload, label }) => {
-    if (!active || !payload?.length) return null;
-    return (
-      <div className="bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 shadow-2xl">
-        {label !== undefined && <p className="text-slate-400 text-xs mb-0.5 font-medium">{label}</p>}
-        {payload.map((p, i) => (
-          <p key={i} className="text-sm font-bold" style={{ color: p.color || p.fill || '#fff' }}>
-            {typeof p.value === 'number' ? Number(p.value).toLocaleString() : p.value}
-          </p>
-        ))}
-      </div>
-    );
-  };
-
-  const renderVizChart = (chart, idx) => {
-    const grad = GRADIENT_PAIRS[idx % GRADIENT_PAIRS.length];
-    const col  = CHART_COLORS[idx % CHART_COLORS.length];
-    const common = { data: chart.data, margin: { top: 4, right: 8, left: 0, bottom: 4 } };
-    if (chart.type === 'bar') return (
-      <ResponsiveContainer width="100%" height={200}>
-        <BarChart {...common}>
-          <defs><linearGradient id={`bg-${idx}`} x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={grad[0]} stopOpacity={0.9}/><stop offset="100%" stopColor={grad[1]} stopOpacity={0.6}/></linearGradient></defs>
-          <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-          <XAxis dataKey={chart.xKey} tick={{ fontSize: 10, fill: '#94a3b8' }} tickLine={false} axisLine={false} />
-          <YAxis tick={{ fontSize: 10, fill: '#94a3b8' }} tickLine={false} axisLine={false} width={42} />
-          <Tooltip content={<VizTooltip />} cursor={{ fill: 'rgba(99,102,241,0.05)' }} />
-          <Bar dataKey={chart.dataKey} fill={`url(#bg-${idx})`} radius={[5,5,0,0]} maxBarSize={44} />
-        </BarChart>
-      </ResponsiveContainer>
-    );
-    if (chart.type === 'area') return (
-      <ResponsiveContainer width="100%" height={200}>
-        <AreaChart {...common}>
-          <defs><linearGradient id={`ag-${idx}`} x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor={col} stopOpacity={0.3}/><stop offset="95%" stopColor={col} stopOpacity={0}/></linearGradient></defs>
-          <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-          <XAxis dataKey={chart.xKey} tick={{ fontSize: 10, fill: '#94a3b8' }} tickLine={false} axisLine={false} />
-          <YAxis tick={{ fontSize: 10, fill: '#94a3b8' }} tickLine={false} axisLine={false} width={42} />
-          <Tooltip content={<VizTooltip />} />
-          <Area type="monotone" dataKey={chart.dataKey} stroke={col} strokeWidth={2} fill={`url(#ag-${idx})`} dot={false} />
-        </AreaChart>
-      </ResponsiveContainer>
-    );
-    if (chart.type === 'line') return (
-      <ResponsiveContainer width="100%" height={200}>
-        <LineChart {...common}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-          <XAxis dataKey={chart.xKey} tick={{ fontSize: 10, fill: '#94a3b8' }} tickLine={false} axisLine={false} />
-          <YAxis tick={{ fontSize: 10, fill: '#94a3b8' }} tickLine={false} axisLine={false} width={42} />
-          <Tooltip content={<VizTooltip />} />
-          <Line type="monotone" dataKey={chart.dataKey} stroke={col} strokeWidth={2} dot={false} activeDot={{ r: 4, fill: col }} />
-        </LineChart>
-      </ResponsiveContainer>
-    );
-    if (chart.type === 'pie') return (
-      <ResponsiveContainer width="100%" height={200}>
-        <PieChart>
-          <Pie data={chart.data} cx="50%" cy="50%" innerRadius={45} outerRadius={80} paddingAngle={3} dataKey="value">
-            {chart.data.map((entry, i) => <Cell key={i} fill={entry.color || CHART_COLORS[i % CHART_COLORS.length]} />)}
-          </Pie>
-          <Tooltip content={<VizTooltip />} />
-          <Legend formatter={(v) => <span style={{ color: '#64748b', fontSize: 10 }}>{v}</span>} />
-        </PieChart>
-      </ResponsiveContainer>
-    );
-    if (chart.type === 'scatter') return (
-      <ResponsiveContainer width="100%" height={200}>
-        <ScatterChart {...common}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-          <XAxis dataKey="x" tick={{ fontSize: 10, fill: '#94a3b8' }} tickLine={false} axisLine={false} />
-          <YAxis dataKey="y" tick={{ fontSize: 10, fill: '#94a3b8' }} tickLine={false} axisLine={false} width={42} />
-          <Tooltip content={<VizTooltip />} cursor={{ strokeDasharray: '3 3' }} />
-          <Scatter data={chart.data} fill={col} fillOpacity={0.65} />
-        </ScatterChart>
-      </ResponsiveContainer>
-    );
-    return null;
-  };
+  const [showVisualizerOverlay, setShowVisualizerOverlay] = useState(false);
+  const [outputFilename, setOutputFilename] = useState('');
+  const [outputRowCount, setOutputRowCount] = useState(0);
+  const [vizAnalysis, setVizAnalysis] = useState(null);
+  const [vizError] = useState('');
+  const vizLoading = false;
+  const GRADIENT_PAIRS = [['#6366f1','#818cf8']];
+  const renderVizChart = () => null;
 
   const runVisualizerAnalysis = async () => {
-    if (!activeSessionId) return;
-    setVizLoading(true);
-    setVizError('');
     setShowViz(true);
-    try {
-      const res = await axios.post(`${API_BASE}/features/visualizer/analyze/${activeSessionId}`);
-      setVizAnalysis(res.data);
-    } catch (err) {
-      setVizError(err.response?.data?.detail || err.message || 'Visualization failed');
-    } finally {
-      setVizLoading(false);
-    }
+    setShowVisualizerOverlay(true);
   };
 
   const onConnect = useCallback((params) => setEdges((eds) => addEdge(params, eds)), []);
@@ -317,6 +260,14 @@ export const PipelineBuilder = ({ onComplete }) => {
       if (type === 'validation') label = 'Quality Validation';
       if (type === 'mapper')     label = 'Schema Mapping';
       if (type === 'matching')   label = 'Data Matching';
+      if (type === 'filter')     label = 'Filter Rows';
+      if (type === 'aggregate')  label = 'Aggregate';
+      if (type === 'join')       label = 'Dataset Join';
+      if (type === 'deduplicate') label = 'Deduplicate';
+      if (type === 'loop')       label = 'Loop';
+      if (type === 'conditional') label = 'Conditional Branch';
+      if (type === 'email')      label = 'Email Notification';
+      if (type === 'webhook')    label = 'Webhook';
       if (type === 'export')     label = 'File Export';
 
       const newNode = {
@@ -344,6 +295,53 @@ export const PipelineBuilder = ({ onComplete }) => {
     event.dataTransfer.dropEffect = 'move';
   }, []);
 
+  const loadSavedPipelines = async () => {
+      try {
+          const token = localStorage.getItem('token');
+          const headers = token ? { Authorization: `Bearer ${token}` } : {};
+          const res = await axios.get(`${API_BASE}/pipeline/saved`, { headers });
+          setSavedPipelines(res.data || []);
+      } catch (err) {
+          console.error("Failed to load pipelines", err);
+      }
+  };
+
+  useEffect(() => {
+      loadSavedPipelines();
+  }, []);
+
+  const handleSavePipeline = async () => {
+      setIsSaving(true);
+      try {
+          const payload = {
+              id: pipelineId,
+              name: pipelineName,
+              nodes: nodes,
+              edges: edges
+          };
+          const token = localStorage.getItem('token');
+          const headers = token ? { Authorization: `Bearer ${token}` } : {};
+          const res = await axios.post(`${API_BASE}/pipeline/saved`, payload, { headers });
+          if (res.data.id) {
+              setPipelineId(res.data.id);
+          }
+          // Fallback to local storage
+          const localSaved = JSON.parse(localStorage.getItem('cleanflow_saved_pipelines_v2') || '[]');
+          const idx = localSaved.findIndex(p => p.id === (res.data.id || pipelineId));
+          const newEntry = { id: res.data.id || pipelineId || Date.now().toString(), name: pipelineName, nodes, edges, savedAt: new Date().toISOString() };
+          if (idx >= 0) localSaved[idx] = newEntry;
+          else localSaved.push(newEntry);
+          localStorage.setItem('cleanflow_saved_pipelines_v2', JSON.stringify(localSaved));
+          
+          alert("Pipeline saved successfully!");
+          loadSavedPipelines();
+      } catch (err) {
+          alert('Failed to save pipeline: ' + err.message);
+      } finally {
+          setIsSaving(false);
+      }
+  };
+
   const handleRunPipeline = async () => {
       if (!activeSessionId) {
           alert('Please configure a Dataset Input node first to initialize a session!');
@@ -353,9 +351,15 @@ export const PipelineBuilder = ({ onComplete }) => {
       setIsExecuting(true);
       setExecutionLogs([]);
       setDownloadUrl(null);
+      setOutputSessionId(null);
+      setOutputFilename('');
+      setOutputRowCount(0);
+      setShowViz(false);
+      setShowVisualizerOverlay(false);
       
       // Serialize nodes to send to backend
       // In a full implementation we would extract node-specific configurations (like rules for Cleaner) from node.data
+      const hasExportNode = nodes.some((node) => getNodeKind(node.data.label) === 'export');
       const payload = {
           nodes: nodes.map(n => ({
               id: n.id,
@@ -393,15 +397,22 @@ export const PipelineBuilder = ({ onComplete }) => {
         const res = await axios.post(`${API_BASE}/features/pipeline/execute/${activeSessionId}`, payload, { headers });
         
         setExecutionLogs(res.data.logs || []);
-        
-        if (res.data.output_file) {
-            // Usually we construct a download URL
+        const nextOutputSessionId = res.data.output_session_id || null;
+        setOutputSessionId(nextOutputSessionId);
+        const nextOutputFilename = res.data.output_file
+            ? res.data.output_file.split('/').pop().split('\\').pop()
+            : `${(pipelineName || 'pipeline-output').trim() || 'pipeline-output'}.xlsx`;
+        setOutputFilename(nextOutputFilename);
+        setOutputRowCount(res.data.output_row_count || 0);
+
+        if (nextOutputSessionId && hasExportNode) {
+            setDownloadUrl(`${API_BASE}/features/export/${nextOutputSessionId}?format=xlsx`);
+        } else if (res.data.output_file) {
             const filename = res.data.output_file.split('/').pop().split('\\').pop();
             setDownloadUrl(`${API_BASE}/download/${filename}`);
         }
-        // Auto-trigger visualization on successful run
-        setVizAnalysis(null);
         setShowViz(false);
+        setShowVisualizerOverlay(false);
 
         persistRun((currentRuns) => currentRuns.map((run) => (
           run.id === runRecord.id
@@ -453,6 +464,19 @@ export const PipelineBuilder = ({ onComplete }) => {
               )}
           </div>
           <div className="flex items-center gap-3">
+              <div className="flex items-center gap-1 bg-slate-50 border border-slate-200 rounded-lg p-1 mr-2 hidden md:flex">
+                  <input
+                      type="text"
+                      className="bg-transparent text-sm font-bold text-slate-700 px-3 py-1.5 w-48 outline-none"
+                      value={pipelineName}
+                      onChange={e => setPipelineName(e.target.value)}
+                      placeholder="Name your pipeline..."
+                  />
+                  <button onClick={handleSavePipeline} disabled={isSaving} className="p-1.5 rounded-md bg-white border border-slate-200 text-slate-500 hover:text-emerald-600 hover:border-emerald-200 shadow-sm transition-colors" title="Save Pipeline"><Save size={16} /></button>
+                  <button onClick={() => setShowLoadDrawer(true)} className="p-1.5 rounded-md bg-white border border-slate-200 text-slate-500 hover:text-sky-600 hover:border-sky-200 shadow-sm transition-colors" title="Load Pipeline"><FolderOpen size={16} /></button>
+                  <button onClick={() => setShowScheduleModal(true)} disabled={!pipelineId} className="p-1.5 rounded-md bg-white border border-slate-200 text-slate-500 hover:text-indigo-600 hover:border-indigo-200 shadow-sm transition-colors disabled:opacity-50" title="Schedule Pipeline (Save first)"><Clock size={16} /></button>
+              </div>
+
               {isExecuting && (
                   <span className="flex items-center gap-1.5 text-xs text-amber-600 font-bold animate-pulse">
                       <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-ping" /> Executing…
@@ -513,7 +537,34 @@ export const PipelineBuilder = ({ onComplete }) => {
                 {[{ type: 'cleaner',    label: 'Data Cleaner',       icon: Sparkles,    color: '#10b981', bg: '#10b98115' },
                   { type: 'validation', label: 'Quality Validation', icon: ShieldCheck, color: '#3b82f6', bg: '#3b82f615' },
                   { type: 'mapper',     label: 'Schema Mapping',     icon: GitMerge,    color: '#6366f1', bg: '#6366f115' },
-                  { type: 'matching',   label: 'Data Matching',      icon: Shuffle,     color: '#8b5cf6', bg: '#8b5cf615' }]
+                  { type: 'matching',   label: 'Data Matching',      icon: Shuffle,     color: '#8b5cf6', bg: '#8b5cf615' },
+                  { type: 'filter',     label: 'Filter Rows',        icon: Filter,      color: '#f59e0b', bg: '#f59e0b15' },
+                  { type: 'aggregate',  label: 'Aggregate',          icon: Calculator,  color: '#ec4899', bg: '#ec489915' },
+                  { type: 'join',       label: 'Dataset Join',       icon: Link,        color: '#14b8a6', bg: '#14b8a615' },
+                  { type: 'deduplicate',label: 'Deduplicate',        icon: Files,       color: '#64748b', bg: '#64748b15' },
+                  { type: 'loop',       label: 'Loop (Iterator)',    icon: Repeat,      color: '#8b5cf6', bg: '#8b5cf615' },
+                  { type: 'conditional',label: 'Conditional Branch', icon: GitBranch,   color: '#06b6d4', bg: '#06b6d415' }]
+                .map(n => (
+                    <div key={n.type}
+                        draggable
+                        onDragStart={(e) => onDragStart(e, n.type)}
+                        className="flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-grab select-none transition-all border border-slate-100 hover:border-slate-200 hover:bg-slate-50"
+                    >
+                        <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style={{ background: n.bg }}>
+                            <n.icon size={14} style={{ color: n.color }} />
+                        </div>
+                        <span className="text-xs font-bold text-slate-600">{n.label}</span>
+                    </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Notify */}
+            <div>
+              <p className="text-xs font-black uppercase tracking-widest mb-2 px-1 text-slate-400">Notify</p>
+              <div className="space-y-1.5">
+                {[{ type: 'email',      label: 'Email Notification', icon: Mail,        color: '#f43f5e', bg: '#f43f5e15' },
+                  { type: 'webhook',    label: 'Webhook / HTTP Call',icon: Webhook,     color: '#3b82f6', bg: '#3b82f615' }]
                 .map(n => (
                     <div key={n.type}
                         draggable
@@ -594,122 +645,182 @@ export const PipelineBuilder = ({ onComplete }) => {
             </ReactFlowProvider>
 
 
-            {/* Right Side Configuration Panel */}
-            <AnimatePresence>
-                {activeNode && (
+            {/* Full-Screen Configuration Modal Portal */}
+            {activeNode && createPortal(
+                <AnimatePresence>
                     <motion.div
-                        initial={{ x: '100%', opacity: 0 }}
-                        animate={{ x: 0, opacity: 1 }}
-                        exit={{ x: '100%', opacity: 0 }}
-                        transition={{ type: 'spring', damping: 28, stiffness: 300 }}
-                        className="absolute right-0 top-0 h-full w-[480px] max-w-full shadow-2xl z-40 flex flex-col"
-                        style={{ background: '#ffffff', borderLeft: '1px solid #e2e8f0' }}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-50 flex flex-col pt-20 pb-10 px-4 items-center"
+                        style={{ background: 'rgba(15, 23, 42, 0.4)', backdropFilter: 'blur(8px)' }}
                     >
-                        {/* Panel accent bar */}
-                        <div className="h-0.5 w-full" style={{ background: 'linear-gradient(90deg,#10b981,#6366f1,#8b5cf6)' }} />
-                        <div className="h-14 flex items-center justify-between px-5 border-b border-slate-100 shrink-0 bg-white">
-                            <div className="flex items-center gap-3">
-                                <div className="w-7 h-7 rounded-lg bg-slate-100 flex items-center justify-center">
-                                    <Settings size={13} className="text-slate-600" />
+                        <motion.div
+                            initial={{ scale: 0.95, opacity: 0, y: 20 }}
+                            animate={{ scale: 1, opacity: 1, y: 0 }}
+                            exit={{ scale: 0.95, opacity: 0, y: 20 }}
+                            transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+                            className="bg-white rounded-[24px] shadow-2xl flex flex-col overflow-hidden h-full max-h-[800px] w-full max-w-3xl border border-slate-100"
+                        >
+                            {/* Header */}
+                            <div className="h-1.5 w-full shrink-0" style={{ background: 'linear-gradient(90deg,#10b981,#6366f1,#8b5cf6)' }} />
+                            <div className="flex items-center justify-between p-5 border-b border-slate-100 bg-white shrink-0">
+                                <div className="flex items-center gap-4">
+                                    <div className="w-12 h-12 rounded-xl bg-slate-50 shadow-sm flex items-center justify-center border border-slate-100">
+                                        <Settings size={22} className="text-slate-700" />
+                                    </div>
+                                    <div>
+                                        <h2 className="text-lg font-black text-slate-800">{activeNode.data.label}</h2>
+                                        <p className="text-xs text-slate-400 font-medium tracking-wide uppercase mt-0.5">Node Configuration</p>
+                                    </div>
                                 </div>
-                                <div>
-                                    <p className="text-xs font-black text-slate-900">{activeNode.data.label}</p>
-                                    <p className="text-xs text-slate-400">Configuration</p>
-                                </div>
+                                <button onClick={() => setActiveNode(null)} className="p-2.5 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors">
+                                    <X size={20} />
+                                </button>
                             </div>
-                            <button onClick={() => setActiveNode(null)}
-                                className="p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-all">
-                                <X size={16} />
-                            </button>
-                        </div>
-                        <div className="flex-1 overflow-y-auto p-5">
-                            {/* Validation Configuration */}
-                            {activeNode.data.label.toLowerCase().includes('validation') && (
-                                <RuleBuilder 
-                                    isEmbedded={true} 
-                                    columns={activeNode.data.columns || pipelineColumns} 
-                                    initialRules={activeNode.data.rules || []}
-                                    onSaveRules={(rules) => {
-                                        setNodes(nds => nds.map(n => n.id === activeNode.id ? { ...n, data: { ...n.data, rules } } : n));
-                                        setActiveNode(prev => prev ? { ...prev, data: { ...prev.data, rules } } : null);
-                                    }}
-                                />
-                            )}
                             
-                            {/* Cleaner Configuration */}
-                            {activeNode.data.label.toLowerCase().includes('cleaner') && (
-                                <CleanerConfigPanel 
-                                    node={activeNode} 
-                                    columns={activeNode.data.columns || pipelineColumns}
-                                    onSave={(rules) => {
-                                        setNodes(nds => nds.map(n => n.id === activeNode.id ? { ...n, data: { ...n.data, rules } } : n));
-                                        setActiveNode(prev => prev ? { ...prev, data: { ...prev.data, rules } } : null);
-                                    }} 
-                                />
-                            )}
+                            {/* Body */}
+                            <div className="flex-1 overflow-y-auto p-6 bg-slate-50">
+                                {/* Validation Configuration */}
+                                {activeNode.data.label.toLowerCase().includes('validation') && (
+                                    <RuleBuilder 
+                                        isEmbedded={true} 
+                                        columns={activeNode.data.columns || pipelineColumns} 
+                                        initialRules={activeNode.data.rules || []}
+                                        onSaveRules={(rules) => {
+                                            setNodes(nds => nds.map(n => n.id === activeNode.id ? { ...n, data: { ...n.data, rules } } : n));
+                                            setActiveNode(null);
+                                        }}
+                                    />
+                                )}
+                                
+                                {/* Cleaner Configuration */}
+                                {activeNode.data.label.toLowerCase().includes('cleaner') && (
+                                    <CleanerConfigPanel 
+                                        node={activeNode} 
+                                        columns={activeNode.data.columns || pipelineColumns}
+                                        onSave={(rules) => {
+                                            setNodes(nds => nds.map(n => n.id === activeNode.id ? { ...n, data: { ...n.data, rules } } : n));
+                                            setActiveNode(null);
+                                        }} 
+                                    />
+                                )}
 
-                            {activeNode.data.label.toLowerCase().includes('mapping') && (
-                                <MapperConfigPanel
-                                    node={activeNode}
-                                    columns={activeNode.data.columns || pipelineColumns}
-                                    onSave={(config) => {
-                                        setNodes(nds => nds.map(n => n.id === activeNode.id ? { ...n, data: { ...n.data, ...config } } : n));
-                                        setActiveNode(prev => prev ? { ...prev, data: { ...prev.data, ...config } } : null);
-                                    }}
-                                />
-                            )}
+                                {activeNode.data.label.toLowerCase().includes('mapping') && (
+                                    <MapperConfigPanel
+                                        node={activeNode}
+                                        columns={activeNode.data.columns || pipelineColumns}
+                                        onSave={(config) => {
+                                            setNodes(nds => nds.map(n => n.id === activeNode.id ? { ...n, data: { ...n.data, ...config } } : n));
+                                            setActiveNode(null);
+                                        }}
+                                    />
+                                )}
 
-                            {activeNode.data.label.toLowerCase().includes('matching') && (
-                                <MatchingConfigPanel
-                                    node={activeNode}
-                                    columns={activeNode.data.columns || pipelineColumns}
-                                    onSave={(config) => {
-                                        setNodes(nds => nds.map(n => n.id === activeNode.id ? { ...n, data: { ...n.data, ...config } } : n));
-                                        setActiveNode(prev => prev ? { ...prev, data: { ...prev.data, ...config } } : null);
-                                    }}
-                                />
-                            )}
+                                {activeNode.data.label.toLowerCase().includes('matching') && (
+                                    <MatchingConfigPanel
+                                        node={activeNode}
+                                        columns={activeNode.data.columns || pipelineColumns}
+                                        onSave={(config) => {
+                                            setNodes(nds => nds.map(n => n.id === activeNode.id ? { ...n, data: { ...n.data, ...config } } : n));
+                                            setActiveNode(null);
+                                        }}
+                                    />
+                                )}
 
-                            {activeNode.data.label.toLowerCase().includes('scraping') && (
-                                <ScraperConfigPanel
-                                    node={activeNode}
-                                    onSave={(config) => {
-                                        setNodes(nds => nds.map(n => n.id === activeNode.id ? { ...n, data: { ...n.data, ...config } } : n));
-                                        setActiveNode(prev => prev ? { ...prev, data: { ...prev.data, ...config } } : null);
-                                    }}
-                                />
-                            )}
+                                {activeNode.data.label.toLowerCase().includes('scraping') && (
+                                    <ScraperConfigPanel
+                                        node={activeNode}
+                                        onSave={(config) => {
+                                            setNodes(nds => nds.map(n => n.id === activeNode.id ? { ...n, data: { ...n.data, ...config } } : n));
+                                            setActiveNode(null);
+                                        }}
+                                    />
+                                )}
 
-                            {activeNode.data.label.toLowerCase().includes('dataset') && (
-                                <div className="flex flex-col h-full bg-white rounded-3xl shadow-xl border border-slate-100 py-6 px-4">
-                                     <h3 className="font-bold text-lg text-slate-800 mb-6">Import Dataset</h3>
-                                     <div className="mt-4">
-                                        <DataConnection onUploadSuccess={(uploadData) => {
-                                             setActiveSessionId(uploadData.session_id);
-                                             setPipelineColumns(uploadData.columns || []);
-                                             // Mark this node as configured by storing sessionId in its data
-                                             setNodes(nds => nds.map(n => n.id === activeNode.id 
-                                               ? { ...n, data: { ...n.data, sessionId: uploadData.session_id, columns: uploadData.columns || [] } } 
-                                               : n
-                                             ));
-                                             setActiveNode(prev => prev ? { ...prev, data: { ...prev.data, sessionId: uploadData.session_id, columns: uploadData.columns || [] } } : null);
-                                             setActiveNode(null);
-                                        }} />
-                                     </div>
-                                </div>
-                            )}
+                                {activeNode.data.label.toLowerCase().includes('dataset') && (
+                                    <div className="flex flex-col h-full bg-white rounded-2xl shadow-sm border border-slate-100 py-6 px-4">
+                                         <h3 className="font-bold text-lg text-slate-800 mb-6">Import Dataset</h3>
+                                         <div className="mt-4">
+                                            <DataConnection onUploadSuccess={(uploadData) => {
+                                                 setActiveSessionId(uploadData.session_id);
+                                                 setOutputSessionId(null);
+                                                 setOutputFilename('');
+                                                 setOutputRowCount(0);
+                                                 setPipelineColumns(uploadData.columns || []);
+                                                 setDownloadUrl(null);
+                                                 setShowViz(false);
+                                                 setShowVisualizerOverlay(false);
+                                                 setNodes(nds => nds.map(n => n.id === activeNode.id 
+                                                   ? { ...n, data: { ...n.data, sessionId: uploadData.session_id, columns: uploadData.columns || [] } } 
+                                                   : n
+                                                 ));
+                                                 setActiveNode(null);
+                                            }} />
+                                         </div>
+                                    </div>
+                                )}
 
-                            {activeNode.data.label.toLowerCase().includes('export') && (
-                                <div className="text-slate-500 text-center mt-10 space-y-3">
-                                    <Download size={32} className="mx-auto text-emerald-400" />
-                                    <p className="font-semibold text-slate-700">Export Node Ready</p>
-                                    <p className="text-sm">This node automatically exports pipeline results. No configuration needed.</p>
-                                </div>
-                            )}
-                        </div>
+                                {/* NEW NODES START */}
+                                {/* Filter Rows */}
+                                {activeNode.data.label.toLowerCase().includes('filter') && (
+                                    <FilterConfigPanel node={activeNode} columns={activeNode.data.columns || pipelineColumns} onSave={(config) => { setNodes(nds => nds.map(n => n.id === activeNode.id ? { ...n, data: { ...n.data, ...config } } : n)); setActiveNode(null); }} />
+                                )}
+
+                                {/* Aggregate */}
+                                {activeNode.data.label.toLowerCase().includes('aggregate') && (
+                                    <AggregateConfigPanel node={activeNode} columns={activeNode.data.columns || pipelineColumns} onSave={(config) => { setNodes(nds => nds.map(n => n.id === activeNode.id ? { ...n, data: { ...n.data, ...config } } : n)); setActiveNode(null); }} />
+                                )}
+                                
+                                {/* Join */}
+                                {activeNode.data.label.toLowerCase().includes('join') && (
+                                    <JoinConfigPanel node={activeNode} columns={activeNode.data.columns || pipelineColumns} onSave={(config) => { setNodes(nds => nds.map(n => n.id === activeNode.id ? { ...n, data: { ...n.data, ...config } } : n)); setActiveNode(null); }} />
+                                )}
+
+                                {/* Deduplicate */}
+                                {activeNode.data.label.toLowerCase().includes('deduplicate') && (
+                                    <DeduplicateConfigPanel node={activeNode} columns={activeNode.data.columns || pipelineColumns} onSave={(config) => { setNodes(nds => nds.map(n => n.id === activeNode.id ? { ...n, data: { ...n.data, ...config } } : n)); setActiveNode(null); }} />
+                                )}
+                                
+                                {/* Loop */}
+                                {activeNode.data.label.toLowerCase().includes('loop') && (
+                                    <LoopConfigPanel node={activeNode} onSave={(config) => { setNodes(nds => nds.map(n => n.id === activeNode.id ? { ...n, data: { ...n.data, ...config } } : n)); setActiveNode(null); }} />
+                                )}
+
+                                {/* Conditional */}
+                                {activeNode.data.label.toLowerCase().includes('conditional') && (
+                                    <ConditionalConfigPanel node={activeNode} columns={activeNode.data.columns || pipelineColumns} onSave={(config) => { setNodes(nds => nds.map(n => n.id === activeNode.id ? { ...n, data: { ...n.data, ...config } } : n)); setActiveNode(null); }} />
+                                )}
+
+                                {/* Email */}
+                                {activeNode.data.label.toLowerCase().includes('email') && (
+                                    <EmailConfigPanel node={activeNode} onSave={(config) => { setNodes(nds => nds.map(n => n.id === activeNode.id ? { ...n, data: { ...n.data, ...config } } : n)); setActiveNode(null); }} />
+                                )}
+
+                                {/* Webhook */}
+                                {activeNode.data.label.toLowerCase().includes('webhook') && (
+                                    <WebhookConfigPanel node={activeNode} onSave={(config) => { setNodes(nds => nds.map(n => n.id === activeNode.id ? { ...n, data: { ...n.data, ...config } } : n)); setActiveNode(null); }} />
+                                )}
+                                {/* NEW NODES END */}
+
+                                {activeNode.data.label.toLowerCase().includes('export') && (
+                                    <div className="flex flex-col h-full bg-white rounded-2xl shadow-sm py-16 px-4 text-center items-center justify-center">
+                                        <div className="w-20 h-20 rounded-full bg-emerald-50 flex items-center justify-center mb-6">
+                                            <Download size={36} className="text-emerald-500" />
+                                        </div>
+                                        <h3 className="font-black text-2xl text-slate-800">Export Node Ready</h3>
+                                        <p className="text-slate-500 mt-2 max-w-sm">This node handles automatic file export after the pipeline successfully runs. No further configuration is needed here.</p>
+                                        <button onClick={() => setActiveNode(null)} className="mt-8 px-6 py-3 bg-slate-900 border border-slate-800 hover:bg-slate-800 text-white font-bold rounded-xl shadow-lg transition-transform hover:-translate-y-0.5">
+                                            Awesome, Looks Good
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+                        </motion.div>
                     </motion.div>
-                )}
-            </AnimatePresence>
+                </AnimatePresence>,
+                document.body
+            )}
 
             {/* Floating Logs panel overlay if logs exist */}
             {executionLogs.length > 0 && (
@@ -747,8 +858,7 @@ export const PipelineBuilder = ({ onComplete }) => {
                         )}
                         <button
                             onClick={runVisualizerAnalysis}
-                            disabled={vizLoading}
-                            className="w-full flex items-center justify-center gap-2 bg-violet-600 hover:bg-violet-500 disabled:opacity-60 text-white font-bold py-2 rounded-xl transition-colors text-sm"
+                            className="w-full flex items-center justify-center gap-2 bg-violet-600 hover:bg-violet-500 disabled:opacity-60 disabled:cursor-not-allowed text-white font-bold py-2 rounded-xl transition-colors text-sm"
                         >
                             {vizLoading
                                 ? <><RefreshCw size={14} className="animate-spin" /> Analyzing…</>
@@ -768,11 +878,11 @@ export const PipelineBuilder = ({ onComplete }) => {
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
             transition={{ duration: 0.35, ease: 'easeInOut' }}
-            className="shrink-0 border-t border-slate-200 bg-slate-50 overflow-hidden"
+            className="shrink-0 max-h-[72vh] border-t border-slate-200 bg-slate-50 overflow-hidden"
           >
-            <div className="p-6">
+            <div className="max-h-[72vh] overflow-y-auto overscroll-contain p-6">
               {/* Panel header */}
-              <div className="flex items-center justify-between mb-5">
+              <div className="sticky top-0 z-10 -mx-6 mb-5 flex items-center justify-between border-b border-slate-200 bg-slate-50 px-6 pb-4 pt-1">
                 <div className="flex items-center gap-3">
                   <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-violet-200">
                     <BarChart3 size={18} className="text-white" />
@@ -858,6 +968,172 @@ export const PipelineBuilder = ({ onComplete }) => {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {(showVisualizerOverlay || showViz) && createPortal(
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="fixed inset-0 z-[70] bg-slate-950/45 p-3 backdrop-blur-sm md:p-5"
+            onClick={() => { setShowVisualizerOverlay(false); setShowViz(false); }}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.97, y: 18 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              transition={{ type: 'spring', damping: 28, stiffness: 280 }}
+              className="mx-auto h-full w-full max-w-[1600px] overflow-hidden rounded-[28px] border border-white/60 bg-white shadow-2xl shadow-slate-900/25"
+              onClick={(event) => event.stopPropagation()}
+            >
+              {outputSessionId ? (
+                <DataVisualizer
+                  initialSessionId={outputSessionId}
+                  initialFilename={outputFilename}
+                  initialRowCount={outputRowCount}
+                  onClose={() => { setShowVisualizerOverlay(false); setShowViz(false); }}
+                />
+              ) : (
+                <div className="flex h-full w-full items-center justify-center bg-slate-50 p-6">
+                  <div className="w-full max-w-2xl rounded-[28px] border border-slate-100 bg-white p-8 text-center shadow-xl shadow-slate-200/60">
+                    <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-500 to-indigo-600 shadow-lg shadow-violet-200">
+                      <AlertCircle size={26} className="text-white" />
+                    </div>
+                    <h2 className="text-2xl font-black text-slate-900">Pipeline output is not ready</h2>
+                    <p className="mt-2 text-sm font-medium text-slate-400">
+                      We could not find a generated output session for this run, so the full visualizer cannot open yet.
+                    </p>
+                    <p className="mt-2 text-sm font-medium text-slate-400">
+                      Run the pipeline again. If this still happens, restart the backend so the latest pipeline output session changes are active.
+                    </p>
+                    <div className="mt-6 flex items-center justify-center gap-3">
+                      <button
+                        onClick={() => { setShowVisualizerOverlay(false); setShowViz(false); }}
+                        className="rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-500 transition-all hover:bg-slate-50"
+                      >
+                        Close
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </motion.div>
+          </motion.div>,
+          document.body
+        )}
+
+      {/* Load Pipeline Drawer */}
+      <AnimatePresence>
+        {showLoadDrawer && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 flex" style={{ background: 'rgba(15, 23, 42, 0.4)', backdropFilter: 'blur(4px)' }}>
+            <motion.div initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }} transition={{ type: 'spring', damping: 25, stiffness: 300 }} className="ml-auto w-96 bg-white h-full shadow-2xl flex flex-col border-l border-slate-100">
+                <div className="p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+                    <div className="flex items-center gap-3">
+                        <FolderOpen className="text-sky-500" size={20} />
+                        <div>
+                            <h3 className="font-black text-slate-800">Saved Pipelines</h3>
+                            <p className="text-xs text-slate-400">Load or restore your work</p>
+                        </div>
+                    </div>
+                    <button onClick={() => setShowLoadDrawer(false)} className="p-2 rounded-xl hover:bg-slate-200 text-slate-400"><X size={18} /></button>
+                </div>
+                <div className="flex-1 overflow-y-auto p-4 space-y-3">
+                    {savedPipelines.map(p => (
+                        <div key={p.id} className="p-4 border border-slate-200 rounded-xl hover:border-sky-300 hover:shadow-md transition-all cursor-pointer bg-white group" onClick={() => {
+                            setNodes(p.nodes || (p.pipeline_data?.nodes || []));
+                            setEdges(p.edges || (p.pipeline_data?.edges || []));
+                            setPipelineName(p.name);
+                            setPipelineId(p.id);
+                            setShowLoadDrawer(false);
+                        }}>
+                            <div className="flex justify-between items-start mb-2">
+                                <h4 className="font-bold text-sm text-slate-800 group-hover:text-sky-600 transition-colors">{p.name || 'Untitled'}</h4>
+                            </div>
+                            <div className="text-xs text-slate-400 space-y-1">
+                                <p>ID: <span className="font-mono">{String(p.id).slice(0,8)}...</span></p>
+                                <p>Last Updated: {new Date(p.updated_at || p.savedAt).toLocaleString()}</p>
+                            </div>
+                        </div>
+                    ))}
+                    {savedPipelines.length === 0 && (
+                        <div className="text-center py-10 text-slate-400">
+                            <FolderOpen size={32} className="mx-auto mb-3 opacity-50" />
+                            <p className="text-sm font-semibold">No saved pipelines found.</p>
+                        </div>
+                    )}
+                </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Schedule Modal */}
+      <AnimatePresence>
+          {showScheduleModal && (
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(15, 23, 42, 0.4)', backdropFilter: 'blur(4px)' }}>
+                  <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }} exit={{ scale: 0.95 }} className="bg-white rounded-2xl shadow-xl max-w-md w-full overflow-hidden">
+                      <div className="p-5 border-b border-slate-100 flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                              <CalendarDays className="text-indigo-500" size={20} />
+                              <h3 className="font-black text-slate-800">Schedule Pipeline</h3>
+                          </div>
+                          <button onClick={() => setShowScheduleModal(false)} className="p-2 rounded-xl hover:bg-slate-100 text-slate-400"><X size={18} /></button>
+                      </div>
+                      <form className="p-6 space-y-5" onSubmit={async (e) => {
+                          e.preventDefault();
+                          const fd = new FormData(e.target);
+                          const scheduleData = {
+                              is_active: true,
+                              frequency: fd.get('frequency'),
+                              run_time: fd.get('run_time'),
+                              timezone: fd.get('timezone') || 'UTC'
+                          };
+                          try {
+                              const token = localStorage.getItem('token');
+                              const headers = token ? { Authorization: `Bearer ${token}` } : {};
+                              await axios.post(`${API_BASE}/pipeline/saved/${pipelineId}/schedules`, scheduleData, { headers });
+                              alert("Schedule saved successfully!");
+                              setShowScheduleModal(false);
+                          } catch (err) {
+                              alert("Failed to save schedule: " + (err.response?.data?.detail || err.message));
+                          }
+                      }}>
+                          <div className="px-3 py-2 bg-indigo-50 text-indigo-700 text-xs rounded-lg mb-4">
+                              <strong>Note:</strong> Scheduling relies on an active cron execution backend connected to this target API.
+                          </div>
+                          <div>
+                              <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Frequency</label>
+                              <select name="frequency" className="w-full p-2 border border-slate-200 rounded-lg text-sm bg-white" required defaultValue="daily">
+                                  <option value="hourly">Hourly</option>
+                                  <option value="daily">Daily</option>
+                                  <option value="weekly">Weekly</option>
+                                  <option value="monthly">Monthly</option>
+                              </select>
+                          </div>
+                          <div className="grid grid-cols-2 gap-4">
+                              <div>
+                                  <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Run Time</label>
+                                  <input type="time" name="run_time" className="w-full p-2 border border-slate-200 rounded-lg text-sm" required defaultValue="00:00" />
+                              </div>
+                              <div>
+                                  <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Timezone</label>
+                                  <select name="timezone" className="w-full p-2 border border-slate-200 rounded-lg text-sm bg-white" defaultValue="UTC">
+                                      <option value="UTC">UTC</option>
+                                      <option value="America/New_York">EST</option>
+                                      <option value="America/Los_Angeles">PST</option>
+                                      <option value="Europe/London">GMT</option>
+                                      <option value="Asia/Tokyo">JST</option>
+                                      <option value="Asia/Kolkata">IST</option>
+                                  </select>
+                              </div>
+                          </div>
+                          <div className="pt-4 border-t border-slate-100 flex justify-end gap-3 mt-4">
+                              <button type="button" onClick={() => setShowScheduleModal(false)} className="px-4 py-2 rounded-xl text-slate-500 hover:bg-slate-100 font-semibold text-sm transition-colors">Cancel</button>
+                              <button type="submit" className="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-sm shadow-md transition-colors">Save Schedule</button>
+                          </div>
+                      </form>
+                  </motion.div>
+              </motion.div>
+          )}
+      </AnimatePresence>
+
     </div>
   );
 };
@@ -1189,6 +1465,281 @@ const ScraperConfigPanel = ({ node, onSave }) => {
                 >
                     Save Scraper Source
                 </button>
+            </div>
+        </div>
+    );
+};
+
+// --- NEW CONFIG PANELS ---
+
+const FilterConfigPanel = ({ node, columns = [], onSave }) => {
+    const [filterRules, setFilterRules] = useState(node.data.filterRules || [{ column: '', condition: 'equals', value: '' }]);
+
+    const updateFilterParams = (index, field, val) => {
+        const newRules = [...filterRules];
+        newRules[index][field] = val;
+        setFilterRules(newRules);
+    };
+
+    return (
+        <div className="flex flex-col h-full bg-white rounded-3xl shadow-xl border border-slate-100 py-6 px-4">
+            <div className="flex items-center justify-between mb-6">
+                <h3 className="font-bold text-lg text-slate-800">Filter Rows</h3>
+                <button onClick={() => setFilterRules([...filterRules, { column: '', condition: 'equals', value: '' }])} className="text-xs font-bold bg-amber-50 text-amber-700 px-3 py-1.5 rounded-lg hover:bg-amber-100">
+                    + Add Condition
+                </button>
+            </div>
+            <div className="space-y-4 mb-6">
+                {filterRules.map((r, i) => (
+                    <div key={i} className="flex gap-2 relative">
+                        <select className="flex-1 text-sm p-2 bg-slate-50 border border-slate-200 rounded-lg outline-none" value={r.column} onChange={e => updateFilterParams(i, 'column', e.target.value)}>
+                            <option value="">Column...</option>
+                            {columns.map(c => <option key={c} value={c}>{c}</option>)}
+                        </select>
+                        <select className="flex-1 text-sm p-2 bg-slate-50 border border-slate-200 rounded-lg outline-none" value={r.condition} onChange={e => updateFilterParams(i, 'condition', e.target.value)}>
+                            <option value="equals">Equals</option>
+                            <option value="not_equals">Does Not Equal</option>
+                            <option value="contains">Contains</option>
+                            <option value="greater_than">Greater Than</option>
+                            <option value="less_than">Less Than</option>
+                            <option value="is_null">Is Null</option>
+                        </select>
+                        {r.condition !== 'is_null' && <input type="text" className="flex-1 text-sm p-2 border border-slate-200 rounded-lg outline-none" placeholder="Value" value={r.value} onChange={e => updateFilterParams(i, 'value', e.target.value)} />}
+                        {filterRules.length > 1 && (
+                            <button onClick={() => setFilterRules(filterRules.filter((_, idx) => idx !== i))} className="absolute -left-6 top-2 text-slate-300 hover:text-red-500">
+                                <X size={16} />
+                            </button>
+                        )}
+                    </div>
+                ))}
+            </div>
+            <div className="mt-auto pt-4 border-t border-slate-200 flex justify-end">
+                <button onClick={() => onSave({ filterRules })} className="px-5 py-2.5 bg-slate-900 border border-slate-800 hover:bg-slate-800 text-white font-bold rounded-xl shadow-lg transition-transform hover:-translate-y-0.5">Save Filter Rules</button>
+            </div>
+        </div>
+    );
+};
+
+const AggregateConfigPanel = ({ node, columns = [], onSave }) => {
+    const [groupByColumn, setGroupByColumn] = useState(node.data.groupByColumn || '');
+    const [aggFunction, setAggFunction] = useState(node.data.aggFunction || 'sum');
+    const [targetColumn, setTargetColumn] = useState(node.data.targetColumn || '');
+
+    return (
+        <div className="flex flex-col h-full bg-white rounded-3xl shadow-xl border border-slate-100 py-6 px-4">
+            <h3 className="font-bold text-lg text-slate-800 mb-6">Aggregate / Group-By</h3>
+            <div className="space-y-4 mb-6">
+                <div>
+                    <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Group By Column</label>
+                    <select className="w-full text-sm p-2 bg-slate-50 border border-slate-200 rounded-lg outline-none" value={groupByColumn} onChange={e => setGroupByColumn(e.target.value)}>
+                        <option value="">Select column...</option>
+                        {columns.map(c => <option key={c} value={c}>{c}</option>)}
+                    </select>
+                </div>
+                <div className="flex gap-4">
+                    <div className="w-1/2">
+                        <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Function</label>
+                        <select className="w-full text-sm p-2 bg-slate-50 border border-slate-200 rounded-lg outline-none" value={aggFunction} onChange={e => setAggFunction(e.target.value)}>
+                            <option value="sum">SUM</option>
+                            <option value="avg">AVG</option>
+                            <option value="min">MIN</option>
+                            <option value="max">MAX</option>
+                            <option value="count">COUNT</option>
+                        </select>
+                    </div>
+                    <div className="w-1/2">
+                        <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Target Variable</label>
+                        <select className="w-full text-sm p-2 bg-slate-50 border border-slate-200 rounded-lg outline-none" value={targetColumn} onChange={e => setTargetColumn(e.target.value)}>
+                            <option value="">Select column...</option>
+                            {columns.map(c => <option key={c} value={c}>{c}</option>)}
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div className="mt-auto pt-4 border-t border-slate-200 flex justify-end">
+                <button onClick={() => onSave({ groupByColumn, aggFunction, targetColumn })} className="px-5 py-2.5 bg-slate-900 border border-slate-800 hover:bg-slate-800 text-white font-bold rounded-xl shadow-lg transition-transform hover:-translate-y-0.5">Save Aggregation</button>
+            </div>
+        </div>
+    );
+};
+
+const JoinConfigPanel = ({ node, columns = [], onSave }) => {
+    const [leftKey, setLeftKey] = useState(node.data.leftKey || '');
+    const [rightKey, setRightKey] = useState(node.data.rightKey || '');
+    const [joinType, setJoinType] = useState(node.data.joinType || 'inner');
+    return (
+        <div className="flex flex-col h-full bg-white rounded-3xl shadow-xl border border-slate-100 py-6 px-4">
+            <h3 className="font-bold text-lg text-slate-800 mb-6">Dataset Join</h3>
+            <div className="space-y-5 mb-6">
+                <div>
+                    <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Join Type</label>
+                    <select className="w-full text-sm p-2.5 bg-slate-50 border border-slate-200 rounded-lg outline-none" value={joinType} onChange={e => setJoinType(e.target.value)}>
+                        <option value="inner">Inner Join</option>
+                        <option value="left">Left Join</option>
+                        <option value="right">Right Join</option>
+                        <option value="outer">Full Outer Join</option>
+                    </select>
+                </div>
+                <div className="grid grid-cols-2 gap-4 border-t border-slate-100 pt-5">
+                    <div>
+                        <label className="block text-xs font-bold text-emerald-600 uppercase mb-2">Left Key (This Dataset)</label>
+                        <select className="w-full text-sm p-2.5 bg-emerald-50 border border-emerald-200/50 rounded-lg outline-none" value={leftKey} onChange={e => setLeftKey(e.target.value)}>
+                            <option value="">Source branch...</option>
+                            {columns.map(c => <option key={c} value={c}>{c}</option>)}
+                        </select>
+                    </div>
+                    <div>
+                        <label className="block text-xs font-bold text-indigo-600 uppercase mb-2">Right Key (Merging Dataset)</label>
+                        <input type="text" className="w-full text-sm p-2.5 bg-indigo-50 border border-indigo-200/50 rounded-lg outline-none placeholder:text-indigo-300" placeholder="e.g. customer_id..." value={rightKey} onChange={e => setRightKey(e.target.value)} />
+                    </div>
+                </div>
+            </div>
+            <div className="mt-auto pt-4 border-t border-slate-200 flex justify-end">
+                <button onClick={() => onSave({ leftKey, rightKey, joinType })} className="px-5 py-2.5 bg-slate-900 border border-slate-800 hover:bg-slate-800 text-white font-bold rounded-xl shadow-lg transition-transform hover:-translate-y-0.5">Save Join Config</button>
+            </div>
+        </div>
+    );
+};
+
+const DeduplicateConfigPanel = ({ node, columns = [], onSave }) => {
+    const [subsetColumns, setSubsetColumns] = useState(node.data.subsetColumns || []);
+    
+    return (
+        <div className="flex flex-col h-full bg-white rounded-3xl shadow-xl border border-slate-100 py-6 px-4">
+            <h3 className="font-bold text-lg text-slate-800 mb-6">Deduplicate Rows</h3>
+            <p className="text-sm text-slate-500 mb-6 leading-relaxed">Select columns to determine uniqueness. If multiple columns are selected, a row is considered a duplicate if all selected columns match.</p>
+            <div className="space-y-4 mb-6">
+                <div>
+                    <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Uniqueness Subset</label>
+                    <select multiple className="w-full text-sm p-3 bg-slate-50 border border-slate-200 rounded-xl h-48 outline-none" value={subsetColumns} onChange={e => setSubsetColumns(Array.from(e.target.selectedOptions, option => option.value))}>
+                        {columns.map(c => <option key={c} value={c}>{c}</option>)}
+                    </select>
+                    <p className="text-xs text-slate-400 mt-2 font-medium">Hold CMD/Ctrl to select multiple fields.</p>
+                </div>
+            </div>
+            <div className="mt-auto pt-4 border-t border-slate-200 flex justify-end">
+                <button onClick={() => onSave({ subsetColumns })} className="px-5 py-2.5 bg-slate-900 border border-slate-800 hover:bg-slate-800 text-white font-bold rounded-xl shadow-lg transition-transform hover:-translate-y-0.5">Save Configuration</button>
+            </div>
+        </div>
+    );
+};
+
+const LoopConfigPanel = ({ node, onSave }) => {
+    const [chunkSize, setChunkSize] = useState(node.data.chunkSize || 100);
+    return (
+        <div className="flex flex-col h-full bg-white rounded-3xl shadow-xl border border-slate-100 py-6 px-4">
+            <h3 className="font-bold text-lg text-slate-800 mb-6 flex items-center gap-2"><Repeat size={20} className="text-purple-500" /> Loop (Iterator)</h3>
+            <div className="space-y-4 mb-6 border border-slate-200 rounded-xl p-5 bg-slate-50">
+                <div>
+                    <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Chunk Processing Size</label>
+                    <input type="number" className="w-full text-sm p-2.5 border border-slate-200 rounded-lg outline-none text-slate-700 font-medium bg-white" value={chunkSize} onChange={e => setChunkSize(e.target.value)} min={1} />
+                </div>
+                <p className="text-xs text-slate-500 mt-2">Pipeline nodes linked after this iterator will be executed in batches of {chunkSize} rows.</p>
+            </div>
+            <div className="mt-auto pt-4 border-t border-slate-200 flex justify-end">
+                <button onClick={() => onSave({ chunkSize })} className="px-5 py-2.5 bg-slate-900 border border-slate-800 hover:bg-slate-800 text-white font-bold rounded-xl shadow-lg transition-transform hover:-translate-y-0.5">Save Iterator</button>
+            </div>
+        </div>
+    );
+};
+
+const ConditionalConfigPanel = ({ node, onSave }) => {
+    const [conditionExpression, setConditionExpression] = useState(node.data.conditionExpression || '');
+    return (
+        <div className="flex flex-col h-full bg-white rounded-3xl shadow-xl border border-slate-100 py-6 px-4">
+            <h3 className="font-bold text-lg text-slate-800 mb-6 flex items-center gap-2"><GitBranch size={20} className="text-cyan-500" /> Conditional Branch</h3>
+            <div className="space-y-4 mb-6">
+                <div>
+                    <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Expression (Python Eval Subset)</label>
+                    <textarea rows="3" className="w-full text-sm p-3 border border-slate-200 rounded-xl font-mono text-slate-800 outline-none bg-slate-50 focus:border-cyan-500 transition-colors" placeholder="e.g. df['amount'] > 1000 and df['status'] == 'active'" value={conditionExpression} onChange={e => setConditionExpression(e.target.value)} />
+                </div>
+                <div className="px-4 py-3 bg-cyan-50 border border-cyan-100 rounded-xl">
+                    <p className="text-xs text-cyan-800">Only rows evaluating to TRUE for this expression will pass through to the subsequent nodes. The expression uses a standard pandas syntax evaluation.</p>
+                </div>
+            </div>
+            <div className="mt-auto pt-4 border-t border-slate-200 flex justify-end">
+                <button onClick={() => onSave({ conditionExpression })} className="px-5 py-2.5 bg-slate-900 border border-slate-800 hover:bg-slate-800 text-white font-bold rounded-xl shadow-lg transition-transform hover:-translate-y-0.5">Save Expression</button>
+            </div>
+        </div>
+    );
+};
+
+const EmailConfigPanel = ({ node, onSave }) => {
+    const [smtpHost, setSmtpHost] = useState(node.data.smtpHost || '');
+    const [toEmail, setToEmail] = useState(node.data.toEmail || '');
+    const [emailSubject, setEmailSubject] = useState(node.data.emailSubject || 'Pipeline Alert');
+    const [emailBody, setEmailBody] = useState(node.data.emailBody || '');
+    
+    const insertMacro = (macro) => {
+        setEmailBody(prev => prev + macro);
+    };
+
+    return (
+        <div className="flex flex-col h-full bg-white rounded-3xl shadow-xl border border-slate-100 py-6 px-4">
+            <h3 className="font-bold text-lg text-slate-800 mb-6 flex items-center gap-2"><Mail size={20} className="text-rose-500" /> Email Notification</h3>
+            <div className="space-y-5 mb-6 overflow-y-auto pr-2 no-scrollbar">
+                <div>
+                    <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Email Connection (Pre-configured)</label>
+                    <input type="text" className="w-full text-sm p-3 bg-slate-100 border border-slate-200 rounded-xl outline-none text-slate-500 cursor-not-allowed" placeholder="Resend (onboarding.cleanflow.one)" value="Resend (onboarding.cleanflow.one)" disabled />
+                    <p className="text-[10px] text-slate-400 mt-1">System automatically sends via @onboarding.cleanflow.one</p>
+                </div>
+                <div>
+                    <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Recipient Email Address</label>
+                    <input type="email" className="w-full text-sm p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-rose-300 transition-colors" placeholder="admin@example.com" value={toEmail} onChange={e => setToEmail(e.target.value)} />
+                </div>
+                <div>
+                    <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Email Subject Line</label>
+                    <input type="text" className="w-full text-sm p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-rose-300 transition-colors" value={emailSubject} onChange={e => setEmailSubject(e.target.value)} />
+                </div>
+                <div>
+                    <div className="flex items-center justify-between mb-2">
+                        <label className="block text-xs font-bold text-slate-500 uppercase">Email Body</label>
+                        <div className="flex gap-1.5 flex-wrap">
+                            {[ 
+                                { label: 'Date', tag: '{{TODAY_DATE}}' }, 
+                                { label: 'Status', tag: '{{STATUS}}' }, 
+                                { label: 'Rows', tag: '{{ROW_COUNT}}' },
+                                { label: 'Pipeline Name', tag: '{{PIPELINE_NAME}}' }
+                            ].map(m => (
+                                <button key={m.tag} onClick={() => insertMacro(m.tag)} className="text-[10px] px-2 py-1 bg-slate-100 hover:bg-rose-50 hover:text-rose-600 text-slate-500 rounded-md font-bold transition-colors">
+                                    + {m.label}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                    <textarea rows="5" className="w-full text-sm p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-rose-300 transition-colors leading-relaxed" placeholder="Write your email message..." value={emailBody} onChange={e => setEmailBody(e.target.value)} />
+                    <p className="text-[11px] font-medium text-slate-400 mt-2">Use the buttons above to insert dynamic template variables that populate dynamically on execution.</p>
+                </div>
+            </div>
+            <div className="mt-auto pt-4 border-t border-slate-200 flex justify-end">
+                <button onClick={() => onSave({ smtpHost, toEmail, emailSubject, emailBody })} className="px-5 py-2.5 bg-slate-900 border border-slate-800 hover:bg-slate-800 text-white font-bold rounded-xl shadow-lg transition-transform hover:-translate-y-0.5">Save Target</button>
+            </div>
+        </div>
+    );
+};
+
+const WebhookConfigPanel = ({ node, onSave }) => {
+    const [webhookUrl, setWebhookUrl] = useState(node.data.webhookUrl || '');
+    const [httpMethod, setHttpMethod] = useState(node.data.httpMethod || 'POST');
+    return (
+        <div className="flex flex-col h-full bg-white rounded-3xl shadow-xl border border-slate-100 py-6 px-4">
+            <h3 className="font-bold text-lg text-slate-800 mb-6 flex items-center gap-2"><Webhook size={20} className="text-blue-500" /> Webhook Trigger</h3>
+            <div className="space-y-5 mb-6">
+                <div>
+                    <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Target Webhook URL</label>
+                    <input type="url" className="w-full text-sm p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-blue-400 text-slate-700 font-mono" placeholder="https://api.example.com/v1/event" value={webhookUrl} onChange={e => setWebhookUrl(e.target.value)} />
+                </div>
+                <div>
+                    <label className="block text-xs font-bold text-slate-500 uppercase mb-2">HTTP Method</label>
+                    <select className="w-full text-sm p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-blue-400" value={httpMethod} onChange={e => setHttpMethod(e.target.value)}>
+                        <option value="POST">POST (Payload passed in body)</option>
+                        <option value="GET">GET</option>
+                        <option value="PUT">PUT</option>
+                    </select>
+                </div>
+            </div>
+            <div className="mt-auto pt-4 border-t border-slate-200 flex justify-end">
+                <button onClick={() => onSave({ webhookUrl, httpMethod })} className="px-5 py-2.5 bg-slate-900 border border-slate-800 hover:bg-slate-800 text-white font-bold rounded-xl shadow-lg transition-transform hover:-translate-y-0.5">Save Target</button>
             </div>
         </div>
     );

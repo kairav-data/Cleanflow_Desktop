@@ -79,3 +79,74 @@ def send_otp_email(to_email: str, otp: str):
         
     except Exception as e:
         logger.error(f"❌ [RESEND API ERROR] General failure sending OTP email to {to_email}: {e}")
+
+
+def send_pipeline_email(to_email: str, subject: str, body: str, pipeline_name: str = "Pipeline") -> dict:
+    """
+    Sends a pipeline notification email via Resend from admin@cleanflow.one.
+    Returns {"success": True} or {"success": False, "error": "..."}.
+    """
+    import datetime
+
+    if not resend.api_key:
+        logger.warning("[PIPELINE EMAIL] Missing RESEND_API_KEY — email not sent.")
+        return {"success": False, "error": "RESEND_API_KEY not configured on server."}
+
+    # Safely escape body for HTML and convert newlines to <br>
+    body_html = (body
+                 .replace("&", "&amp;")
+                 .replace("<", "&lt;")
+                 .replace(">", "&gt;")
+                 .replace("\n", "<br>"))
+    year = datetime.datetime.now().year
+
+    html_content = f"""<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{subject}</title>
+</head>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f4f4f5; margin: 0; padding: 40px 0;">
+  <div style="max-width: 620px; margin: 0 auto; background: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 16px rgba(0,0,0,0.08);">
+
+    <!-- Header bar -->
+    <div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); padding: 28px 32px;">
+      <h1 style="margin: 0; color: #ffffff; font-size: 20px; font-weight: 700; letter-spacing: -0.3px;">
+        &#9889; CleanFlow Pipeline Notification
+      </h1>
+      <p style="margin: 6px 0 0; color: rgba(255,255,255,0.85); font-size: 13px;">{pipeline_name}</p>
+    </div>
+
+    <!-- Body -->
+    <div style="padding: 36px 32px;">
+      <h2 style="color: #1e293b; font-size: 18px; font-weight: 600; margin: 0 0 16px;">{subject}</h2>
+      <div style="color: #475569; font-size: 15px; line-height: 1.7; background: #f8fafc; border-left: 4px solid #10b981; border-radius: 4px; padding: 16px 20px;">
+        {body_html}
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div style="background: #f8fafc; padding: 20px 32px; border-top: 1px solid #e2e8f0; text-align: center;">
+      <p style="color: #94a3b8; font-size: 12px; margin: 0;">
+        &copy; {year} CleanFlow &nbsp;|&nbsp; Sent from admin@cleanflow.one &nbsp;|&nbsp; Do not reply
+      </p>
+    </div>
+  </div>
+</body>
+</html>"""
+
+    try:
+        params = {
+            "from": "CleanFlow <admin@onboarding.cleanflow.one>",
+            "to": [to_email],
+            "subject": subject,
+            "html": html_content,
+            "text": body,  # plain-text fallback
+        }
+        response = resend.Emails.send(params)
+        logger.info(f"✅ Pipeline email sent to {to_email}. Resend ID: {response.get('id')}")
+        return {"success": True, "resend_id": response.get("id")}
+    except Exception as e:
+        logger.error(f"❌ [PIPELINE EMAIL ERROR] Failed to send to {to_email}: {e}")
+        return {"success": False, "error": str(e)}

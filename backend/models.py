@@ -192,3 +192,63 @@ class CleaningOpRepoItem(CleaningOpRepoCreate):
     author_name: Optional[str] = "Anonymous"
     created_at: Optional[str] = ""
     updated_at: Optional[str] = ""
+
+
+# ─── Pipeline Models ──────────────────────────────────────────────────────────
+
+class SavedPipelineCreate(BaseModel):
+    id: Optional[str] = None
+    name: str
+    description: Optional[str] = ""
+    nodes: List[dict]
+    edges: List[dict]
+    tags: Optional[str] = ""
+
+class SavedPipelineItem(SavedPipelineCreate):
+    id: Optional[str] = None
+    user_email: Optional[str] = ""
+    created_at: Optional[str] = ""
+    updated_at: Optional[str] = ""
+
+
+class PipelineScheduleCreate(BaseModel):
+    pipeline_id: str
+    schedule_name: str
+    frequency: str                   # Hourly | Daily | Weekly | Monthly
+    run_time: str                    # HH:MM
+    day_of_week: Optional[str] = None
+    day_of_month: Optional[int] = None
+    timezone: Optional[str] = "UTC"
+    notes: Optional[str] = ""
+
+class PipelineScheduleItem(PipelineScheduleCreate):
+    id: Optional[str] = None
+    user_email: Optional[str] = ""
+    is_active: Optional[bool] = True
+    last_run_at: Optional[str] = None
+    next_run_at: Optional[str] = None
+    created_at: Optional[str] = ""
+
+
+class PipelineRunCreate(BaseModel):
+    pipeline_id: Optional[str] = None
+    pipeline_name: str
+    trigger: Optional[str] = "manual"
+    node_count: Optional[int] = 0
+
+class PipelineRunUpdate(BaseModel):
+    status: Optional[str] = None
+    logs: Optional[List[dict]] = None
+    output_file: Optional[str] = None
+    error_message: Optional[str] = None
+
+class PipelineRunItem(PipelineRunCreate):
+    id: Optional[str] = None
+    user_email: Optional[str] = ""
+    status: Optional[str] = "running"
+    logs: Optional[List[dict]] = []
+    output_file: Optional[str] = None
+    error_message: Optional[str] = None
+    started_at: Optional[str] = ""
+    finished_at: Optional[str] = None
+    duration_seconds: Optional[float] = None

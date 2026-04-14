@@ -17,7 +17,8 @@ export default function ChatBot() {
   const [messages, setMessages] = useState<Message[]>([
     {
       role: 'bot',
-      content: "Hello! I'm your AI assistant. How can I help you today?",
+      content:
+        "Hi, I'm Gwen, your Cleanflow assistant. Ask me anything about modules like validation, cleaning, schema mapping, matching, pricing intelligence, AI visualizer, pipeline builder, history, or connections.",
       id: 'initial',
     },
   ]);
@@ -120,8 +121,8 @@ export default function ChatBot() {
                   <Bot size={18} />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-sm">AI Assistant</h3>
-                  <p className="text-[10px] text-zinc-400 uppercase tracking-wider">Online</p>
+                  <h3 className="font-semibold text-sm">Gwen AI</h3>
+                  <p className="text-[10px] text-zinc-400 uppercase tracking-wider">Cleanflow guide assistant</p>
                 </div>
               </div>
               <button
@@ -182,7 +183,7 @@ export default function ChatBot() {
                   type="text"
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
-                  placeholder="Type your message..."
+                  placeholder="Ask about Cleanflow features or workflows..."
                   className="w-full pl-4 pr-12 py-3 bg-zinc-100 border-none rounded-xl text-sm focus:ring-2 focus:ring-zinc-900 transition-all outline-none"
                   disabled={isLoading}
                 />
@@ -195,7 +196,7 @@ export default function ChatBot() {
                 </button>
               </div>
               <p className="mt-2 text-[10px] text-zinc-400 text-center">
-                Powered by Open Source AI
+                Grounded in the Cleanflow feature guide
               </p>
             </form>
           </motion.div>

@@ -326,6 +326,46 @@ export default function EnrichmentBuilder({ sessionId: initialSessionId, columns
             );
         }
 
+        if (rule.operation === 'deduplicate') {
+            return (
+                <div className="flex flex-col gap-3">
+                    <div>
+                        <label className="mb-1.5 block text-[11px] font-black uppercase tracking-wider text-slate-400">Subset Columns <span className="text-slate-300 font-normal normal-case">(leave empty to check all columns)</span></label>
+                        <div className="flex flex-wrap gap-2 rounded-xl border border-slate-200 bg-slate-50 p-3 max-h-36 overflow-y-auto">
+                            {columns.map((col) => (
+                                <label key={col} className="flex items-center gap-1.5 cursor-pointer text-sm text-slate-700">
+                                    <input
+                                        type="checkbox"
+                                        className="accent-emerald-600 w-3.5 h-3.5"
+                                        checked={(rule.params.subset_columns || []).includes(col)}
+                                        onChange={(e) => {
+                                            const prev = rule.params.subset_columns || [];
+                                            const next = e.target.checked ? [...prev, col] : prev.filter(c => c !== col);
+                                            updateParams(rule.id, 'subset_columns', next);
+                                        }}
+                                    />
+                                    {col}
+                                </label>
+                            ))}
+                            {columns.length === 0 && <span className="text-xs text-slate-400 italic">Upload a dataset first to see columns.</span>}
+                        </div>
+                    </div>
+                    <div>
+                        <label className="mb-1.5 block text-[11px] font-black uppercase tracking-wider text-slate-400">Keep Strategy</label>
+                        <select
+                            className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-medium text-slate-700 outline-none transition-all focus:border-emerald-500"
+                            value={rule.params.keep || 'first'}
+                            onChange={(e) => updateParams(rule.id, 'keep', e.target.value)}
+                        >
+                            <option value="first">Keep First Occurrence</option>
+                            <option value="last">Keep Last Occurrence</option>
+                            <option value="none">Remove ALL Duplicated Rows</option>
+                        </select>
+                    </div>
+                </div>
+            );
+        }
+
         return null;
     };
 

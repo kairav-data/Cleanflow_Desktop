@@ -113,7 +113,7 @@ def send_pipeline_email(to_email: str, subject: str, body: str, pipeline_name: s
     <!-- Header bar -->
     <div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); padding: 28px 32px;">
       <h1 style="margin: 0; color: #ffffff; font-size: 20px; font-weight: 700; letter-spacing: -0.3px;">
-        &#9889; CleanFlow Pipeline Notification
+        CleanFlow Pipeline Notification
       </h1>
       <p style="margin: 6px 0 0; color: rgba(255,255,255,0.85); font-size: 13px;">{pipeline_name}</p>
     </div>
@@ -129,7 +129,7 @@ def send_pipeline_email(to_email: str, subject: str, body: str, pipeline_name: s
     <!-- Footer -->
     <div style="background: #f8fafc; padding: 20px 32px; border-top: 1px solid #e2e8f0; text-align: center;">
       <p style="color: #94a3b8; font-size: 12px; margin: 0;">
-        &copy; {year} CleanFlow &nbsp;|&nbsp; Sent from admin@cleanflow.one &nbsp;|&nbsp; Do not reply
+        &copy; {year} CleanFlow &nbsp;|&nbsp; Sent from notification@onboarding.cleanflow.one &nbsp;|&nbsp; Do not reply
       </p>
     </div>
   </div>
@@ -138,7 +138,7 @@ def send_pipeline_email(to_email: str, subject: str, body: str, pipeline_name: s
 
     try:
         params = {
-            "from": "CleanFlow <admin@onboarding.cleanflow.one>",
+            "from": "CleanFlow <notification@onboarding.cleanflow.one>",
             "to": [to_email],
             "subject": subject,
             "html": html_content,

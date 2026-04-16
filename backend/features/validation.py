@@ -303,16 +303,17 @@ class PolarsValidationEngine:
         if agg_exprs:
             stats_row = self.df.lazy().select(agg_exprs).collect().row(0)
             
-            # Map back
+            # Map back — always write failed_count (0 or more) and always delete the expr object
             idx = 0
             for col, data in column_stats.items():
                 for i, err_obj in enumerate(data["errors"]):
-                    fail_c = stats_row[idx]
+                    fail_c = int(stats_row[idx]) if stats_row[idx] is not None else 0
                     idx += 1
+                    err_obj["failed_count"] = fail_c   # always set, even if 0
+                    if "expr" in err_obj:
+                        del err_obj["expr"]             # always clean up Polars expression
                     if fail_c > 0:
-                        data["passed"] = False
-                        err_obj["failed_count"] = fail_c
-                        del err_obj["expr"] # mismatch cleanup
+                        data["passed"] = False          # mark column as failed
 
         # Clean up any remaining expressions in column_stats just in case
         for col, data in column_stats.items():

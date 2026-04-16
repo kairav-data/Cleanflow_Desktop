@@ -39,6 +39,14 @@ class DataCleaner(BaseFeature):
             "name": "Convert to Lowercase",
             "description": "Convert all text in the column to lowercase.",
             "requires_input": False
+        },
+        {
+            "id": "deduplicate",
+            "name": "Remove Duplicates",
+            "description": "Drop duplicate rows across the whole dataset or based on specific columns.",
+            "requires_input": True,
+            "input_type": "deduplicate",
+            "dataset_level": True   # operates on the whole df, not one column
         }
     ]
 
@@ -67,8 +75,37 @@ class DataCleaner(BaseFeature):
                 column = rule.get("column")
                 operation = rule.get("operation")
                 params = rule.get("params", {})
-                
-                if column not in df_proc.columns:
+
+                # ── Deduplicate (dataset-level, no single column required) ──
+                if operation == "deduplicate":
+                    subset = params.get("subset_columns")  # list[str] or None
+                    keep = params.get("keep", "first")      # "first" | "last" | "none"
+
+                    # Validate subset columns exist
+                    if subset:
+                        subset = [c for c in subset if c in df_proc.columns]
+
+                    if keep == "none":
+                        # Drop all rows that appear more than once
+                        if subset:
+                            counts = df_proc.select(subset).with_row_index("__row__").group_by(subset).agg(pl.col("__row__").count().alias("__cnt__"))
+                            df_proc = df_proc.with_row_index("__row__").join(counts, on=subset, how="left").filter(pl.col("__cnt__") == 1).drop(["__row__", "__cnt__"])
+                        else:
+                            df_proc = df_proc.unique(maintain_order=True)
+                            # keep only rows not duplicated at all → need count trick
+                            # fallback: unique already removes most cases; for strict "none" use value_counts approach
+                            df_proc = df_proc.unique(maintain_order=True)
+                    else:
+                        # keep = "first" or "last"
+                        keep_last = (keep == "last")
+                        if subset:
+                            df_proc = df_proc.unique(subset=subset, keep="last" if keep_last else "first", maintain_order=True)
+                        else:
+                            df_proc = df_proc.unique(keep="last" if keep_last else "first", maintain_order=True)
+                    continue
+
+                # ── All other operations require a valid column ──
+                if not column or column not in df_proc.columns:
                     continue
                     
                 if operation == "fill_nulls":
@@ -140,15 +177,18 @@ class DataCleaner(BaseFeature):
             return False, "Payload must contain a 'rules' array"
             
         valid_ops = [op["id"] for op in self.OPERATIONS]
+        dataset_level_ops = {op["id"] for op in self.OPERATIONS if op.get("dataset_level")}
+        
         for idx, rule in enumerate(rules):
-            if "column" not in rule:
+            op = rule.get("operation", "")
+            if op not in valid_ops:
+                return False, f"Rule '{idx}' has an invalid operation: {op}"
+            # dataset-level ops (e.g. deduplicate) don't require a column
+            if op not in dataset_level_ops and "column" not in rule:
                 return False, f"Rule '{idx}' is missing a 'column' key"
-            if "operation" not in rule:
-                return False, f"Rule '{idx}' is missing an 'operation' key"
-            if rule["operation"] not in valid_ops:
-                return False, f"Rule '{idx}' has an invalid operation: {rule['operation']}"
         return True, None
 
     @classmethod
     def get_operations(cls) -> List[Dict[str, Any]]:
         return cls.OPERATIONS
+

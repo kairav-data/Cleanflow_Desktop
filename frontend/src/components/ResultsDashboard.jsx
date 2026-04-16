@@ -19,8 +19,10 @@ const ResultsDashboard = ({ results, onReset, onEditRules }) => {
         .filter(([_, stats]) => !stats.passed)
         .map(([colName, stats]) => ({
             label: colName,
-            errors: stats.errors ? stats.errors.reduce((acc, err) => acc + (err.count || 1), 0) : 1 // Fallback to 1 if no count
+            // sum failed_count (the actual row-failure count per rule) sent by backend
+            errors: stats.errors ? stats.errors.reduce((acc, err) => acc + (err.failed_count || 0), 0) : 0
         }))
+        .filter(item => item.errors > 0)   // exclude columns that had no actual failures
         .sort((a, b) => b.errors - a.errors);
 
     // If we only have some errors, let's normalize their width against the worst column
@@ -129,9 +131,12 @@ const ResultsDashboard = ({ results, onReset, onEditRules }) => {
                     ) : (
                         <div className="space-y-4">
                             {columnFailures.slice(0, 5).map((item) => {
+                                // Bar width relative to the worst column (always fills to 100% for top column)
                                 const failurePercentage = Math.round((item.errors / maxErrors) * 100);
-                                // Real failure percentage roughly vs invalid rows for display purpose:
-                                const displayPercent = Math.round((item.errors / (results.invalid_rows || 1)) * 100);
+                                // Display % = row failures for this column as % of total rows in dataset
+                                const displayPercent = results.total_rows > 0
+                                    ? Math.min(100, Math.round((item.errors / results.total_rows) * 100))
+                                    : 0;
                                 return (
                                     <div key={item.label}>
                                         <div className="flex justify-between text-sm text-slate-700 mb-1.5">

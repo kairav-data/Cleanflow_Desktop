@@ -94,19 +94,25 @@ async def create_schedule(
     payload: PipelineScheduleCreate,
     current_user: UserInDB = Depends(get_current_user),
 ):
-    """Create a new schedule for a pipeline."""
+    """Create or update a schedule for a pipeline."""
     # Verify the pipeline belongs to this user
     pipeline = await db.get_pipeline(pipeline_id, current_user.email)
     if not pipeline:
         raise HTTPException(status_code=404, detail="Pipeline not found.")
 
-    data = payload.dict()
+    data = payload.dict(exclude_unset=True)
     data["pipeline_id"] = pipeline_id
     data["user_email"] = current_user.email
-    data["id"] = str(uuid.uuid4())
+    is_update = bool(data.get("id"))
+    if not data.get("id"):
+        data["id"] = str(uuid.uuid4())
+    data["schedule_name"] = (data.get("schedule_name") or f"{pipeline.get('name', 'Pipeline')} Schedule").strip()
 
-    schedule_id = await db.save_schedule(data)
-    return {"id": schedule_id, "message": "Schedule created."}
+    try:
+        schedule_id = await db.save_schedule(data)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return {"id": schedule_id, "message": "Schedule updated." if is_update else "Schedule created."}
 
 
 @router.patch("/schedules/{schedule_id}/toggle", response_model=dict)

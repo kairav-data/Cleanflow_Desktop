@@ -2,9 +2,17 @@ import os
 import time
 import uuid
 from sqlalchemy import create_engine, Column, Integer, String, Boolean, Text, DateTime, Float, text, ForeignKey
-from sqlalchemy.orm import sessionmaker, declarative_base, relationship
+from sqlalchemy.orm import sessionmaker, declarative_base, relationship, joinedload
 from datetime import datetime
 import json
+
+from pipeline_schedule_utils import (
+    compute_next_run_at,
+    normalize_day_of_week,
+    normalize_frequency,
+    normalize_timezone_name,
+    parse_run_time,
+)
 
 # --- Docker Connection Config ---
 PG_URL = os.getenv("DATABASE_URL", "postgresql://user:password@postgres:5432/cleanflow_db")
@@ -291,8 +299,10 @@ class DatabaseManager:
                     "ALTER TABLE pipeline_runs ADD COLUMN IF NOT EXISTS duration_seconds FLOAT;",
                     "ALTER TABLE pipeline_runs ADD COLUMN IF NOT EXISTS error_message TEXT;",
                     "ALTER TABLE pipeline_schedules ADD COLUMN IF NOT EXISTS timezone VARCHAR DEFAULT 'UTC';",
+                    "ALTER TABLE pipeline_schedules ADD COLUMN IF NOT EXISTS notes TEXT;",
                     "ALTER TABLE pipeline_schedules ADD COLUMN IF NOT EXISTS last_run_at TIMESTAMP;",
                     "ALTER TABLE pipeline_schedules ADD COLUMN IF NOT EXISTS next_run_at TIMESTAMP;",
+                    "CREATE INDEX IF NOT EXISTS idx_pipeline_schedules_active_next_run ON pipeline_schedules (is_active, next_run_at);",
                 ]
                 
                 for query in migration_queries:
@@ -610,6 +620,48 @@ class DatabaseManager:
 
     # ─── Saved Pipelines ──────────────────────────────────────────────────────
 
+    def _normalize_run_time(self, value: str) -> str:
+        hour, minute = parse_run_time(value)
+        return f"{hour:02d}:{minute:02d}"
+
+    def _serialize_schedule(self, row: PipelineSchedule) -> dict:
+        pipeline_name = row.pipeline.name if getattr(row, "pipeline", None) is not None else ""
+        def _utc_iso(dt):
+            """Return an ISO-8601 string with a trailing 'Z' so browsers parse it as UTC."""
+            return dt.isoformat() + 'Z' if dt else None
+        return {
+            'id': row.id,
+            'pipeline_id': row.pipeline_id,
+            'pipeline_name': pipeline_name,
+            'schedule_name': row.schedule_name,
+            'frequency': row.frequency,
+            'run_time': row.run_time,
+            'day_of_week': row.day_of_week or '',
+            'day_of_month': row.day_of_month,
+            'timezone': row.timezone or 'UTC',
+            'is_active': bool(row.is_active),
+            'notes': row.notes or '',
+            'last_run_at': _utc_iso(row.last_run_at),
+            'next_run_at': _utc_iso(row.next_run_at),
+            'created_at': _utc_iso(row.created_at) or '',
+        }
+
+    def _serialize_pipeline_run(self, row: PipelineRun) -> dict:
+        return {
+            'id': row.id,
+            'pipeline_id': row.pipeline_id,
+            'pipeline_name': row.pipeline_name,
+            'trigger': row.trigger or 'manual',
+            'status': row.status,
+            'node_count': row.node_count or 0,
+            'logs': json.loads(row.logs) if row.logs else [],
+            'output_file': row.output_file,
+            'error_message': row.error_message,
+            'started_at': row.started_at.isoformat() if row.started_at else '',
+            'finished_at': row.finished_at.isoformat() if row.finished_at else None,
+            'duration_seconds': row.duration_seconds,
+        }
+
     async def save_pipeline(self, data: dict):
         db = self.SessionLocal()
         try:
@@ -704,78 +756,163 @@ class DatabaseManager:
     async def save_schedule(self, data: dict):
         db = self.SessionLocal()
         try:
+            normalized_frequency = normalize_frequency(data.get('frequency'))
+            normalized_run_time = self._normalize_run_time(data.get('run_time'))
+            normalized_timezone = normalize_timezone_name(data.get('timezone', 'UTC'))
+            normalized_day_of_week = normalize_day_of_week(data.get('day_of_week')) if data.get('day_of_week') else None
+            normalized_day_of_month = int(data['day_of_month']) if data.get('day_of_month') is not None else None
+            existing = None
+
+            if data.get('id'):
+                existing = db.query(PipelineSchedule).filter(
+                    PipelineSchedule.id == data['id'],
+                    PipelineSchedule.user_email == data['user_email']
+                ).first()
+
+            if normalized_frequency != 'Weekly':
+                normalized_day_of_week = None
+            if normalized_frequency != 'Monthly':
+                normalized_day_of_month = None
+
+            if 'is_active' in data:
+                is_active = bool(data.get('is_active'))
+            elif existing is not None:
+                is_active = bool(existing.is_active)
+            else:
+                is_active = True
+
+            next_run_at = compute_next_run_at(
+                normalized_frequency,
+                normalized_run_time,
+                normalized_timezone,
+                normalized_day_of_week,
+                normalized_day_of_month,
+            ) if is_active else None
+
+            if existing is not None:
+                existing.pipeline_id = data['pipeline_id']
+                existing.schedule_name = data['schedule_name']
+                existing.frequency = normalized_frequency
+                existing.run_time = normalized_run_time
+                existing.day_of_week = normalized_day_of_week
+                existing.day_of_month = normalized_day_of_month
+                existing.timezone = normalized_timezone
+                existing.is_active = is_active
+                existing.notes = data.get('notes', existing.notes or '')
+                existing.next_run_at = next_run_at
+                db.commit()
+                return existing.id
+
             schedule_id = data.get('id') or str(uuid.uuid4())
             entry = PipelineSchedule(
                 id=schedule_id,
                 pipeline_id=data['pipeline_id'],
                 user_email=data['user_email'],
                 schedule_name=data['schedule_name'],
-                frequency=data['frequency'],
-                run_time=data['run_time'],
-                day_of_week=data.get('day_of_week'),
-                day_of_month=data.get('day_of_month'),
-                timezone=data.get('timezone', 'UTC'),
-                is_active=True,
+                frequency=normalized_frequency,
+                run_time=normalized_run_time,
+                day_of_week=normalized_day_of_week,
+                day_of_month=normalized_day_of_month,
+                timezone=normalized_timezone,
+                is_active=is_active,
                 notes=data.get('notes', ''),
+                next_run_at=next_run_at,
             )
             db.add(entry)
             db.commit()
             return schedule_id
+        except Exception:
+            db.rollback()
+            raise
         finally:
             db.close()
 
     async def get_pipeline_schedules(self, pipeline_id: str, email: str):
         db = self.SessionLocal()
-        rows = db.query(PipelineSchedule).filter(
+        rows = db.query(PipelineSchedule).options(joinedload(PipelineSchedule.pipeline)).filter(
             PipelineSchedule.pipeline_id == pipeline_id,
             PipelineSchedule.user_email == email
         ).order_by(PipelineSchedule.created_at.desc()).all()
-        result = [
-            {
-                'id': r.id,
-                'pipeline_id': r.pipeline_id,
-                'schedule_name': r.schedule_name,
-                'frequency': r.frequency,
-                'run_time': r.run_time,
-                'day_of_week': r.day_of_week or '',
-                'day_of_month': r.day_of_month,
-                'timezone': r.timezone or 'UTC',
-                'is_active': r.is_active,
-                'notes': r.notes or '',
-                'last_run_at': r.last_run_at.isoformat() if r.last_run_at else None,
-                'next_run_at': r.next_run_at.isoformat() if r.next_run_at else None,
-                'created_at': r.created_at.isoformat() if r.created_at else '',
-            }
-            for r in rows
-        ]
+        result = [self._serialize_schedule(r) for r in rows]
         db.close()
         return result
 
     async def get_all_user_schedules(self, email: str):
         db = self.SessionLocal()
-        rows = db.query(PipelineSchedule).filter(
+        rows = db.query(PipelineSchedule).options(joinedload(PipelineSchedule.pipeline)).filter(
             PipelineSchedule.user_email == email
         ).order_by(PipelineSchedule.created_at.desc()).all()
-        result = [
-            {
-                'id': r.id,
-                'pipeline_id': r.pipeline_id,
-                'schedule_name': r.schedule_name,
-                'frequency': r.frequency,
-                'run_time': r.run_time,
-                'day_of_week': r.day_of_week or '',
-                'day_of_month': r.day_of_month,
-                'timezone': r.timezone or 'UTC',
-                'is_active': r.is_active,
-                'notes': r.notes or '',
-                'last_run_at': r.last_run_at.isoformat() if r.last_run_at else None,
-                'next_run_at': r.next_run_at.isoformat() if r.next_run_at else None,
-                'created_at': r.created_at.isoformat() if r.created_at else '',
-            }
-            for r in rows
-        ]
+        result = [self._serialize_schedule(r) for r in rows]
         db.close()
         return result
+
+    async def initialize_schedule_next_runs(self):
+        db = self.SessionLocal()
+        try:
+            rows = db.query(PipelineSchedule).filter(
+                PipelineSchedule.is_active == True,
+                PipelineSchedule.next_run_at.is_(None)
+            ).all()
+            changed = 0
+            for row in rows:
+                row.next_run_at = compute_next_run_at(
+                    row.frequency,
+                    row.run_time,
+                    row.timezone or 'UTC',
+                    row.day_of_week,
+                    row.day_of_month,
+                )
+                changed += 1
+
+            if changed:
+                db.commit()
+            return changed
+        except Exception:
+            db.rollback()
+            raise
+        finally:
+            db.close()
+
+    async def claim_due_schedules(self, limit: int = 10):
+        db = self.SessionLocal()
+        try:
+            now = datetime.utcnow()
+            rows = db.query(PipelineSchedule).options(joinedload(PipelineSchedule.pipeline)).filter(
+                PipelineSchedule.is_active == True,
+                PipelineSchedule.next_run_at.isnot(None),
+                PipelineSchedule.next_run_at <= now,
+            ).order_by(PipelineSchedule.next_run_at.asc()).with_for_update(skip_locked=True, of=PipelineSchedule).limit(limit).all()
+
+            claimed = []
+            for row in rows:
+                scheduled_for = row.next_run_at or now
+                row.last_run_at = now
+                row.next_run_at = compute_next_run_at(
+                    row.frequency,
+                    row.run_time,
+                    row.timezone or 'UTC',
+                    row.day_of_week,
+                    row.day_of_month,
+                    now_utc=now,
+                )
+                claimed.append({
+                    'id': row.id,
+                    'pipeline_id': row.pipeline_id,
+                    'pipeline_name': row.pipeline.name if row.pipeline else '',
+                    'schedule_name': row.schedule_name,
+                    'user_email': row.user_email,
+                    'scheduled_for': scheduled_for.isoformat() if scheduled_for else None,
+                    'next_run_at': row.next_run_at.isoformat() if row.next_run_at else None,
+                })
+
+            if claimed:
+                db.commit()
+            return claimed
+        except Exception:
+            db.rollback()
+            raise
+        finally:
+            db.close()
 
     async def toggle_schedule(self, schedule_id: str, email: str):
         db = self.SessionLocal()
@@ -786,9 +923,19 @@ class DatabaseManager:
             ).first()
             if row:
                 row.is_active = not row.is_active
+                row.next_run_at = compute_next_run_at(
+                    row.frequency,
+                    row.run_time,
+                    row.timezone or 'UTC',
+                    row.day_of_week,
+                    row.day_of_month,
+                ) if row.is_active else None
                 db.commit()
                 return row.is_active
             return None
+        except Exception:
+            db.rollback()
+            raise
         finally:
             db.close()
 
@@ -816,12 +963,15 @@ class DatabaseManager:
                 user_email=data['user_email'],
                 pipeline_name=data['pipeline_name'],
                 trigger=data.get('trigger', 'manual'),
-                status='running',
+                status=data.get('status', 'running'),
                 node_count=data.get('node_count', 0),
             )
             db.add(entry)
             db.commit()
             return run_id
+        except Exception:
+            db.rollback()
+            raise
         finally:
             db.close()
 
@@ -846,6 +996,9 @@ class DatabaseManager:
                     if row.started_at:
                         row.duration_seconds = (row.finished_at - row.started_at).total_seconds()
                 db.commit()
+        except Exception:
+            db.rollback()
+            raise
         finally:
             db.close()
 
@@ -855,23 +1008,7 @@ class DatabaseManager:
         if pipeline_id:
             query = query.filter(PipelineRun.pipeline_id == pipeline_id)
         rows = query.order_by(PipelineRun.started_at.desc()).limit(limit).all()
-        result = [
-            {
-                'id': r.id,
-                'pipeline_id': r.pipeline_id,
-                'pipeline_name': r.pipeline_name,
-                'trigger': r.trigger or 'manual',
-                'status': r.status,
-                'node_count': r.node_count or 0,
-                'logs': json.loads(r.logs) if r.logs else [],
-                'output_file': r.output_file,
-                'error_message': r.error_message,
-                'started_at': r.started_at.isoformat() if r.started_at else '',
-                'finished_at': r.finished_at.isoformat() if r.finished_at else None,
-                'duration_seconds': r.duration_seconds,
-            }
-            for r in rows
-        ]
+        result = [self._serialize_pipeline_run(r) for r in rows]
         db.close()
         return result
 

@@ -14,6 +14,7 @@ import { AuthModal, PaymentModal } from './components/modals';
 import { Footer, PlatformDropdown } from './components/common';
 import { HomePage, PricingPage, UserProfilePage, UsagePage } from './components/pages';
 import ChatBot from './components/ChatBot';
+import { formatDateTimeInIST } from './lib/utils';
 
 // Feature Builders
 import { EnrichmentBuilder, ScraperBuilder, SchemaMapper, DataMatchingBuilder, PricingIntelligenceBuilder, PipelineBuilder, SchedulerBuilder, PipelineRuns, DataVisualizer, GlobalRepositoryBuilder } from './features';
@@ -127,7 +128,7 @@ function App() {
     const goToLanding = () => setActiveTab(user ? 'dashboard' : 'home');
     const formatJobDate = (iso) => {
         try {
-            return new Date(iso).toLocaleString();
+            return formatDateTimeInIST(iso);
         } catch {
             return iso;
         }
@@ -507,7 +508,7 @@ function App() {
                                                     <tr className="bg-slate-50/50 border-b border-slate-100 text-xs font-black uppercase text-slate-400 tracking-wider">
                                                         <th className="p-4 pl-6">Job Summary</th>
                                                         <th className="p-4">Status</th>
-                                                        <th className="p-4">Execution Date</th>
+                                                        <th className="p-4">Execution Time</th>
                                                         <th className="p-4 pr-6 text-right">Actions</th>
                                                     </tr>
                                                 </thead>

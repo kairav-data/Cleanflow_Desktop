@@ -1,263 +1,544 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
+import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-    Plus, Trash2, Settings, Clock3, Calendar, Play, Pause,
-    Zap, ChevronRight, AlertCircle, CheckCircle2, ToggleLeft,
-    ToggleRight, GitMerge, BarChart3, RefreshCw
+    AlertCircle,
+    Calendar,
+    CheckCircle2,
+    Clock3,
+    GitMerge,
+    Pause,
+    Pencil,
+    RefreshCw,
+    Settings,
+    Trash2,
 } from 'lucide-react';
+import { formatDateTimeInIST } from '../lib/utils';
 
-const STORAGE_KEY = 'cleanflow_pipeline_schedules_v1';
-
+const API_BASE = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || 'http://localhost:8000';
+const Motion = motion;
+const DAY_OPTIONS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 const FREQUENCIES = [
-    { label: 'Hourly', value: 'Hourly', desc: 'Every 60 min', color: '#6366f1' },
-    { label: 'Daily',  value: 'Daily',  desc: 'Once a day',   color: '#10b981' },
-    { label: 'Weekly', value: 'Weekly', desc: 'Once a week',  color: '#f59e0b' },
-    { label: 'Monthly',value: 'Monthly',desc: 'Once a month', color: '#8b5cf6' },
+    { label: 'Hourly', value: 'Hourly', desc: 'Runs every hour at the selected minute', color: '#4f46e5' },
+    { label: 'Daily', value: 'Daily', desc: 'Runs once every day', color: '#059669' },
+    { label: 'Weekly', value: 'Weekly', desc: 'Runs once every week', color: '#d97706' },
+    { label: 'Monthly', value: 'Monthly', desc: 'Runs once every month', color: '#db2777' },
 ];
 
-const DEFAULT_SCHEDULE = {
-    id: '', name: '', pipelineName: '',
-    frequency: 'Daily', runTime: '09:00',
-    status: 'Active', notes: '',
+const getBrowserTimezone = () => {
+    try {
+        return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+    } catch {
+        return 'UTC';
+    }
 };
 
-function FreqBadge({ freq }) {
-    const f = FREQUENCIES.find(x => x.value === freq) || FREQUENCIES[1];
+const buildDraft = (pipelines = [], schedule = null) => ({
+    id: schedule?.id || '',
+    scheduleName: schedule?.schedule_name || '',
+    pipelineId: schedule?.pipeline_id || pipelines[0]?.id || '',
+    frequency: schedule?.frequency || 'Daily',
+    runTime: schedule?.run_time || '09:00',
+    dayOfWeek: schedule?.day_of_week || 'Mon',
+    dayOfMonth: schedule?.day_of_month ?? 1,
+    timezone: schedule?.timezone || getBrowserTimezone(),
+    notes: schedule?.notes || '',
+});
+
+const buildScheduleSummary = (schedule) => {
+    if (schedule.frequency === 'Hourly') {
+        return `Hourly at minute ${String(schedule.run_time || '00:00').split(':')[1] || '00'}`;
+    }
+    if (schedule.frequency === 'Weekly') {
+        return `${schedule.frequency} on ${schedule.day_of_week || 'Mon'} at ${schedule.run_time}`;
+    }
+    if (schedule.frequency === 'Monthly') {
+        return `${schedule.frequency} on day ${schedule.day_of_month || 1} at ${schedule.run_time}`;
+    }
+    return `${schedule.frequency} at ${schedule.run_time}`;
+};
+
+function FrequencyBadge({ frequency }) {
+    const match = FREQUENCIES.find((item) => item.value === frequency) || FREQUENCIES[1];
     return (
-        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold"
-              style={{ color: f.color, background: f.color + '18', border: `1px solid ${f.color}30` }}>
-            <Clock3 size={9} /> {f.label}
+        <span
+            className="inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-bold"
+            style={{ color: match.color, background: `${match.color}18`, borderColor: `${match.color}33` }}
+        >
+            <Clock3 size={10} /> {match.label}
         </span>
     );
 }
 
 export default function SchedulerBuilder() {
+    const [pipelines, setPipelines] = useState([]);
     const [schedules, setSchedules] = useState([]);
-    const [draft, setDraft] = useState(DEFAULT_SCHEDULE);
+    const [draft, setDraft] = useState(buildDraft());
     const [errors, setErrors] = useState({});
+    const [loading, setLoading] = useState(true);
+    const [refreshing, setRefreshing] = useState(false);
     const [saving, setSaving] = useState(false);
+    const [busyScheduleId, setBusyScheduleId] = useState('');
+    const [errorMessage, setErrorMessage] = useState('');
+
+    const token = localStorage.getItem('token');
+    const headers = token ? { Authorization: `Bearer ${token}` } : {};
+
+    const selectedPipeline = useMemo(
+        () => pipelines.find((pipeline) => pipeline.id === draft.pipelineId) || null,
+        [draft.pipelineId, pipelines]
+    );
+    const isEditing = Boolean(draft.id);
+
+    const stats = useMemo(() => ({
+        total: schedules.length,
+        active: schedules.filter((schedule) => schedule.is_active).length,
+        paused: schedules.filter((schedule) => !schedule.is_active).length,
+    }), [schedules]);
+
+    const loadData = async ({ silent = false } = {}) => {
+        if (!token) {
+            setErrorMessage('Sign in to manage pipeline schedules.');
+            setLoading(false);
+            return;
+        }
+
+        if (silent) {
+            setRefreshing(true);
+        } else {
+            setLoading(true);
+        }
+        setErrorMessage('');
+
+        try {
+            const [pipelinesRes, schedulesRes] = await Promise.all([
+                axios.get(`${API_BASE}/pipeline/saved`, { headers }),
+                axios.get(`${API_BASE}/pipeline/schedules`, { headers }),
+            ]);
+
+            const nextPipelines = Array.isArray(pipelinesRes.data) ? pipelinesRes.data : [];
+            const nextSchedules = Array.isArray(schedulesRes.data) ? schedulesRes.data : [];
+            setPipelines(nextPipelines);
+            setSchedules(nextSchedules);
+            setDraft((current) => ({
+                ...buildDraft(nextPipelines),
+                ...current,
+                pipelineId: nextPipelines.some((pipeline) => pipeline.id === current.pipelineId)
+                    ? current.pipelineId
+                    : nextPipelines[0]?.id || '',
+            }));
+        } catch (error) {
+            setErrorMessage(error.response?.data?.detail || 'Failed to load pipeline schedules.');
+        } finally {
+            setLoading(false);
+            setRefreshing(false);
+        }
+    };
 
     useEffect(() => {
-        try {
-            const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
-            setSchedules(Array.isArray(saved) ? saved : []);
-        } catch { setSchedules([]); }
+        loadData();
     }, []);
 
-    const persist = (next) => {
-        setSchedules(next);
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-    };
-
     const validate = () => {
-        const e = {};
-        if (!draft.name.trim())         e.name = 'Schedule name is required';
-        if (!draft.pipelineName.trim()) e.pipelineName = 'Pipeline name is required';
-        setErrors(e);
-        return Object.keys(e).length === 0;
+        const nextErrors = {};
+        if (!draft.pipelineId) nextErrors.pipelineId = 'Select a saved pipeline first.';
+        if (!draft.runTime) nextErrors.runTime = 'Run time is required.';
+        if (draft.frequency === 'Weekly' && !draft.dayOfWeek) nextErrors.dayOfWeek = 'Choose a weekday.';
+        if (draft.frequency === 'Monthly') {
+            const day = Number(draft.dayOfMonth);
+            if (!Number.isInteger(day) || day < 1 || day > 31) {
+                nextErrors.dayOfMonth = 'Choose a day between 1 and 31.';
+            }
+        }
+        setErrors(nextErrors);
+        return Object.keys(nextErrors).length === 0;
     };
 
-    const handleCreate = () => {
+    const resetDraft = (nextPipelines = pipelines) => {
+        setDraft(buildDraft(nextPipelines));
+        setErrors({});
+    };
+
+    const startEditing = (schedule) => {
+        setDraft(buildDraft(pipelines, schedule));
+        setErrors({});
+        setErrorMessage('');
+    };
+
+    const handleSave = async () => {
         if (!validate()) return;
         setSaving(true);
-        setTimeout(() => {
-            persist([
-                { ...draft, id: `sched_${Date.now()}`, createdAt: new Date().toISOString(), lastRun: null },
-                ...schedules,
-            ]);
-            setDraft(DEFAULT_SCHEDULE);
-            setErrors({});
+        setErrorMessage('');
+
+        try {
+            await axios.post(
+                `${API_BASE}/pipeline/saved/${draft.pipelineId}/schedules`,
+                {
+                    id: draft.id || undefined,
+                    schedule_name: draft.scheduleName.trim() || `${selectedPipeline?.name || 'Pipeline'} Schedule`,
+                    frequency: draft.frequency,
+                    run_time: draft.runTime,
+                    day_of_week: draft.frequency === 'Weekly' ? draft.dayOfWeek : null,
+                    day_of_month: draft.frequency === 'Monthly' ? Number(draft.dayOfMonth) : null,
+                    timezone: draft.timezone || 'UTC',
+                    notes: draft.notes.trim(),
+                },
+                { headers }
+            );
+
+            resetDraft(pipelines);
+            await loadData({ silent: true });
+        } catch (error) {
+            setErrorMessage(error.response?.data?.detail || `Failed to ${isEditing ? 'update' : 'save'} schedule.`);
+        } finally {
             setSaving(false);
-        }, 400);
+        }
     };
 
-    const toggleStatus = (id) =>
-        persist(schedules.map(s => s.id === id ? { ...s, status: s.status === 'Active' ? 'Paused' : 'Active' } : s));
+    const toggleSchedule = async (scheduleId) => {
+        setBusyScheduleId(scheduleId);
+        setErrorMessage('');
+        try {
+            await axios.patch(`${API_BASE}/pipeline/schedules/${scheduleId}/toggle`, {}, { headers });
+            await loadData({ silent: true });
+        } catch (error) {
+            setErrorMessage(error.response?.data?.detail || 'Failed to update schedule.');
+        } finally {
+            setBusyScheduleId('');
+        }
+    };
 
-    const removeSchedule = (id) => persist(schedules.filter(s => s.id !== id));
+    const deleteSchedule = async (scheduleId) => {
+        setBusyScheduleId(scheduleId);
+        setErrorMessage('');
+        try {
+            await axios.delete(`${API_BASE}/pipeline/schedules/${scheduleId}`, { headers });
+            if (draft.id === scheduleId) {
+                resetDraft(pipelines);
+            }
+            await loadData({ silent: true });
+        } catch (error) {
+            setErrorMessage(error.response?.data?.detail || 'Failed to delete schedule.');
+        } finally {
+            setBusyScheduleId('');
+        }
+    };
 
-    const active  = schedules.filter(s => s.status === 'Active').length;
-    const paused  = schedules.filter(s => s.status === 'Paused').length;
-
-    const field = (label, key, element, err) => (
+    const field = (label, content, error) => (
         <div>
             <label className="text-xs font-black uppercase tracking-wider text-slate-500">{label}</label>
-            <div className="mt-2">{element}</div>
-            {err && <p className="text-xs text-red-500 mt-1 flex items-center gap-1"><AlertCircle size={11} />{err}</p>}
+            <div className="mt-2">{content}</div>
+            {error ? (
+                <p className="mt-1 flex items-center gap-1 text-xs text-red-500">
+                    <AlertCircle size={11} /> {error}
+                </p>
+            ) : null}
         </div>
     );
 
-    const inputCls = (err) =>
-        `w-full p-3 border rounded-xl text-sm outline-none transition-all focus:ring-2 focus:ring-indigo-300 focus:border-indigo-400 ${err ? 'border-red-300 bg-red-50' : 'border-slate-200 bg-white hover:border-slate-300'}`;
+    const inputClass = (hasError) =>
+        `w-full rounded-xl border px-3 py-3 text-sm outline-none transition-all focus:border-indigo-400 focus:ring-2 focus:ring-indigo-200 ${
+            hasError ? 'border-red-300 bg-red-50' : 'border-slate-200 bg-white hover:border-slate-300'
+        }`;
 
     return (
-        <div className="flex flex-col h-full w-full bg-slate-50">
-            {/* ── Header ── */}
-            <div className="shrink-0 bg-white border-b border-slate-100 px-8 py-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center shadow-lg shadow-indigo-200">
-                        <Clock3 size={20} className="text-white" />
+        <div className="flex h-full w-full flex-col bg-slate-50">
+            <div className="shrink-0 border-b border-slate-100 bg-white px-8 py-5">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="flex items-center gap-3">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 shadow-lg shadow-indigo-200">
+                            <Clock3 size={20} className="text-white" />
+                        </div>
+                        <div>
+                            <h1 className="text-lg font-black leading-tight text-slate-900">Pipeline Scheduler</h1>
+                            <p className="text-xs font-medium text-slate-400">Run saved pipelines automatically on a real backend schedule</p>
+                        </div>
                     </div>
-                    <div>
-                        <h1 className="text-lg font-black text-slate-900 leading-tight">Pipeline Scheduler</h1>
-                        <p className="text-xs text-slate-400 font-medium">Plan recurring runs for your orchestrated workflows</p>
+
+                    <div className="flex items-center gap-2">
+                        <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-100 bg-emerald-50 px-3 py-1.5 text-xs font-bold text-emerald-700">
+                            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" /> {stats.active} Active
+                        </span>
+                        <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-100 px-3 py-1.5 text-xs font-bold text-slate-600">
+                            {stats.paused} Paused
+                        </span>
+                        <button
+                            onClick={() => loadData({ silent: true })}
+                            className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 shadow-sm transition-all hover:bg-slate-50"
+                        >
+                            <RefreshCw size={14} className={refreshing ? 'animate-spin' : ''} /> Refresh
+                        </button>
                     </div>
-                </div>
-                {/* Summary pills */}
-                <div className="flex items-center gap-2">
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-100">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" /> {active} Active
-                    </span>
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-slate-100 text-slate-600 border border-slate-200">
-                        {paused} Paused
-                    </span>
                 </div>
             </div>
 
-            {/* ── Content ── */}
             <div className="flex-1 overflow-y-auto p-6 md:p-8">
-                <div className="grid grid-cols-1 xl:grid-cols-[400px_1fr] gap-6 max-w-7xl mx-auto">
-
-                    {/* ── Create Panel ── */}
-                    <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-                        {/* Accent bar */}
+                <div className="mx-auto grid max-w-7xl grid-cols-1 gap-6 xl:grid-cols-[420px_1fr]">
+                    <div className="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm">
                         <div className="h-1 bg-gradient-to-r from-indigo-500 to-violet-500" />
                         <div className="p-6">
-                            <div className="flex items-center gap-3 mb-6">
-                                <div className="w-9 h-9 rounded-xl bg-indigo-50 flex items-center justify-center">
+                            <div className="mb-6 flex items-center gap-3">
+                                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-indigo-50">
                                     <Settings size={18} className="text-indigo-600" />
                                 </div>
                                 <div>
-                                    <h2 className="text-base font-black text-slate-900">New Schedule</h2>
-                                    <p className="text-xs text-slate-400">Configure a recurring pipeline trigger</p>
+                                    <h2 className="text-base font-black text-slate-900">{isEditing ? 'Edit Schedule' : 'New Schedule'}</h2>
+                                    <p className="text-xs text-slate-400">
+                                        {isEditing
+                                            ? 'Update the selected scheduled pipeline and save your changes'
+                                            : 'Choose a saved pipeline and define when it should run'}
+                                    </p>
                                 </div>
                             </div>
 
-                            <div className="space-y-4">
-                                {field('Schedule Name',
-                                    'name',
-                                    <input className={inputCls(errors.name)} placeholder="e.g. Morning Data Sync"
-                                        value={draft.name} onChange={e => { setDraft(p => ({...p, name: e.target.value})); setErrors(p => ({...p, name:''})); }} />,
-                                    errors.name
-                                )}
-                                {field('Pipeline Name',
-                                    'pipeline',
-                                    <input className={inputCls(errors.pipelineName)} placeholder="e.g. Customer Quality Pipeline"
-                                        value={draft.pipelineName} onChange={e => { setDraft(p => ({...p, pipelineName: e.target.value})); setErrors(p => ({...p, pipelineName:''})); }} />,
-                                    errors.pipelineName
-                                )}
+                            {errorMessage ? (
+                                <div className="mb-4 rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-700">
+                                    {errorMessage}
+                                </div>
+                            ) : null}
 
-                                {/* Frequency selector */}
-                                <div>
-                                    <label className="text-xs font-black uppercase tracking-wider text-slate-500">Frequency</label>
-                                    <div className="grid grid-cols-2 gap-2 mt-2">
-                                        {FREQUENCIES.map(f => (
+                            {!loading && pipelines.length === 0 ? (
+                                <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-5 py-8 text-center">
+                                    <p className="font-bold text-slate-700">No saved pipelines yet</p>
+                                    <p className="mt-1 text-sm text-slate-500">Save a pipeline from the pipeline builder first, then schedule it here.</p>
+                                </div>
+                            ) : (
+                                <div className="space-y-4">
+                                    {field(
+                                        'Saved Pipeline',
+                                        <select
+                                            className={inputClass(errors.pipelineId)}
+                                            value={draft.pipelineId}
+                                            onChange={(event) => {
+                                                const pipelineId = event.target.value;
+                                                setDraft((current) => ({ ...current, pipelineId }));
+                                                setErrors((current) => ({ ...current, pipelineId: '' }));
+                                            }}
+                                        >
+                                            <option value="">Select a saved pipeline...</option>
+                                            {pipelines.map((pipeline) => (
+                                                <option key={pipeline.id} value={pipeline.id}>{pipeline.name}</option>
+                                            ))}
+                                        </select>,
+                                        errors.pipelineId
+                                    )}
+
+                                    {field(
+                                        'Schedule Name',
+                                        <input
+                                            className={inputClass(false)}
+                                            placeholder={selectedPipeline ? `${selectedPipeline.name} Schedule` : 'Morning customer sync'}
+                                            value={draft.scheduleName}
+                                            onChange={(event) => setDraft((current) => ({ ...current, scheduleName: event.target.value }))}
+                                        />
+                                    )}
+
+                                    <div>
+                                        <label className="text-xs font-black uppercase tracking-wider text-slate-500">Frequency</label>
+                                        <div className="mt-2 grid grid-cols-2 gap-2">
+                                            {FREQUENCIES.map((frequency) => (
+                                                <button
+                                                    key={frequency.value}
+                                                    type="button"
+                                                    onClick={() => setDraft((current) => ({ ...current, frequency: frequency.value }))}
+                                                    className={`rounded-xl border p-3 text-left transition-all ${
+                                                        draft.frequency === frequency.value
+                                                            ? 'shadow-sm'
+                                                            : 'border-slate-200 bg-slate-50 hover:border-slate-300'
+                                                    }`}
+                                                    style={draft.frequency === frequency.value ? { borderColor: frequency.color, background: `${frequency.color}10`, color: frequency.color } : undefined}
+                                                >
+                                                    <span className="block text-xs font-black">{frequency.label}</span>
+                                                    <span className="mt-0.5 block text-xs opacity-70">{frequency.desc}</span>
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    {field(
+                                        'Run Time',
+                                        <input
+                                            type="time"
+                                            className={inputClass(errors.runTime)}
+                                            value={draft.runTime}
+                                            onChange={(event) => {
+                                                setDraft((current) => ({ ...current, runTime: event.target.value }));
+                                                setErrors((current) => ({ ...current, runTime: '' }));
+                                            }}
+                                        />,
+                                        errors.runTime
+                                    )}
+
+                                    {draft.frequency === 'Weekly' ? field(
+                                        'Day Of Week',
+                                        <select
+                                            className={inputClass(errors.dayOfWeek)}
+                                            value={draft.dayOfWeek}
+                                            onChange={(event) => {
+                                                setDraft((current) => ({ ...current, dayOfWeek: event.target.value }));
+                                                setErrors((current) => ({ ...current, dayOfWeek: '' }));
+                                            }}
+                                        >
+                                            {DAY_OPTIONS.map((day) => (
+                                                <option key={day} value={day}>{day}</option>
+                                            ))}
+                                        </select>,
+                                        errors.dayOfWeek
+                                    ) : null}
+
+                                    {draft.frequency === 'Monthly' ? field(
+                                        'Day Of Month',
+                                        <input
+                                            type="number"
+                                            min={1}
+                                            max={31}
+                                            className={inputClass(errors.dayOfMonth)}
+                                            value={draft.dayOfMonth}
+                                            onChange={(event) => {
+                                                setDraft((current) => ({ ...current, dayOfMonth: event.target.value }));
+                                                setErrors((current) => ({ ...current, dayOfMonth: '' }));
+                                            }}
+                                        />,
+                                        errors.dayOfMonth
+                                    ) : null}
+
+                                    {field(
+                                        'Timezone',
+                                        <input
+                                            className={inputClass(false)}
+                                            value={draft.timezone}
+                                            onChange={(event) => setDraft((current) => ({ ...current, timezone: event.target.value }))}
+                                            placeholder="Asia/Kolkata"
+                                        />
+                                    )}
+
+                                    {field(
+                                        'Notes',
+                                        <textarea
+                                            rows={3}
+                                            className={inputClass(false)}
+                                            placeholder="Optional notes for why this schedule exists"
+                                            value={draft.notes}
+                                            onChange={(event) => setDraft((current) => ({ ...current, notes: event.target.value }))}
+                                        />
+                                    )}
+
+                                    <div className="mt-2 flex flex-col gap-2 sm:flex-row">
+                                        <button
+                                            type="button"
+                                            onClick={handleSave}
+                                            disabled={saving || !pipelines.length}
+                                            className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 py-3.5 text-sm font-black text-white shadow-lg shadow-indigo-200 transition-all hover:from-indigo-500 hover:to-violet-500 disabled:cursor-not-allowed disabled:opacity-60"
+                                        >
+                                            {saving ? <RefreshCw size={16} className="animate-spin" /> : <Clock3 size={16} />}
+                                            {saving ? 'Saving...' : isEditing ? 'Update Schedule' : 'Save Schedule'}
+                                        </button>
+                                        {isEditing ? (
                                             <button
-                                                key={f.value}
-                                                onClick={() => setDraft(p => ({...p, frequency: f.value}))}
-                                                className={`flex flex-col items-start p-3 rounded-xl border text-left transition-all ${draft.frequency === f.value ? 'border-current shadow-sm' : 'border-slate-200 hover:border-slate-300 bg-slate-50'}`}
-                                                style={draft.frequency === f.value ? { borderColor: f.color, background: f.color + '10', color: f.color } : {}}
+                                                type="button"
+                                                onClick={() => resetDraft(pipelines)}
+                                                disabled={saving}
+                                                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3.5 text-sm font-bold text-slate-600 transition-all hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
                                             >
-                                                <span className="text-xs font-black">{f.label}</span>
-                                                <span className="text-xs opacity-70 mt-0.5" style={draft.frequency === f.value ? {} : {color:'#94a3b8'}}>{f.desc}</span>
+                                                Cancel Edit
                                             </button>
-                                        ))}
+                                        ) : null}
                                     </div>
                                 </div>
-
-                                {field('Run Time',
-                                    'time',
-                                    <input type="time" className={inputCls(false)}
-                                        value={draft.runTime} onChange={e => setDraft(p => ({...p, runTime: e.target.value}))} />
-                                )}
-
-                                {field('Notes (optional)',
-                                    'notes',
-                                    <textarea rows={3} className={inputCls(false)} placeholder="Optional run context or handoff notes"
-                                        value={draft.notes} onChange={e => setDraft(p => ({...p, notes: e.target.value}))} />
-                                )}
-                            </div>
-
-                            <button
-                                onClick={handleCreate}
-                                disabled={saving}
-                                className="w-full mt-6 flex items-center justify-center gap-2 py-3.5 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 text-white font-black text-sm hover:from-indigo-500 hover:to-violet-500 shadow-lg shadow-indigo-200 disabled:opacity-60 transition-all hover:scale-[1.01]"
-                            >
-                                {saving ? <RefreshCw size={16} className="animate-spin" /> : <Plus size={16} />}
-                                {saving ? 'Saving…' : 'Save Schedule'}
-                            </button>
+                            )}
                         </div>
                     </div>
 
-                    {/* ── Schedule List ── */}
                     <div>
-                        <div className="flex items-center justify-between mb-4">
+                        <div className="mb-4 flex items-center justify-between">
                             <h2 className="text-base font-black text-slate-800">
-                                Scheduled Pipelines <span className="ml-2 text-slate-400 font-semibold text-sm">({schedules.length})</span>
+                                Scheduled Pipelines <span className="ml-2 text-sm font-semibold text-slate-400">({stats.total})</span>
                             </h2>
                         </div>
 
-                        {schedules.length === 0 ? (
-                            <div className="flex flex-col items-center justify-center py-24 bg-white rounded-2xl border border-dashed border-slate-200">
-                                <div className="w-16 h-16 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-center mb-4">
+                        {loading ? (
+                            <div className="rounded-2xl border border-slate-100 bg-white px-6 py-12 text-center shadow-sm">
+                                <RefreshCw size={18} className="mx-auto animate-spin text-slate-400" />
+                                <p className="mt-3 text-sm font-medium text-slate-500">Loading schedules...</p>
+                            </div>
+                        ) : schedules.length === 0 ? (
+                            <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-white py-24">
+                                <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl border border-slate-100 bg-slate-50">
                                     <Calendar size={28} className="text-slate-300" />
                                 </div>
                                 <p className="font-bold text-slate-600">No schedules yet</p>
-                                <p className="text-xs text-slate-400 mt-1">Create your first recurring pipeline trigger</p>
+                                <p className="mt-1 text-xs text-slate-400">Create your first recurring pipeline run from the panel on the left.</p>
                             </div>
                         ) : (
                             <div className="space-y-3">
                                 <AnimatePresence>
-                                    {schedules.map((s, i) => (
-                                        <motion.div
-                                            key={s.id}
+                                    {schedules.map((schedule, index) => (
+                                        <Motion.div
+                                            key={schedule.id}
                                             initial={{ opacity: 0, y: 12 }}
                                             animate={{ opacity: 1, y: 0 }}
                                             exit={{ opacity: 0, x: -20 }}
-                                            transition={{ delay: i * 0.04 }}
-                                            className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden group"
+                                            transition={{ delay: index * 0.03 }}
+                                            className="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm"
                                         >
-                                            {/* Active indicator line */}
-                                            <div className={`h-0.5 w-full transition-all ${s.status === 'Active' ? 'bg-emerald-400' : 'bg-slate-200'}`} />
+                                            <div className={`h-0.5 w-full ${schedule.is_active ? 'bg-emerald-400' : 'bg-slate-200'}`} />
                                             <div className="p-5">
                                                 <div className="flex items-start justify-between gap-4">
-                                                    <div className="flex items-start gap-4 min-w-0">
-                                                        {/* Icon */}
-                                                        <div className={`w-10 h-10 rounded-xl shrink-0 flex items-center justify-center transition-all ${s.status === 'Active' ? 'bg-emerald-50' : 'bg-slate-100'}`}>
-                                                            <GitMerge size={18} className={s.status === 'Active' ? 'text-emerald-600' : 'text-slate-400'} />
+                                                    <div className="flex min-w-0 items-start gap-4">
+                                                        <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${schedule.is_active ? 'bg-emerald-50' : 'bg-slate-100'}`}>
+                                                            <GitMerge size={18} className={schedule.is_active ? 'text-emerald-600' : 'text-slate-400'} />
                                                         </div>
                                                         <div className="min-w-0">
-                                                            <div className="flex items-center gap-2 mb-1">
-                                                                <p className="text-sm font-black text-slate-900 truncate">{s.name}</p>
-                                                                <FreqBadge freq={s.frequency} />
+                                                            <div className="mb-1 flex flex-wrap items-center gap-2">
+                                                                <p className="truncate text-sm font-black text-slate-900">{schedule.schedule_name}</p>
+                                                                <FrequencyBadge frequency={schedule.frequency} />
                                                             </div>
-                                                            <p className="text-xs text-slate-500 truncate">{s.pipelineName}</p>
-                                                            <p className="text-xs text-slate-400 mt-1.5 flex items-center gap-1">
-                                                                <Clock3 size={10} /> {s.frequency} at {s.runTime}
+                                                            <p className="truncate text-xs text-slate-500">{schedule.pipeline_name || 'Saved pipeline'}</p>
+                                                            <p className="mt-1.5 flex items-center gap-1 text-xs text-slate-400">
+                                                                <Clock3 size={10} /> {buildScheduleSummary(schedule)}
                                                             </p>
-                                                            {s.notes && (
-                                                                <p className="text-xs text-slate-400 mt-1.5 truncate italic">"{s.notes}"</p>
-                                                            )}
+                                                            <p className="mt-2 text-xs text-slate-500">Next run: {formatDateTimeInIST(schedule.next_run_at, 'Not scheduled yet')}</p>
+                                                            <p className="mt-1 text-xs text-slate-400">Last run: {formatDateTimeInIST(schedule.last_run_at, 'Not scheduled yet')}</p>
+                                                            {schedule.notes ? (
+                                                                <p className="mt-2 truncate text-xs italic text-slate-400">"{schedule.notes}"</p>
+                                                            ) : null}
                                                         </div>
                                                     </div>
 
-                                                    {/* Actions */}
-                                                    <div className="flex items-center gap-2 shrink-0">
-                                                        {/* Toggle */}
+                                                    <div className="flex shrink-0 items-center gap-2">
                                                         <button
-                                                            onClick={() => toggleStatus(s.id)}
-                                                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border transition-all ${s.status === 'Active'
-                                                                ? 'bg-emerald-50 text-emerald-700 border-emerald-100 hover:bg-amber-50 hover:text-amber-700 hover:border-amber-100'
-                                                                : 'bg-slate-100 text-slate-600 border-slate-200 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-100'}`}
+                                                            type="button"
+                                                            onClick={() => startEditing(schedule)}
+                                                            disabled={busyScheduleId === schedule.id}
+                                                            className="rounded-xl border border-slate-200 bg-white p-2 text-slate-400 transition-all hover:border-indigo-100 hover:bg-indigo-50 hover:text-indigo-600 disabled:cursor-not-allowed disabled:opacity-50"
+                                                            title="Edit schedule"
                                                         >
-                                                            {s.status === 'Active'
-                                                                ? <><CheckCircle2 size={11} /> Active</>
-                                                                : <><Pause size={11} /> Paused</>}
+                                                            <Pencil size={15} />
                                                         </button>
-                                                        {/* Delete */}
                                                         <button
-                                                            onClick={() => removeSchedule(s.id)}
-                                                            className="p-2 rounded-xl text-slate-300 hover:text-red-500 hover:bg-red-50 border border-transparent hover:border-red-100 transition-all"
+                                                            type="button"
+                                                            onClick={() => toggleSchedule(schedule.id)}
+                                                            disabled={busyScheduleId === schedule.id}
+                                                            className={`flex items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-bold transition-all ${
+                                                                schedule.is_active
+                                                                    ? 'border-emerald-100 bg-emerald-50 text-emerald-700 hover:border-amber-100 hover:bg-amber-50 hover:text-amber-700'
+                                                                    : 'border-slate-200 bg-slate-100 text-slate-600 hover:border-emerald-100 hover:bg-emerald-50 hover:text-emerald-700'
+                                                            }`}
+                                                        >
+                                                            {busyScheduleId === schedule.id ? (
+                                                                <RefreshCw size={11} className="animate-spin" />
+                                                            ) : schedule.is_active ? (
+                                                                <CheckCircle2 size={11} />
+                                                            ) : (
+                                                                <Pause size={11} />
+                                                            )}
+                                                            {schedule.is_active ? 'Active' : 'Paused'}
+                                                        </button>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => deleteSchedule(schedule.id)}
+                                                            disabled={busyScheduleId === schedule.id}
+                                                            className="rounded-xl border border-transparent p-2 text-slate-300 transition-all hover:border-red-100 hover:bg-red-50 hover:text-red-500 disabled:cursor-not-allowed disabled:opacity-50"
                                                             title="Delete schedule"
                                                         >
                                                             <Trash2 size={15} />
@@ -265,7 +546,7 @@ export default function SchedulerBuilder() {
                                                     </div>
                                                 </div>
                                             </div>
-                                        </motion.div>
+                                        </Motion.div>
                                     ))}
                                 </AnimatePresence>
                             </div>

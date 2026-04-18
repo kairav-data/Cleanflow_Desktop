@@ -5,7 +5,9 @@ from fastapi.responses import FileResponse, JSONResponse, Response
 from contextlib import asynccontextmanager
 import asyncio
 import os
+import re
 import sys
+import uuid
 # Adding current directory to Python path for modules like models.py
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 try:
@@ -37,6 +39,9 @@ from payment import router as payment_router
 from chatbot import chat_router
 from repo_router import router as repo_router
 from pipeline_router import router as pipeline_router
+from pipeline_execution import attach_output_session, create_dataframe_session, execute_pipeline_runtime
+from pipeline_scheduler import PipelineSchedulerService
+from features.pipeline_runner import PipelineOrchestrator
 # --- Startup/Shutdown Logic ---
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -48,9 +53,22 @@ async def lifespan(app: FastAPI):
         db._init_postgres() 
     except Exception as e:
         logger.error(f"❌ Database initialization failed: {e}")
-    yield
-    # This runs when the backend shuts down
-    logger.info("👋 Backend shutting down...")
+    scheduler = PipelineSchedulerService(session_store=sessions)
+    app.state.pipeline_scheduler = scheduler
+    try:
+        await scheduler.start()
+    except Exception as exc:
+        logger.error("❌ Pipeline scheduler failed to start: %s", exc)
+
+    try:
+        yield
+    finally:
+        try:
+            await scheduler.stop()
+        except Exception as exc:
+            logger.error("❌ Pipeline scheduler failed to stop cleanly: %s", exc)
+        # This runs when the backend shuts down
+        logger.info("👋 Backend shutting down...")
 
 # Initialize FastAPI with the lifespan handler
 app = FastAPI(
@@ -127,6 +145,30 @@ def health_check():
 def health_check_head():
     return Response(status_code=200)
 
+
+def _sanitize_upload_filename(filename: str) -> str:
+    cleaned = re.sub(r"[^A-Za-z0-9._-]+", "_", os.path.basename(filename or "dataset"))
+    cleaned = cleaned.strip("._")
+    return cleaned or "dataset"
+
+
+def _build_file_source_config(original_filename: str, stored_file_name: str, delimiter: str) -> dict:
+    return {
+        "type": "file",
+        "original_filename": original_filename,
+        "stored_file_name": stored_file_name,
+        "delimiter": delimiter or ",",
+    }
+
+
+def _build_database_source_config(connection_id: str, connection_name: str, query: str) -> dict:
+    return {
+        "type": "database",
+        "connection_id": connection_id,
+        "connection_name": connection_name,
+        "query": query,
+    }
+
 # --- File Upload Endpoints ---
 
 @app.post("/upload")
@@ -135,7 +177,8 @@ async def upload_file(file: UploadFile = File(...), delimiter: str = Form(",")):
         logger.debug(f"Upload received. Filename: {file.filename}, Delimiter: '{delimiter}'")
         os.makedirs(UPLOAD_DIR, exist_ok=True)
         
-        file_path = os.path.join(UPLOAD_DIR, file.filename)
+        stored_file_name = f"{uuid.uuid4().hex}_{_sanitize_upload_filename(file.filename)}"
+        file_path = os.path.join(UPLOAD_DIR, stored_file_name)
         
         # Use async read to avoid blocking the event loop during I/O
         contents = await file.read()
@@ -154,7 +197,9 @@ async def upload_file(file: UploadFile = File(...), delimiter: str = Form(",")):
         return {
             "session_id": engine.session_id,
             "filename": file.filename,
-            "columns": columns
+            "stored_file_name": stored_file_name,
+            "columns": columns,
+            "source_config": _build_file_source_config(file.filename, stored_file_name, delimiter),
         }
     except Exception as e:
         logger.error(f"Upload Error: {e}")
@@ -228,7 +273,12 @@ async def ingest_database(request: dict, current_user: UserInDB = Depends(get_cu
         return {
             "session_id": engine.session_id,
             "filename": f"DB: {conn_data.get('name', 'Remote DB')}",
-            "columns": columns
+            "columns": columns,
+            "source_config": _build_database_source_config(
+                connection_id,
+                conn_data.get('name', 'Remote DB'),
+                query,
+            ),
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Database Error: {str(e)}")
@@ -1073,31 +1123,87 @@ async def visualizer_analyze_ai(session_id: str, body: dict = Body(default={})):
 # --- Pipeline Feature ---
 
 @app.post("/features/pipeline/execute/{session_id}")
-async def execute_pipeline(session_id: str, config: dict):
-    from features.pipeline_runner import PipelineOrchestrator
-    if session_id not in sessions:
-        raise HTTPException(status_code=404, detail="Session not found")
-    
-    engine = sessions[session_id]
-    if engine.df is None:
-        raise HTTPException(status_code=400, detail="No data available in session")
-        
-    orchestrator = PipelineOrchestrator(session_id=session_id, initial_df=engine.df)
-    result = await orchestrator.execute_graph(config)
-    
+async def execute_pipeline(session_id: str, config: dict, current_user: UserInDB = Depends(get_current_user)):
+    engine = sessions.get(session_id)
+    initial_df = getattr(engine, "df", None) if engine is not None else None
+    result = await execute_pipeline_runtime(
+        config,
+        user_email=current_user.email,
+        session_store=sessions,
+        session_id=session_id,
+        pipeline_id=config.get("pipelineId") or config.get("pipeline_id"),
+        trigger="manual",
+        initial_df=initial_df,
+    )
+
     if not result.get("success"):
         raise HTTPException(status_code=400, detail=result.get("error", "Pipeline execution failed"))
 
-    output_df = result.pop("output_df", None)
-    if output_df is not None:
-        output_engine = ValidationEngine()
-        output_columns = output_engine.load_data(dataframe=output_df)
-        sessions[output_engine.session_id] = output_engine
-        result["output_session_id"] = output_engine.session_id
-        result["output_columns"] = output_columns
-        result["output_row_count"] = len(output_df)
+    return attach_output_session(result, sessions)
 
-    return result
+
+@app.post("/features/pipeline/script-preview/{session_id}")
+async def preview_pipeline_script(session_id: str, config: dict, current_user: UserInDB = Depends(get_current_user)):
+    target_node_id = str(config.get("targetNodeId") or "").strip()
+    if not target_node_id:
+        raise HTTPException(status_code=400, detail="Target node ID is required for script preview.")
+
+    engine = sessions.get(session_id)
+    initial_df = getattr(engine, "df", None) if engine is not None else None
+    orchestrator = PipelineOrchestrator(
+        session_id=session_id,
+        initial_df=initial_df,
+        session_store=sessions,
+        user_email=current_user.email,
+    )
+
+    capture_result = await orchestrator.execute_graph(
+        {
+            "pipelineId": config.get("pipelineId") or config.get("pipeline_id"),
+            "pipelineName": config.get("pipelineName") or config.get("pipeline_name") or "Untitled Pipeline",
+            "nodes": config.get("nodes") or [],
+            "edges": config.get("edges") or [],
+        },
+        capture_inputs_for_node_id=target_node_id,
+    )
+    if not capture_result.get("success"):
+        raise HTTPException(status_code=400, detail=capture_result.get("error", "Unable to resolve script input."))
+
+    captured_inputs = capture_result.get("captured_inputs") or []
+    if not captured_inputs:
+        raise HTTPException(
+            status_code=400,
+            detail="Connect a Data Flow input to this script task before running a preview.",
+        )
+
+    input_df = captured_inputs[0]
+    preview_result = orchestrator.preview_script(
+        input_df,
+        node_type="script",
+        data=config.get("nodeData") or {},
+        validate_only=bool(config.get("validateOnly")),
+    )
+
+    input_session = create_dataframe_session(input_df, sessions)
+    response = {
+        "language": preview_result.get("language"),
+        "message": preview_result.get("message"),
+        "notes": preview_result.get("notes", []),
+        "normalized_script": preview_result.get("normalized_script"),
+        "input_session_id": input_session["session_id"],
+        "input_columns": input_session["columns"],
+        "input_row_count": input_session["row_count"],
+    }
+
+    if not bool(config.get("validateOnly")):
+        output_session = create_dataframe_session(preview_result["output_df"], sessions)
+        response.update({
+            "output_session_id": output_session["session_id"],
+            "output_columns": output_session["columns"],
+            "output_row_count": output_session["row_count"],
+        })
+
+    return response
 
 if __name__ == "__main__":
     import uvicorn

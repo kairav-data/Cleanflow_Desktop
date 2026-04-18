@@ -14,16 +14,28 @@ import {
   MarkerType,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import { Database, Sparkles, ShieldCheck, Download, Play, CheckCircle, X, Plus, Trash2, AlertCircle, Globe, GitMerge, Shuffle, BarChart3, Activity, TrendingUp, PieChart as PieIcon, RefreshCw, ChevronDown, ChevronUp, Zap, Settings, Filter, Calculator, Link, Files, Repeat, GitBranch, Mail, Webhook, Save, FolderOpen, Clock, CalendarDays } from 'lucide-react';
+import { Database, Sparkles, ShieldCheck, Download, Play, CheckCircle, X, Plus, Trash2, AlertCircle, Globe, GitMerge, Shuffle, BarChart3, Activity, TrendingUp, PieChart as PieIcon, RefreshCw, ChevronDown, ChevronUp, Zap, Settings, Filter, Calculator, Link, Files, Repeat, GitBranch, Mail, Webhook, Save, FolderOpen, Clock, CalendarDays, Workflow, ArrowDownUp, ArrowRightLeft, TerminalSquare } from 'lucide-react';
 import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
 
 // Component Imports
-import { DataConnection, RuleBuilder } from '../components';
+import { DataConnection, DatasetViewer, RuleBuilder, WorkspaceTabs } from '../components';
+import EnrichmentBuilder from './EnrichmentBuilder';
+import SchemaMapper from './SchemaMapper';
+import DataMatchingBuilder from './DataMatchingBuilder';
 import DataVisualizer from './DataVisualizer';
+import PipelineScriptWorkspace from './PipelineScriptWorkspace';
+import {
+  SCRIPT_NODE_KIND,
+  SCRIPT_NODE_LABEL,
+  buildScriptNodeData,
+  isScriptConfigured,
+} from './scriptTaskConfig';
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'import.meta.env.VITE_API_URL';
+const API_BASE = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || 'http://localhost:8000';
 const PIPELINE_RUNS_KEY = 'cleanflow_pipeline_runs_v1';
+const getSourceConfigFromResponse = (payload = {}) => payload?.source_config || payload?.sourceConfig || null;
+const hasResolvableSource = (nodeData = {}) => Boolean(nodeData?.sessionId || nodeData?.sourceConfig || nodeData?.source_config);
 
 let id = 0;
 const getId = () => {
@@ -46,11 +58,309 @@ const MATCHING_ALGORITHMS = [
   { id: 'jaccard', name: 'Jaccard Similarity' },
 ];
 
-const getNodeKind = (label = '') => {
-  const normalized = label.toLowerCase();
+const FLOW_LIBRARY_TABS = [
+  { id: 'data', label: 'Data Flow', subtitle: 'Share datasets between services' },
+  { id: 'sequence', label: 'Sequence Flow', subtitle: 'Define orchestration and actions' },
+];
+
+const FLOW_HANDLE_IDS = {
+  sequenceIn: 'sequence-in',
+  sequenceOut: 'sequence-out',
+  dataIn: 'data-in',
+  dataOut: 'data-out',
+};
+
+const EDGE_KINDS = {
+  data: 'data',
+  sequence: 'sequence',
+};
+
+const PIPELINE_NODE_DEFS = {
+  dataset: {
+    kind: 'dataset',
+    label: 'Dataset Input',
+    library: 'data',
+    section: 'sources',
+    sectionLabel: 'Sources',
+    description: 'Start a data stream from an uploaded or connected dataset.',
+    icon: Database,
+    accent: '#0f766e',
+    bg: '#ecfeff',
+    libraryBadgeClass: 'border-emerald-200 bg-emerald-50 text-emerald-700',
+    supportsSequenceIn: false,
+    supportsSequenceOut: true,
+    supportsDataIn: false,
+    supportsDataOut: true,
+  },
+  scraper: {
+    kind: 'scraper',
+    label: 'Web Scraping',
+    library: 'data',
+    section: 'sources',
+    sectionLabel: 'Sources',
+    description: 'Create a dataset by scraping configured web pages or templates.',
+    icon: Globe,
+    accent: '#ea580c',
+    bg: '#fff7ed',
+    libraryBadgeClass: 'border-orange-200 bg-orange-50 text-orange-700',
+    supportsSequenceIn: false,
+    supportsSequenceOut: true,
+    supportsDataIn: false,
+    supportsDataOut: true,
+  },
+  cleaner: {
+    kind: 'cleaner',
+    label: 'Data Cleaning',
+    library: 'data',
+    section: 'services',
+    sectionLabel: 'Data Services',
+    description: 'Apply reusable cleaning operations and pass the refined dataset downstream.',
+    icon: Sparkles,
+    accent: '#059669',
+    bg: '#ecfdf5',
+    libraryBadgeClass: 'border-emerald-200 bg-emerald-50 text-emerald-700',
+    supportsSequenceIn: true,
+    supportsSequenceOut: true,
+    supportsDataIn: true,
+    supportsDataOut: true,
+  },
+  validation: {
+    kind: 'validation',
+    label: 'Quality Validation',
+    library: 'data',
+    section: 'services',
+    sectionLabel: 'Data Services',
+    description: 'Evaluate data quality rules while keeping the dataset available for the next service.',
+    icon: ShieldCheck,
+    accent: '#2563eb',
+    bg: '#eff6ff',
+    libraryBadgeClass: 'border-blue-200 bg-blue-50 text-blue-700',
+    supportsSequenceIn: true,
+    supportsSequenceOut: true,
+    supportsDataIn: true,
+    supportsDataOut: true,
+  },
+  mapper: {
+    kind: 'mapper',
+    label: 'Schema Mapping',
+    library: 'data',
+    section: 'services',
+    sectionLabel: 'Data Services',
+    description: 'Map, rename, and transform columns before handing off the output dataset.',
+    icon: GitMerge,
+    accent: '#4f46e5',
+    bg: '#eef2ff',
+    libraryBadgeClass: 'border-indigo-200 bg-indigo-50 text-indigo-700',
+    supportsSequenceIn: true,
+    supportsSequenceOut: true,
+    supportsDataIn: true,
+    supportsDataOut: true,
+  },
+  matching: {
+    kind: 'matching',
+    label: 'Data Matching',
+    library: 'data',
+    section: 'services',
+    sectionLabel: 'Data Services',
+    description: 'Compare records across one or more inputs and emit a matched dataset.',
+    icon: Shuffle,
+    accent: '#7c3aed',
+    bg: '#f5f3ff',
+    libraryBadgeClass: 'border-violet-200 bg-violet-50 text-violet-700',
+    supportsSequenceIn: true,
+    supportsSequenceOut: true,
+    supportsDataIn: true,
+    supportsDataOut: true,
+  },
+  filter: {
+    kind: 'filter',
+    label: 'Filter Rows',
+    library: 'data',
+    section: 'services',
+    sectionLabel: 'Data Services',
+    description: 'Keep only rows that match the configured rules.',
+    icon: Filter,
+    accent: '#d97706',
+    bg: '#fffbeb',
+    libraryBadgeClass: 'border-amber-200 bg-amber-50 text-amber-700',
+    supportsSequenceIn: true,
+    supportsSequenceOut: true,
+    supportsDataIn: true,
+    supportsDataOut: true,
+  },
+  aggregate: {
+    kind: 'aggregate',
+    label: 'Aggregate',
+    library: 'data',
+    section: 'services',
+    sectionLabel: 'Data Services',
+    description: 'Group and summarize incoming rows into a smaller analytic dataset.',
+    icon: Calculator,
+    accent: '#db2777',
+    bg: '#fdf2f8',
+    libraryBadgeClass: 'border-pink-200 bg-pink-50 text-pink-700',
+    supportsSequenceIn: true,
+    supportsSequenceOut: true,
+    supportsDataIn: true,
+    supportsDataOut: true,
+  },
+  join: {
+    kind: 'join',
+    label: 'Dataset Join',
+    library: 'data',
+    section: 'services',
+    sectionLabel: 'Data Services',
+    description: 'Merge two incoming datasets by key and pass the combined result forward.',
+    icon: ArrowRightLeft,
+    accent: '#0f766e',
+    bg: '#f0fdfa',
+    libraryBadgeClass: 'border-teal-200 bg-teal-50 text-teal-700',
+    supportsSequenceIn: true,
+    supportsSequenceOut: true,
+    supportsDataIn: true,
+    supportsDataOut: true,
+  },
+  deduplicate: {
+    kind: 'deduplicate',
+    label: 'Deduplicate',
+    library: 'data',
+    section: 'services',
+    sectionLabel: 'Data Services',
+    description: 'Remove duplicate rows and forward the unique result set.',
+    icon: Files,
+    accent: '#475569',
+    bg: '#f8fafc',
+    libraryBadgeClass: 'border-slate-200 bg-slate-50 text-slate-700',
+    supportsSequenceIn: true,
+    supportsSequenceOut: true,
+    supportsDataIn: true,
+    supportsDataOut: true,
+  },
+  conditional: {
+    kind: 'conditional',
+    label: 'Conditional Branch',
+    library: 'sequence',
+    section: 'logic',
+    sectionLabel: 'Logic',
+    description: 'Control which rows continue based on a branching expression.',
+    icon: GitBranch,
+    accent: '#0891b2',
+    bg: '#ecfeff',
+    libraryBadgeClass: 'border-cyan-200 bg-cyan-50 text-cyan-700',
+    supportsSequenceIn: true,
+    supportsSequenceOut: true,
+    supportsDataIn: true,
+    supportsDataOut: true,
+  },
+  loop: {
+    kind: 'loop',
+    label: 'For Each Loop',
+    library: 'sequence',
+    section: 'logic',
+    sectionLabel: 'Logic',
+    description: 'Iterate over the incoming dataset in chunks while preserving orchestration order.',
+    icon: Repeat,
+    accent: '#7c3aed',
+    bg: '#f5f3ff',
+    libraryBadgeClass: 'border-violet-200 bg-violet-50 text-violet-700',
+    supportsSequenceIn: true,
+    supportsSequenceOut: true,
+    supportsDataIn: true,
+    supportsDataOut: true,
+  },
+  script: {
+    kind: SCRIPT_NODE_KIND,
+    label: SCRIPT_NODE_LABEL,
+    library: 'sequence',
+    section: 'automation',
+    sectionLabel: 'Execution',
+    description: 'Run SQL or Python against the incoming dataset from one professional script workspace.',
+    icon: TerminalSquare,
+    accent: '#2563eb',
+    bg: '#eff6ff',
+    libraryBadgeClass: 'border-blue-200 bg-blue-50 text-blue-700',
+    supportsSequenceIn: true,
+    supportsSequenceOut: true,
+    supportsDataIn: true,
+    supportsDataOut: true,
+  },
+  email: {
+    kind: 'email',
+    label: 'Email Notification',
+    library: 'sequence',
+    section: 'delivery',
+    sectionLabel: 'Actions',
+    description: 'Send a notification after the sequence reaches this point.',
+    icon: Mail,
+    accent: '#e11d48',
+    bg: '#fff1f2',
+    libraryBadgeClass: 'border-rose-200 bg-rose-50 text-rose-700',
+    supportsSequenceIn: true,
+    supportsSequenceOut: true,
+    supportsDataIn: true,
+    supportsDataOut: false,
+  },
+  webhook: {
+    kind: 'webhook',
+    label: 'Webhook / HTTP Call',
+    library: 'sequence',
+    section: 'delivery',
+    sectionLabel: 'Actions',
+    description: 'Call an external endpoint when the process reaches this stage.',
+    icon: Webhook,
+    accent: '#2563eb',
+    bg: '#eff6ff',
+    libraryBadgeClass: 'border-blue-200 bg-blue-50 text-blue-700',
+    supportsSequenceIn: true,
+    supportsSequenceOut: true,
+    supportsDataIn: true,
+    supportsDataOut: false,
+  },
+  export: {
+    kind: 'export',
+    label: 'Export Dataset',
+    library: 'sequence',
+    section: 'delivery',
+    sectionLabel: 'Actions',
+    description: 'Persist the connected dataset to a file only when you explicitly add an export step.',
+    icon: Download,
+    accent: '#059669',
+    bg: '#ecfdf5',
+    libraryBadgeClass: 'border-emerald-200 bg-emerald-50 text-emerald-700',
+    supportsSequenceIn: true,
+    supportsSequenceOut: false,
+    supportsDataIn: true,
+    supportsDataOut: false,
+  },
+};
+
+const getNodeDefinition = (value) => {
+  const rawValue = typeof value === 'string'
+    ? value
+    : value?.data?.nodeType || value?.nodeType || value?.type || value?.data?.label || value?.label || '';
+  const normalized = String(rawValue || '').trim().toLowerCase();
+
+  if (PIPELINE_NODE_DEFS[normalized]) return PIPELINE_NODE_DEFS[normalized];
+  if (normalized.includes('execute sql') || normalized.includes('sql task') || normalized === 'sql') return PIPELINE_NODE_DEFS.script;
+  if (normalized.includes('execute python') || normalized.includes('python task') || normalized === 'python') return PIPELINE_NODE_DEFS.script;
+  if (normalized === 'pipelinenode' && (value?.data?.sqlQuery || value?.data?.pythonCode || value?.data?.scriptCode)) {
+    return PIPELINE_NODE_DEFS.script;
+  }
+  return null;
+};
+
+const getNodeKind = (value = '') => {
+  const explicitDefinition = getNodeDefinition(value);
+  if (explicitDefinition) return explicitDefinition.kind;
+
+  const normalized = String(
+    typeof value === 'string'
+      ? value
+      : value?.data?.nodeType || value?.nodeType || value?.type || value?.data?.label || value?.label || '',
+  ).toLowerCase();
   if (normalized.includes('dataset')) return 'dataset';
   if (normalized.includes('scraping')) return 'scraper';
-  if (normalized.includes('cleaner')) return 'cleaner';
+  if (normalized.includes('cleaner') || normalized.includes('cleaning')) return 'cleaner';
   if (normalized.includes('validation')) return 'validation';
   if (normalized.includes('mapping')) return 'mapper';
   if (normalized.includes('matching')) return 'matching';
@@ -60,16 +370,217 @@ const getNodeKind = (label = '') => {
   if (normalized.includes('deduplicate')) return 'deduplicate';
   if (normalized.includes('loop')) return 'loop';
   if (normalized.includes('conditional')) return 'conditional';
+  if (normalized.includes('execute sql') || normalized.includes('sql task') || normalized === 'sql') return SCRIPT_NODE_KIND;
+  if (normalized.includes('execute python') || normalized.includes('python task') || normalized === 'python') return SCRIPT_NODE_KIND;
   if (normalized.includes('email')) return 'email';
   if (normalized.includes('webhook')) return 'webhook';
   if (normalized.includes('export')) return 'export';
+  if (value?.data?.sqlQuery || value?.data?.pythonCode || value?.data?.scriptCode) return SCRIPT_NODE_KIND;
   return 'unknown';
+};
+
+const getEdgeKind = (edge = {}) => {
+  if (edge?.data?.kind) return edge.data.kind;
+  if (edge?.kind && Object.values(EDGE_KINDS).includes(edge.kind)) return edge.kind;
+  if ((edge?.sourceHandle || '').startsWith('data') || (edge?.targetHandle || '').startsWith('data')) return EDGE_KINDS.data;
+  return EDGE_KINDS.sequence;
+};
+
+const getEdgePresentation = (kind = EDGE_KINDS.sequence) => {
+  if (kind === EDGE_KINDS.data) {
+    return {
+      type: 'smoothstep',
+      animated: true,
+      markerEnd: 'url(#cf-data-arrow)',
+      style: { stroke: '#10b981', strokeWidth: 2.2 },
+      label: 'DATA',
+      labelStyle: { fill: '#047857', fontSize: 10, fontWeight: 800 },
+      labelBgStyle: { fill: '#ecfdf5', opacity: 0.95 },
+      labelBgPadding: [6, 3],
+      labelBgBorderRadius: 999,
+    };
+  }
+
+  return {
+    type: 'step',
+    animated: false,
+    markerEnd: 'url(#cf-sequence-arrow)',
+    style: { stroke: '#475569', strokeWidth: 1.8, strokeDasharray: '8 5' },
+    label: 'SEQ',
+    labelStyle: { fill: '#334155', fontSize: 10, fontWeight: 800 },
+    labelBgStyle: { fill: '#f8fafc', opacity: 0.98 },
+    labelBgPadding: [6, 3],
+    labelBgBorderRadius: 999,
+  };
+};
+
+const createEdgeId = ({ source, target, sourceHandle, targetHandle, kind }) =>
+  `${source}-${sourceHandle || 'auto'}-${target}-${targetHandle || 'auto'}-${kind}`;
+
+const buildStyledEdge = (edgeLike) => {
+  const kind = getEdgeKind(edgeLike);
+  return {
+    ...edgeLike,
+    ...getEdgePresentation(kind),
+    data: { ...(edgeLike.data || {}), kind },
+    kind,
+  };
+};
+
+const createEdgeFromConnection = (params) => {
+  const kind = (params.sourceHandle || '').startsWith('data') ? EDGE_KINDS.data : EDGE_KINDS.sequence;
+  return buildStyledEdge({
+    ...params,
+    id: createEdgeId({ ...params, kind }),
+    data: { kind },
+  });
+};
+
+const getExecutionFlowEdges = (edges = []) => {
+  const seen = new Set();
+  return (edges || []).filter((edge) => {
+    const source = edge?.source;
+    const target = edge?.target;
+    if (!source || !target) return false;
+    const key = `${source}-${target}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+};
+
+const normalizePipelineNode = (node) => {
+  const kind = getNodeKind(node);
+  const definition = getNodeDefinition(kind);
+  if (!definition) return node;
+  const baseData = node.data || {};
+  const normalizedData = kind === SCRIPT_NODE_KIND
+    ? buildScriptNodeData(baseData)
+    : baseData;
+
+  return {
+    ...node,
+    type: 'pipelineNode',
+    data: {
+      ...normalizedData,
+      nodeType: kind,
+      label: normalizedData.label || definition.label,
+      library: normalizedData.library || definition.library,
+    },
+  };
+};
+
+const normalizePipelineEdges = (edges = [], nodes = []) => {
+  const nodeMap = Object.fromEntries(nodes.map((node) => [node.id, normalizePipelineNode(node)]));
+  const seen = new Set();
+
+  return (edges || []).flatMap((edge) => {
+    const sourceDef = getNodeDefinition(nodeMap[edge.source]);
+    const targetDef = getNodeDefinition(nodeMap[edge.target]);
+
+    if (edge?.data?.kind || edge?.sourceHandle || edge?.targetHandle) {
+      const normalizedEdge = buildStyledEdge({
+        ...edge,
+        id: edge.id || createEdgeId({ ...edge, kind: getEdgeKind(edge) }),
+      });
+      const key = `${normalizedEdge.source}-${normalizedEdge.target}-${getEdgeKind(normalizedEdge)}`;
+      if (seen.has(key)) return [];
+      seen.add(key);
+      return [normalizedEdge];
+    }
+
+    const legacyEdges = [];
+
+    if (sourceDef?.supportsSequenceOut && targetDef?.supportsSequenceIn) {
+      legacyEdges.push(buildStyledEdge({
+        ...edge,
+        id: createEdgeId({
+          source: edge.source,
+          target: edge.target,
+          sourceHandle: FLOW_HANDLE_IDS.sequenceOut,
+          targetHandle: FLOW_HANDLE_IDS.sequenceIn,
+          kind: EDGE_KINDS.sequence,
+        }),
+        sourceHandle: FLOW_HANDLE_IDS.sequenceOut,
+        targetHandle: FLOW_HANDLE_IDS.sequenceIn,
+        data: { ...(edge.data || {}), kind: EDGE_KINDS.sequence, legacy: true },
+      }));
+    }
+
+    if (sourceDef?.supportsDataOut && targetDef?.supportsDataIn) {
+      legacyEdges.push(buildStyledEdge({
+        ...edge,
+        id: createEdgeId({
+          source: edge.source,
+          target: edge.target,
+          sourceHandle: FLOW_HANDLE_IDS.dataOut,
+          targetHandle: FLOW_HANDLE_IDS.dataIn,
+          kind: EDGE_KINDS.data,
+        }),
+        sourceHandle: FLOW_HANDLE_IDS.dataOut,
+        targetHandle: FLOW_HANDLE_IDS.dataIn,
+        data: { ...(edge.data || {}), kind: EDGE_KINDS.data, legacy: true },
+      }));
+    }
+
+    return legacyEdges.filter((legacyEdge) => {
+      const key = `${legacyEdge.source}-${legacyEdge.target}-${getEdgeKind(legacyEdge)}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  });
+};
+
+const FEATURE_OVERLAY_META = {
+  dataset: {
+    badge: 'Source',
+    description: 'Attach or replace the dataset that initializes this pipeline.',
+    icon: Database,
+    pillClass: 'border-blue-100 bg-blue-50 text-blue-700',
+    iconClass: 'border-blue-100 bg-blue-50 text-blue-600',
+  },
+  validation: {
+    badge: 'Validation',
+    description: 'Use the same validation workspace from Data Service and save the rules back into this node.',
+    icon: ShieldCheck,
+    pillClass: 'border-blue-100 bg-blue-50 text-blue-700',
+    iconClass: 'border-blue-100 bg-blue-50 text-blue-600',
+  },
+  cleaner: {
+    badge: 'Cleaning',
+    description: 'Configure cleaning operations with the same workspace used in the Data Service tab.',
+    icon: Sparkles,
+    pillClass: 'border-emerald-100 bg-emerald-50 text-emerald-700',
+    iconClass: 'border-emerald-100 bg-emerald-50 text-emerald-600',
+  },
+  mapper: {
+    badge: 'Transformation',
+    description: 'Open the schema mapping workspace on top of the builder and save the mapping into this node.',
+    icon: GitMerge,
+    pillClass: 'border-indigo-100 bg-indigo-50 text-indigo-700',
+    iconClass: 'border-indigo-100 bg-indigo-50 text-indigo-600',
+  },
+  matching: {
+    badge: 'Matching',
+    description: 'Configure cross-dataset matching rules with the same matching workspace used in Data Service.',
+    icon: Shuffle,
+    pillClass: 'border-violet-100 bg-violet-50 text-violet-700',
+    iconClass: 'border-violet-100 bg-violet-50 text-violet-600',
+  },
+  script: {
+    badge: 'Script',
+    description: 'Choose SQL or Python, validate syntax, preview the incoming dataset, and save the script back into this node.',
+    icon: TerminalSquare,
+    pillClass: 'border-blue-100 bg-blue-50 text-blue-700',
+    iconClass: 'border-blue-100 bg-blue-50 text-blue-600',
+  },
 };
 
 // ─── Helper: is a node "configured"? ────────────────────────────────────────
 const isNodeConfigured = (node) => {
-  const kind = getNodeKind(node.data?.label || '');
-  if (kind === 'dataset') return !!node.data?.sessionId;
+  const kind = getNodeKind(node);
+  if (kind === 'dataset') return hasResolvableSource(node.data);
   if (kind === 'cleaner' || kind === 'validation') {
     return Array.isArray(node.data?.rules) && node.data.rules.length > 0;
   }
@@ -88,93 +599,142 @@ const isNodeConfigured = (node) => {
   if (kind === 'deduplicate') return Array.isArray(node.data?.subsetColumns) && node.data.subsetColumns.length > 0;
   if (kind === 'loop') return !!node.data?.chunkSize;
   if (kind === 'conditional') return !!node.data?.conditionExpression;
+  if (kind === SCRIPT_NODE_KIND) return isScriptConfigured(node.data);
   if (kind === 'email') return !!node.data?.toEmail;
   if (kind === 'webhook') return !!node.data?.webhookUrl;
-  
-  if (kind === 'export') return true;
+  if (kind === 'export') return !!(node.data?.outputFormat || 'xlsx');
   return false;
 };
 
 // ─── Custom Node Component ───────────────────────────────────────────────────
 const PipelineNode = ({ id: nodeId, data, selected }) => {
-  const configured = isNodeConfigured({ id: nodeId, data });
-  const kind = getNodeKind(data.label || '');
-
-  const iconMap = {
-      dataset: <Database size={15} />, scraper: <Globe size={15} />, cleaner: <Sparkles size={15} />,
-      validation: <ShieldCheck size={15} />, mapper: <GitMerge size={15} />, matching: <Shuffle size={15} />,
-      filter: <Filter size={15} />, aggregate: <Calculator size={15} />, join: <Link size={15} />,
-      deduplicate: <Files size={15} />, loop: <Repeat size={15} />, conditional: <GitBranch size={15} />,
-      email: <Mail size={15} />, webhook: <Webhook size={15} />, export: <Download size={15} />
-  };
-  const icon = iconMap[kind] || iconMap.export;
-
-  const borderColor = configured ? '#10b981' : '#f59e0b';
-  const bgColor     = configured ? '#f0fdf4' : '#fffbeb';
-  const textColor   = configured ? '#065f46' : '#92400e';
-  const badgeColor  = configured ? '#10b981' : '#f59e0b';
+  const normalizedNode = { id: nodeId, data };
+  const configured = isNodeConfigured(normalizedNode);
+  const kind = getNodeKind(normalizedNode);
+  const definition = getNodeDefinition(kind) || PIPELINE_NODE_DEFS.dataset;
+  const Icon = definition.icon || Workflow;
+  const borderColor = selected ? '#1d4ed8' : configured ? definition.accent : '#f59e0b';
+  const surfaceColor = selected ? '#ffffff' : definition.bg;
+  const statusClass = configured
+    ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+    : 'border-amber-200 bg-amber-50 text-amber-700';
 
   return (
     <div
+      className="relative min-w-[220px] rounded-[18px] border px-4 py-3 shadow-lg transition-all"
       style={{
-        border: `2px solid ${selected ? '#6366f1' : borderColor}`,
-        borderRadius: '14px',
-        background: bgColor,
-        minWidth: '160px',
-        padding: '10px 14px 10px 12px',
+        borderColor,
+        background: surfaceColor,
         boxShadow: selected
-          ? '0 0 0 3px rgba(99,102,241,0.25)'
-          : '0 4px 12px rgba(0,0,0,0.08)',
-        position: 'relative',
-        fontFamily: 'inherit',
-        cursor: 'pointer',
-        transition: 'all 0.2s',
+          ? '0 0 0 4px rgba(37,99,235,0.12), 0 22px 44px rgba(15,23,42,0.18)'
+          : '0 12px 28px rgba(15,23,42,0.08)',
       }}
     >
       {/* Handles — wired per node role */}
       {/* Sources only emit (right handle) */}
-      {(kind !== 'dataset' && kind !== 'scraper') && (
-        <Handle type="target" position={Position.Left}
-          style={{ background: borderColor, width: 10, height: 10, border: '2px solid white', boxShadow: '0 0 0 2px ' + borderColor }} />
+      {definition.supportsSequenceIn && (
+        <Handle
+          id={FLOW_HANDLE_IDS.sequenceIn}
+          type="target"
+          position={Position.Top}
+          style={{
+            background: '#475569',
+            width: 12,
+            height: 12,
+            border: '3px solid white',
+            boxShadow: '0 0 0 2px rgba(71,85,105,0.28)',
+          }}
+        />
       )}
-      {/* Export only receives (left handle) */}
-      {kind !== 'export' && (
-        <Handle type="source" position={Position.Right}
-          style={{ background: borderColor, width: 10, height: 10, border: '2px solid white', boxShadow: '0 0 0 2px ' + borderColor }} />
+      {definition.supportsSequenceOut && (
+        <Handle
+          id={FLOW_HANDLE_IDS.sequenceOut}
+          type="source"
+          position={Position.Bottom}
+          style={{
+            background: '#475569',
+            width: 12,
+            height: 12,
+            border: '3px solid white',
+            boxShadow: '0 0 0 2px rgba(71,85,105,0.28)',
+          }}
+        />
+      )}
+      {definition.supportsDataIn && (
+        <Handle
+          id={FLOW_HANDLE_IDS.dataIn}
+          type="target"
+          position={Position.Left}
+          style={{
+            background: definition.accent,
+            width: 12,
+            height: 12,
+            border: '3px solid white',
+            boxShadow: `0 0 0 2px ${definition.accent}33`,
+          }}
+        />
+      )}
+      {definition.supportsDataOut && (
+        <Handle
+          id={FLOW_HANDLE_IDS.dataOut}
+          type="source"
+          position={Position.Right}
+          style={{
+            background: definition.accent,
+            width: 12,
+            height: 12,
+            border: '3px solid white',
+            boxShadow: `0 0 0 2px ${definition.accent}33`,
+          }}
+        />
       )}
 
       {/* Delete button */}
       <button
         onClick={(e) => { e.stopPropagation(); data.onDelete(nodeId); }}
-        style={{
-          position: 'absolute', top: -10, right: -10,
-          background: '#ef4444', border: '2px solid white',
-          borderRadius: '50%', width: 22, height: 22,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          cursor: 'pointer', color: 'white', zIndex: 10,
-        }}
+        className="absolute -right-2.5 -top-2.5 z-10 flex h-6 w-6 items-center justify-center rounded-full border-2 border-white bg-rose-500 text-white shadow-md transition-colors hover:bg-rose-600"
         title="Delete node"
       >
         <X size={12} />
       </button>
 
       {/* Content */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-        <span style={{ color: badgeColor }}>{icon}</span>
-        <span style={{ fontWeight: 700, fontSize: 13, color: textColor }}>{data.label}</span>
+      <div className="flex items-start gap-3">
+        <div
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border"
+          style={{ borderColor: `${definition.accent}30`, background: `${definition.accent}16`, color: definition.accent }}
+        >
+          <Icon size={18} />
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="mb-2 flex flex-wrap items-center gap-2">
+            <span className={`rounded-full border px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.18em] ${definition.libraryBadgeClass}`}>
+              {definition.library === 'data' ? 'Data Flow' : 'Sequence'}
+            </span>
+            <span className={`rounded-full border px-2.5 py-1 text-[10px] font-bold ${statusClass}`}>
+              {configured ? 'Configured' : 'Needs Setup'}
+            </span>
+          </div>
+          <div className="truncate text-sm font-black text-slate-900">{data.label}</div>
+          <p className="mt-1 text-[11px] leading-5 text-slate-500">{definition.description}</p>
+        </div>
       </div>
 
       {/* Status badge */}
-      <div style={{ marginTop: 6, display: 'flex', alignItems: 'center', gap: 4 }}>
-        {configured ? (
-          <span style={{ display: 'flex', alignItems: 'center', gap: 3, fontSize: 10, fontWeight: 700, color: '#10b981' }}>
-            <CheckCircle size={10} /> Configured
-          </span>
-        ) : (
-          <span style={{ display: 'flex', alignItems: 'center', gap: 3, fontSize: 10, fontWeight: 700, color: '#f59e0b' }}>
-            <AlertCircle size={10} /> Needs Setup
-          </span>
-        )}
+      <div className="mt-3 flex items-center justify-between border-t border-slate-200/70 pt-3">
+        <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">
+          {(definition.supportsSequenceIn || definition.supportsSequenceOut) && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-1 text-slate-500">
+              <ArrowDownUp size={11} /> Seq
+            </span>
+          )}
+          {(definition.supportsDataIn || definition.supportsDataOut) && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-1 text-emerald-700">
+              <ArrowRightLeft size={11} /> Data
+            </span>
+          )}
+        </div>
+        <span className="text-[11px] font-semibold text-slate-400">{definition.sectionLabel}</span>
       </div>
     </div>
   );
@@ -204,6 +764,8 @@ export const PipelineBuilder = ({ onComplete }) => {
   const [showScheduleModal, setShowScheduleModal] = useState(false);
   const [savedPipelines, setSavedPipelines] = useState([]);
   const [isSaving, setIsSaving] = useState(false);
+  const [libraryMode, setLibraryMode] = useState('data');
+  const [sequenceDataFlowOpen, setSequenceDataFlowOpen] = useState(false);
 
   // AI Visualizer overlay state
   const [showViz, setShowViz] = useState(false);
@@ -221,13 +783,94 @@ export const PipelineBuilder = ({ onComplete }) => {
     setShowVisualizerOverlay(true);
   };
 
-  const onConnect = useCallback((params) => setEdges((eds) => addEdge(params, eds)), []);
+  const activeNodeKind = activeNode ? getNodeKind(activeNode) : null;
+  const activeFeatureOverlay = activeNodeKind ? FEATURE_OVERLAY_META[activeNodeKind] || null : null;
+
+  const resetPipelineOutputState = useCallback(() => {
+    setOutputSessionId(null);
+    setOutputFilename('');
+    setOutputRowCount(0);
+    setDownloadUrl(null);
+    setShowViz(false);
+    setShowVisualizerOverlay(false);
+  }, []);
+
+  const syncPipelineSourceContext = useCallback((nextNodes = []) => {
+    const datasetNode = nextNodes.find((node) => getNodeKind(node) === 'dataset');
+    setActiveSessionId(datasetNode?.data?.sessionId || null);
+    setPipelineColumns(datasetNode?.data?.columns || []);
+  }, []);
+
+  const hydratePipelineState = useCallback((rawNodes = [], rawEdges = []) => {
+    const normalizedNodes = (rawNodes || []).map(normalizePipelineNode);
+    const normalizedEdges = normalizePipelineEdges(rawEdges, normalizedNodes);
+    return { normalizedNodes, normalizedEdges };
+  }, []);
+
+  const serializeNodes = useCallback((rawNodes = []) => rawNodes.map((node) => {
+    const { onDelete, ...safeData } = node.data || {};
+    return {
+      ...node,
+      type: 'pipelineNode',
+      data: safeData,
+    };
+  }), []);
+
+  const serializeEdges = useCallback((rawEdges = []) => rawEdges.map((edge) => ({
+    ...edge,
+    ...getEdgePresentation(getEdgeKind(edge)),
+    data: { ...(edge.data || {}), kind: getEdgeKind(edge) },
+  })), []);
+
+  const updateNodeData = useCallback((nodeId, patch) => {
+    setNodes((nds) => nds.map((node) => {
+      if (node.id !== nodeId) return node;
+      const nextPatch = typeof patch === 'function' ? patch(node) : patch;
+      return { ...node, data: { ...node.data, ...nextPatch } };
+    }));
+  }, [setNodes]);
+
+  const closeNodeConfigurator = useCallback(() => {
+    setActiveNode(null);
+  }, []);
+
+  const openNodeConfigurator = useCallback((event, node) => {
+    event?.preventDefault?.();
+    setActiveNode(node);
+  }, []);
+
+  const isValidFlowConnection = useCallback((connection) => {
+    if (!connection?.source || !connection?.target || connection.source === connection.target) return false;
+
+    const sourceHandle = connection.sourceHandle || '';
+    const targetHandle = connection.targetHandle || '';
+    const isDataConnection = sourceHandle.startsWith('data') && targetHandle.startsWith('data');
+    const isSequenceConnection = sourceHandle.startsWith('sequence') && targetHandle.startsWith('sequence');
+
+    if (!isDataConnection && !isSequenceConnection) return false;
+
+    const kind = isDataConnection ? EDGE_KINDS.data : EDGE_KINDS.sequence;
+    return !edges.some((edge) =>
+      edge.source === connection.source &&
+      edge.target === connection.target &&
+      getEdgeKind(edge) === kind
+    );
+  }, [edges]);
+
+  const onConnect = useCallback((params) => {
+    if (!isValidFlowConnection(params)) return;
+    setEdges((eds) => addEdge(createEdgeFromConnection(params), eds));
+  }, [isValidFlowConnection, setEdges]);
 
   const deleteNode = useCallback((nodeId) => {
-    setNodes((nds) => nds.filter((n) => n.id !== nodeId));
+    setNodes((nds) => {
+      const nextNodes = nds.filter((n) => n.id !== nodeId);
+      syncPipelineSourceContext(nextNodes);
+      return nextNodes;
+    });
     setEdges((eds) => eds.filter((e) => e.source !== nodeId && e.target !== nodeId));
     setActiveNode((prev) => (prev?.id === nodeId ? null : prev));
-  }, [setNodes, setEdges]);
+  }, [setNodes, setEdges, syncPipelineSourceContext]);
 
   // Inject onDelete into every node's data so custom node can call it
   const nodesWithHandlers = nodes.map((n) => ({
@@ -245,36 +888,28 @@ export const PipelineBuilder = ({ onComplete }) => {
       event.preventDefault();
       if (!reactFlowInstance) return;
 
-      const type = event.dataTransfer.getData('application/reactflow');
-      if (typeof type === 'undefined' || !type) return;
+      const nodeType = event.dataTransfer.getData('application/reactflow');
+      if (typeof nodeType === 'undefined' || !nodeType) return;
+
+      const definition = getNodeDefinition(nodeType);
+      if (!definition) return;
 
       const position = reactFlowInstance.screenToFlowPosition({
         x: event.clientX,
         y: event.clientY,
       });
 
-      let label = type.charAt(0).toUpperCase() + type.slice(1);
-      if (type === 'dataset')    label = 'Dataset Input';
-      if (type === 'scraper')    label = 'Web Scraping';
-      if (type === 'cleaner')    label = 'Data Cleaner';
-      if (type === 'validation') label = 'Quality Validation';
-      if (type === 'mapper')     label = 'Schema Mapping';
-      if (type === 'matching')   label = 'Data Matching';
-      if (type === 'filter')     label = 'Filter Rows';
-      if (type === 'aggregate')  label = 'Aggregate';
-      if (type === 'join')       label = 'Dataset Join';
-      if (type === 'deduplicate') label = 'Deduplicate';
-      if (type === 'loop')       label = 'Loop';
-      if (type === 'conditional') label = 'Conditional Branch';
-      if (type === 'email')      label = 'Email Notification';
-      if (type === 'webhook')    label = 'Webhook';
-      if (type === 'export')     label = 'File Export';
-
       const newNode = {
         id: getId(),
         type: 'pipelineNode',
         position,
-        data: { label, rules: [], onDelete: deleteNode },
+        data: {
+          label: definition.label,
+          nodeType,
+          library: definition.library,
+          rules: [],
+          onDelete: deleteNode,
+        },
       };
 
       setNodes((nds) => nds.concat(newNode));
@@ -282,18 +917,79 @@ export const PipelineBuilder = ({ onComplete }) => {
     [reactFlowInstance, deleteNode]
   );
 
-  const onNodeClick = useCallback((event, node) => {
-      setActiveNode(node);
+  const onNodeClick = useCallback(() => {
+    // React Flow handles selection styling for us; configuration now opens on double click.
   }, []);
 
+  const onNodeDoubleClick = useCallback((event, node) => {
+    openNodeConfigurator(event, node);
+  }, [openNodeConfigurator]);
+
   const onPaneClick = useCallback(() => {
-      setActiveNode(null);
-  }, []);
+    closeNodeConfigurator();
+  }, [closeNodeConfigurator]);
 
   const onDragOver = useCallback((event) => {
     event.preventDefault();
     event.dataTransfer.dropEffect = 'move';
   }, []);
+
+  const dataEdgeCount = edges.filter((edge) => getEdgeKind(edge) === EDGE_KINDS.data).length;
+  const executionFlowCount = getExecutionFlowEdges(edges).length;
+  const librarySections = Object.values(PIPELINE_NODE_DEFS)
+    .filter((definition) => definition.library === libraryMode)
+    .reduce((sections, definition) => {
+      if (!sections[definition.section]) {
+        sections[definition.section] = {
+          id: definition.section,
+          label: definition.sectionLabel,
+          items: [],
+        };
+      }
+      sections[definition.section].items.push(definition);
+      return sections;
+    }, {});
+
+  const validatePipelineGraph = useCallback(() => {
+    const issues = [];
+    const hasConfiguredSource = nodes.some((node) => {
+      const kind = getNodeKind(node);
+      return (kind === 'dataset' || kind === 'scraper') && isNodeConfigured(node);
+    });
+
+    if (!hasConfiguredSource) {
+      issues.push('Add and configure at least one data source before running the pipeline.');
+    }
+
+    if (nodes.length > 1 && executionFlowCount === 0) {
+      issues.push('Connect tasks with Data Flow or Sequence Flow so CleanFlow knows the runtime order.');
+    }
+
+    const dataRequiredNodes = nodes.filter((node) => {
+      const definition = getNodeDefinition(node);
+      const kind = getNodeKind(node);
+      return definition?.supportsDataIn && kind !== 'dataset' && kind !== 'scraper' && kind !== 'email' && kind !== 'webhook';
+    });
+
+    dataRequiredNodes.forEach((node) => {
+      const incomingDataEdges = edges.filter((edge) => getEdgeKind(edge) === EDGE_KINDS.data && edge.target === node.id);
+      const hasDataInput = incomingDataEdges.length > 0;
+      const hasLocalSource = hasResolvableSource(node.data) || !!node.data?.matchingSessionId;
+      if (!hasDataInput && !hasLocalSource) {
+        issues.push(`${node.data.label} needs a Data Flow input or its own configured dataset.`);
+      }
+
+      const kind = getNodeKind(node);
+      if (kind === 'join' && incomingDataEdges.length < 2) {
+        issues.push('Dataset Join needs two Data Flow inputs before it can run.');
+      }
+      if (kind === 'matching' && incomingDataEdges.length === 1 && !hasLocalSource) {
+        issues.push('Data Matching needs two connected datasets or a saved matching workspace.');
+      }
+    });
+
+    return issues;
+  }, [edges, executionFlowCount, nodes]);
 
   const loadSavedPipelines = async () => {
       try {
@@ -313,11 +1009,13 @@ export const PipelineBuilder = ({ onComplete }) => {
   const handleSavePipeline = async () => {
       setIsSaving(true);
       try {
+          const safeNodes = serializeNodes(nodes);
+          const safeEdges = serializeEdges(edges);
           const payload = {
               id: pipelineId,
               name: pipelineName,
-              nodes: nodes,
-              edges: edges
+              nodes: safeNodes,
+              edges: safeEdges
           };
           const token = localStorage.getItem('token');
           const headers = token ? { Authorization: `Bearer ${token}` } : {};
@@ -328,7 +1026,13 @@ export const PipelineBuilder = ({ onComplete }) => {
           // Fallback to local storage
           const localSaved = JSON.parse(localStorage.getItem('cleanflow_saved_pipelines_v2') || '[]');
           const idx = localSaved.findIndex(p => p.id === (res.data.id || pipelineId));
-          const newEntry = { id: res.data.id || pipelineId || Date.now().toString(), name: pipelineName, nodes, edges, savedAt: new Date().toISOString() };
+          const newEntry = {
+            id: res.data.id || pipelineId || Date.now().toString(),
+            name: pipelineName,
+            nodes: safeNodes,
+            edges: safeEdges,
+            savedAt: new Date().toISOString()
+          };
           if (idx >= 0) localSaved[idx] = newEntry;
           else localSaved.push(newEntry);
           localStorage.setItem('cleanflow_saved_pipelines_v2', JSON.stringify(localSaved));
@@ -342,9 +1046,41 @@ export const PipelineBuilder = ({ onComplete }) => {
       }
   };
 
-  const handleRunPipeline = async () => {
-      if (!activeSessionId) {
-          alert('Please configure a Dataset Input node first to initialize a session!');
+  const resolveExecutionSessionId = useCallback((candidateNodes = nodes) => (
+    activeSessionId ||
+    candidateNodes.find((node) => node.data?.sessionId)?.data?.sessionId ||
+    candidateNodes.find((node) => node.data?.matchingSessionId)?.data?.matchingSessionId ||
+    'pipeline-runtime'
+  ), [activeSessionId, nodes]);
+
+  const buildScriptPreviewPayload = useCallback((targetNodeId, nextNodeData, options = {}) => {
+    const safeNodes = serializeNodes(nodes).map((node) => {
+      const nodeData = node.id === targetNodeId
+        ? { ...node.data, ...nextNodeData, nodeType: SCRIPT_NODE_KIND, label: SCRIPT_NODE_LABEL }
+        : node.data;
+      const normalizedNode = { ...node, data: nodeData };
+      return {
+        id: node.id,
+        type: getNodeKind(normalizedNode),
+        data: nodeData,
+      };
+    });
+
+    return {
+      pipelineId,
+      pipelineName,
+      targetNodeId,
+      validateOnly: Boolean(options.validateOnly),
+      nodeData: nextNodeData,
+      nodes: safeNodes,
+      edges: serializeEdges(edges),
+    };
+  }, [edges, nodes, pipelineId, pipelineName, serializeEdges, serializeNodes]);
+
+  const handleRunPipeline = useCallback(async () => {
+      const graphIssues = validatePipelineGraph();
+      if (graphIssues.length > 0) {
+          alert(graphIssues.join('\n'));
           return;
       }
       
@@ -357,16 +1093,19 @@ export const PipelineBuilder = ({ onComplete }) => {
       setShowViz(false);
       setShowVisualizerOverlay(false);
       
-      // Serialize nodes to send to backend
-      // In a full implementation we would extract node-specific configurations (like rules for Cleaner) from node.data
-      const hasExportNode = nodes.some((node) => getNodeKind(node.data.label) === 'export');
+      const safeNodes = serializeNodes(nodes);
+      const safeEdges = serializeEdges(edges);
+      const hasExportNode = safeNodes.some((node) => getNodeKind(node) === 'export');
+      const executionSessionId = resolveExecutionSessionId(safeNodes);
       const payload = {
-          nodes: nodes.map(n => ({
-              id: n.id,
-              type: getNodeKind(n.data.label),
-              data: n.data
+          pipelineId,
+          pipelineName,
+          nodes: safeNodes.map((node) => ({
+              id: node.id,
+              type: getNodeKind(node),
+              data: node.data
           })),
-          edges: edges
+          edges: safeEdges
       };
 
       const runRecord = {
@@ -394,7 +1133,7 @@ export const PipelineBuilder = ({ onComplete }) => {
       try {
         const token = localStorage.getItem('token');
         const headers = token ? { Authorization: `Bearer ${token}` } : {};
-        const res = await axios.post(`${API_BASE}/features/pipeline/execute/${activeSessionId}`, payload, { headers });
+        const res = await axios.post(`${API_BASE}/features/pipeline/execute/${executionSessionId}`, payload, { headers });
         
         setExecutionLogs(res.data.logs || []);
         const nextOutputSessionId = res.data.output_session_id || null;
@@ -405,11 +1144,11 @@ export const PipelineBuilder = ({ onComplete }) => {
         setOutputFilename(nextOutputFilename);
         setOutputRowCount(res.data.output_row_count || 0);
 
-        if (nextOutputSessionId && hasExportNode) {
-            setDownloadUrl(`${API_BASE}/features/export/${nextOutputSessionId}?format=xlsx`);
-        } else if (res.data.output_file) {
+        if (hasExportNode && res.data.output_file) {
             const filename = res.data.output_file.split('/').pop().split('\\').pop();
             setDownloadUrl(`${API_BASE}/download/${filename}`);
+        } else {
+            setDownloadUrl(null);
         }
         setShowViz(false);
         setShowVisualizerOverlay(false);
@@ -442,6 +1181,135 @@ export const PipelineBuilder = ({ onComplete }) => {
       } finally {
           setIsExecuting(false);
       }
+  }, [edges, nodes, pipelineId, pipelineName, resolveExecutionSessionId, serializeEdges, serializeNodes, validatePipelineGraph]);
+
+  const renderFeatureOverlayContent = () => {
+    if (!activeNode || !activeFeatureOverlay) return null;
+
+    const nodeId = activeNode.id;
+    const sharedSessionId = activeNode.data.sessionId || activeSessionId || null;
+    const sharedColumns = Array.isArray(activeNode.data.columns) && activeNode.data.columns.length > 0
+      ? activeNode.data.columns
+      : pipelineColumns;
+
+    if (activeNodeKind === 'dataset') {
+      return (
+        <PipelineDatasetWorkspace
+          key={`dataset-workspace-${nodeId}`}
+          sessionId={activeNode.data.sessionId || activeSessionId || null}
+          columns={Array.isArray(activeNode.data.columns) && activeNode.data.columns.length > 0 ? activeNode.data.columns : pipelineColumns}
+          sourceConfig={activeNode.data.sourceConfig || activeNode.data.source_config || null}
+          onSave={({ sessionId, columns, sourceConfig }) => {
+            updateNodeData(nodeId, { sessionId, columns, sourceConfig });
+            setActiveSessionId(sessionId || null);
+            setPipelineColumns(columns || []);
+            resetPipelineOutputState();
+            closeNodeConfigurator();
+          }}
+        />
+      );
+    }
+
+    if (activeNodeKind === 'validation') {
+      return (
+        <PipelineValidationWorkspace
+          key={`validation-workspace-${nodeId}`}
+          sessionId={sharedSessionId}
+          columns={sharedColumns}
+          initialSourceConfig={activeNode.data.sourceConfig || activeNode.data.source_config || null}
+          initialRules={activeNode.data.rules || []}
+          onSave={({ sessionId, columns, sourceConfig, rules }) => {
+            updateNodeData(nodeId, { sessionId, columns, sourceConfig, rules });
+            closeNodeConfigurator();
+          }}
+        />
+      );
+    }
+
+    if (activeNodeKind === 'cleaner') {
+      return (
+        <EnrichmentBuilder
+          key={`cleaner-workspace-${nodeId}`}
+          sessionId={sharedSessionId}
+          columns={sharedColumns}
+          initialSourceConfig={activeNode.data.sourceConfig || activeNode.data.source_config || null}
+          initialRules={activeNode.data.rules || []}
+          embedded={true}
+          onSaveConfig={({ sessionId, columns, sourceConfig, rules }) => {
+            updateNodeData(nodeId, { sessionId, columns, sourceConfig, rules });
+            closeNodeConfigurator();
+          }}
+        />
+      );
+    }
+
+    if (activeNodeKind === 'mapper') {
+      return (
+        <SchemaMapper
+          key={`mapper-workspace-${nodeId}`}
+          sessionId={sharedSessionId}
+          columns={sharedColumns}
+          initialSourceConfig={activeNode.data.sourceConfig || activeNode.data.source_config || null}
+          initialTargetSchema={activeNode.data.targetSchema || ''}
+          initialMappings={activeNode.data.mappings || {}}
+          initialTransformations={activeNode.data.columnTransforms || {}}
+          embedded={true}
+          onSaveConfig={({ sessionId, columns, sourceConfig, targetSchema, mappings, columnTransforms }) => {
+            updateNodeData(nodeId, { sessionId, columns, sourceConfig, targetSchema, mappings, columnTransforms });
+            closeNodeConfigurator();
+          }}
+        />
+      );
+    }
+
+    if (activeNodeKind === 'matching') {
+      return (
+        <DataMatchingBuilder
+          key={`matching-workspace-${nodeId}`}
+          embedded={true}
+          initialSessionId={activeNode.data.matchingSessionId || null}
+          initialDatasets={activeNode.data.datasets || { dataset1: null, dataset2: null }}
+          initialDatasetColumns={activeNode.data.datasetColumns || { dataset1: [], dataset2: [] }}
+          initialOutputColumns={activeNode.data.outputColumns || { dataset1: [], dataset2: [] }}
+          initialMatchRules={activeNode.data.matchRules || []}
+          initialDatasetMode={activeNode.data.datasetMode || { dataset1: 'file', dataset2: 'file' }}
+          initialDatasetQueries={activeNode.data.datasetQueries || { dataset1: 'SELECT * FROM table1 LIMIT 100', dataset2: 'SELECT * FROM table2 LIMIT 100' }}
+          initialDatasetConnections={activeNode.data.datasetConnections || { dataset1: '', dataset2: '' }}
+          initialWorkspaceTab={activeNode.data.workspaceTab || 'dataset1'}
+          onSaveConfig={(config) => {
+            updateNodeData(nodeId, {
+              matchingSessionId: config.matchingSessionId,
+              datasets: config.datasets,
+              datasetColumns: config.datasetColumns,
+              outputColumns: config.outputColumns,
+              matchRules: config.matchRules,
+              datasetMode: config.datasetMode,
+              datasetQueries: config.datasetQueries,
+              datasetConnections: config.datasetConnections,
+              workspaceTab: config.workspaceTab,
+            });
+            closeNodeConfigurator();
+          }}
+        />
+      );
+    }
+
+    if (activeNodeKind === SCRIPT_NODE_KIND) {
+      return (
+        <PipelineScriptWorkspace
+          key={`script-workspace-${nodeId}`}
+          node={activeNode}
+          executionSessionId={resolveExecutionSessionId(nodes)}
+          buildPreviewPayload={buildScriptPreviewPayload}
+          onSave={(nextNodeData) => {
+            updateNodeData(nodeId, nextNodeData);
+            closeNodeConfigurator();
+          }}
+        />
+      );
+    }
+
+    return null;
   };
 
   return (
@@ -499,107 +1367,246 @@ export const PipelineBuilder = ({ onComplete }) => {
 
       <div className="flex flex-1 overflow-hidden">
         {/* ── Node Palette (white) ── */}
-        <aside className="w-[210px] shrink-0 z-10 flex flex-col overflow-hidden bg-white border-r border-slate-100">
+        <aside className="w-[290px] shrink-0 z-10 flex flex-col overflow-hidden bg-white border-r border-slate-100">
 
           {/* Palette header */}
           <div className="px-4 py-3.5 border-b border-slate-100">
-              <p className="text-xs font-black uppercase tracking-widest text-slate-400">Node Library</p>
-              <p className="text-xs mt-0.5 text-slate-400">Drag nodes to canvas</p>
+              <div className="flex items-center justify-between gap-3">
+                  <div>
+                      <p className="text-xs font-black uppercase tracking-widest text-slate-400">Node Library</p>
+                      <p className="text-xs mt-0.5 text-slate-400">Drag nodes to canvas</p>
+                  </div>
+                  <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-slate-500">
+                      {dataEdgeCount}D • {executionFlowCount}S
+                  </span>
+              </div>
+
+              <div className="mt-4 grid grid-cols-2 gap-2 rounded-2xl bg-slate-100 p-1">
+                  {FLOW_LIBRARY_TABS.map((tab) => (
+                      <button
+                          key={tab.id}
+                          type="button"
+                          onClick={() => setLibraryMode(tab.id)}
+                          className={`rounded-[14px] px-3 py-2.5 text-left transition-all ${
+                              libraryMode === tab.id
+                                  ? 'bg-white shadow-sm ring-1 ring-slate-200'
+                                  : 'text-slate-500 hover:bg-white/70'
+                          }`}
+                      >
+                          <p className="text-sm font-black text-slate-800">{tab.label}</p>
+                          <p className="mt-0.5 text-[11px] text-slate-400">{tab.subtitle}</p>
+                      </button>
+                  ))}
+              </div>
           </div>
 
           <div className="flex-1 overflow-y-auto px-3 py-4 space-y-5">
 
-            {/* Input Sources */}
-            <div>
-              <p className="text-xs font-black uppercase tracking-widest mb-2 px-1 text-slate-400">Sources</p>
-              <div className="space-y-1.5">
-                {[{ type: 'dataset', label: 'Dataset Input', icon: Database,  color: '#10b981', bg: '#10b98115' },
-                  { type: 'scraper', label: 'Web Scraping',  icon: Globe,     color: '#f97316', bg: '#f9731615' }]
-                .map(n => (
-                    <div key={n.type}
-                        draggable
-                        onDragStart={(e) => onDragStart(e, n.type)}
-                        className="flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-grab select-none transition-all border border-slate-100 hover:border-slate-200 hover:bg-slate-50"
-                    >
-                        <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style={{ background: n.bg }}>
-                            <n.icon size={14} style={{ color: n.color }} />
-                        </div>
-                        <span className="text-xs font-bold text-slate-600">{n.label}</span>
-                    </div>
-                ))}
+            {libraryMode === 'data' && (
+              <div>
+                <p className="text-xs font-black uppercase tracking-widest mb-2 px-1 text-slate-400">Sources</p>
+                <div className="space-y-1.5">
+                  {[{ type: 'dataset', label: 'Dataset Input', icon: Database, color: '#10b981', bg: '#10b98115' },
+                    { type: 'scraper', label: 'Web Scraping', icon: Globe, color: '#f97316', bg: '#f9731615' }]
+                  .map(n => (
+                      <div key={n.type}
+                          draggable
+                          onDragStart={(e) => onDragStart(e, n.type)}
+                          className="flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-grab select-none transition-all border border-slate-100 hover:border-slate-200 hover:bg-slate-50"
+                      >
+                          <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style={{ background: n.bg }}>
+                              <n.icon size={14} style={{ color: n.color }} />
+                          </div>
+                          <span className="text-xs font-bold text-slate-600">{n.label}</span>
+                      </div>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
 
-            {/* Transformations */}
-            <div>
-              <p className="text-xs font-black uppercase tracking-widest mb-2 px-1 text-slate-400">Transform</p>
-              <div className="space-y-1.5">
-                {[{ type: 'cleaner',    label: 'Data Cleaner',       icon: Sparkles,    color: '#10b981', bg: '#10b98115' },
-                  { type: 'validation', label: 'Quality Validation', icon: ShieldCheck, color: '#3b82f6', bg: '#3b82f615' },
-                  { type: 'mapper',     label: 'Schema Mapping',     icon: GitMerge,    color: '#6366f1', bg: '#6366f115' },
-                  { type: 'matching',   label: 'Data Matching',      icon: Shuffle,     color: '#8b5cf6', bg: '#8b5cf615' },
-                  { type: 'filter',     label: 'Filter Rows',        icon: Filter,      color: '#f59e0b', bg: '#f59e0b15' },
-                  { type: 'aggregate',  label: 'Aggregate',          icon: Calculator,  color: '#ec4899', bg: '#ec489915' },
-                  { type: 'join',       label: 'Dataset Join',       icon: Link,        color: '#14b8a6', bg: '#14b8a615' },
-                  { type: 'deduplicate',label: 'Deduplicate',        icon: Files,       color: '#64748b', bg: '#64748b15' },
-                  { type: 'loop',       label: 'Loop (Iterator)',    icon: Repeat,      color: '#8b5cf6', bg: '#8b5cf615' },
-                  { type: 'conditional',label: 'Conditional Branch', icon: GitBranch,   color: '#06b6d4', bg: '#06b6d415' }]
-                .map(n => (
-                    <div key={n.type}
-                        draggable
-                        onDragStart={(e) => onDragStart(e, n.type)}
-                        className="flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-grab select-none transition-all border border-slate-100 hover:border-slate-200 hover:bg-slate-50"
-                    >
-                        <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style={{ background: n.bg }}>
-                            <n.icon size={14} style={{ color: n.color }} />
-                        </div>
-                        <span className="text-xs font-bold text-slate-600">{n.label}</span>
-                    </div>
-                ))}
+            {libraryMode === 'data' && (
+              <div>
+                <p className="text-xs font-black uppercase tracking-widest mb-2 px-1 text-slate-400">Data Services</p>
+                <div className="space-y-1.5">
+                  {[{ type: 'cleaner', label: 'Data Cleaning', icon: Sparkles, color: '#10b981', bg: '#10b98115' },
+                    { type: 'validation', label: 'Quality Validation', icon: ShieldCheck, color: '#3b82f6', bg: '#3b82f615' },
+                    { type: 'mapper', label: 'Schema Mapping', icon: GitMerge, color: '#6366f1', bg: '#6366f115' },
+                    { type: 'matching', label: 'Data Matching', icon: Shuffle, color: '#8b5cf6', bg: '#8b5cf615' },
+                    { type: 'filter', label: 'Filter Rows', icon: Filter, color: '#f59e0b', bg: '#f59e0b15' },
+                    { type: 'aggregate', label: 'Aggregate', icon: Calculator, color: '#ec4899', bg: '#ec489915' },
+                    { type: 'join', label: 'Dataset Join', icon: ArrowRightLeft, color: '#14b8a6', bg: '#14b8a615' },
+                    { type: 'deduplicate', label: 'Deduplicate', icon: Files, color: '#64748b', bg: '#64748b15' }]
+                  .map(n => (
+                      <div key={n.type}
+                          draggable
+                          onDragStart={(e) => onDragStart(e, n.type)}
+                          className="flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-grab select-none transition-all border border-slate-100 hover:border-slate-200 hover:bg-slate-50"
+                      >
+                          <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style={{ background: n.bg }}>
+                              <n.icon size={14} style={{ color: n.color }} />
+                          </div>
+                          <span className="text-xs font-bold text-slate-600">{n.label}</span>
+                      </div>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
 
-            {/* Notify */}
-            <div>
-              <p className="text-xs font-black uppercase tracking-widest mb-2 px-1 text-slate-400">Notify</p>
-              <div className="space-y-1.5">
-                {[{ type: 'email',      label: 'Email Notification', icon: Mail,        color: '#f43f5e', bg: '#f43f5e15' },
-                  { type: 'webhook',    label: 'Webhook / HTTP Call',icon: Webhook,     color: '#3b82f6', bg: '#3b82f615' }]
-                .map(n => (
-                    <div key={n.type}
-                        draggable
-                        onDragStart={(e) => onDragStart(e, n.type)}
-                        className="flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-grab select-none transition-all border border-slate-100 hover:border-slate-200 hover:bg-slate-50"
-                    >
-                        <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style={{ background: n.bg }}>
-                            <n.icon size={14} style={{ color: n.color }} />
-                        </div>
-                        <span className="text-xs font-bold text-slate-600">{n.label}</span>
+            {libraryMode === 'sequence' && (
+              <div>
+                <button
+                  type="button"
+                  onClick={() => setSequenceDataFlowOpen((open) => !open)}
+                  className="w-full rounded-2xl border border-slate-200 bg-white text-left shadow-sm transition-all hover:border-emerald-200 hover:shadow-md"
+                >
+                  <div className="flex items-start gap-3 px-4 py-4">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-emerald-200 bg-emerald-50 text-emerald-700">
+                      <Workflow size={18} />
                     </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Output */}
-            <div>
-              <p className="text-xs font-black uppercase tracking-widest mb-2 px-1 text-slate-400">Output</p>
-              <div
-                  draggable
-                  onDragStart={(e) => onDragStart(e, 'export')}
-                  className="flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-grab select-none transition-all border border-emerald-100 bg-emerald-50 hover:bg-emerald-100"
-              >
-                  <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style={{ background: '#10b98120' }}>
-                      <Download size={14} style={{ color: '#10b981' }} />
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center justify-between gap-3">
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="rounded-full border border-slate-200 bg-slate-50 px-2 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">
+                              Sequence
+                            </span>
+                            <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-emerald-700">
+                              Data Flow Task
+                            </span>
+                          </div>
+                          <p className="mt-2 text-sm font-black text-slate-800">Data Flow</p>
+                          <p className="mt-1 text-[11px] leading-5 text-slate-500">
+                            Click to open all data sources and data service tasks, similar to SSIS Data Flow Task.
+                          </p>
+                        </div>
+                        <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-slate-100 text-slate-500">
+                          {sequenceDataFlowOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                  <span className="text-xs font-bold text-emerald-700">File Export</span>
+                </button>
+
+                {sequenceDataFlowOpen && (
+                  <div className="mt-3 space-y-4 rounded-2xl border border-emerald-100 bg-emerald-50/40 p-3">
+                    <div>
+                      <div className="mb-2 flex items-center justify-between px-1">
+                        <p className="text-xs font-black uppercase tracking-widest text-slate-400">Sources</p>
+                        <span className="rounded-full bg-white px-2 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-emerald-700 shadow-sm">
+                          Input
+                        </span>
+                      </div>
+                      <div className="space-y-1.5">
+                        {[{ type: 'dataset', label: 'Dataset Input', icon: Database, color: '#10b981', bg: '#10b98115' },
+                          { type: 'scraper', label: 'Web Scraping', icon: Globe, color: '#f97316', bg: '#f9731615' }]
+                        .map(n => (
+                            <div key={n.type}
+                                draggable
+                                onDragStart={(e) => onDragStart(e, n.type)}
+                                className="flex items-center gap-3 rounded-xl border border-white bg-white px-3 py-2.5 shadow-sm transition-all hover:border-emerald-200 hover:bg-emerald-50/50"
+                            >
+                                <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style={{ background: n.bg }}>
+                                    <n.icon size={14} style={{ color: n.color }} />
+                                </div>
+                                <span className="text-xs font-bold text-slate-600">{n.label}</span>
+                            </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div>
+                      <div className="mb-2 flex items-center justify-between px-1">
+                        <p className="text-xs font-black uppercase tracking-widest text-slate-400">Data Services</p>
+                        <span className="rounded-full bg-white px-2 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-emerald-700 shadow-sm">
+                          Transform
+                        </span>
+                      </div>
+                      <div className="space-y-1.5">
+                        {[{ type: 'cleaner', label: 'Data Cleaning', icon: Sparkles, color: '#10b981', bg: '#10b98115' },
+                          { type: 'validation', label: 'Quality Validation', icon: ShieldCheck, color: '#3b82f6', bg: '#3b82f615' },
+                          { type: 'mapper', label: 'Schema Mapping', icon: GitMerge, color: '#6366f1', bg: '#6366f115' },
+                          { type: 'matching', label: 'Data Matching', icon: Shuffle, color: '#8b5cf6', bg: '#8b5cf615' },
+                          { type: 'filter', label: 'Filter Rows', icon: Filter, color: '#f59e0b', bg: '#f59e0b15' },
+                          { type: 'aggregate', label: 'Aggregate', icon: Calculator, color: '#ec4899', bg: '#ec489915' },
+                          { type: 'join', label: 'Dataset Join', icon: ArrowRightLeft, color: '#14b8a6', bg: '#14b8a615' },
+                          { type: 'deduplicate', label: 'Deduplicate', icon: Files, color: '#64748b', bg: '#64748b15' }]
+                        .map(n => (
+                            <div key={n.type}
+                                draggable
+                                onDragStart={(e) => onDragStart(e, n.type)}
+                                className="flex items-center gap-3 rounded-xl border border-white bg-white px-3 py-2.5 shadow-sm transition-all hover:border-emerald-200 hover:bg-emerald-50/50"
+                            >
+                                <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style={{ background: n.bg }}>
+                                    <n.icon size={14} style={{ color: n.color }} />
+                                </div>
+                                <div className="min-w-0">
+                                  <div className="text-xs font-bold text-slate-600">{n.label}</div>
+                                  <div className="text-[10px] font-medium text-slate-400">Drag into canvas</div>
+                                </div>
+                            </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
-            </div>
+            )}
+
+            {libraryMode === 'sequence' && (
+              <div>
+                <p className="text-xs font-black uppercase tracking-widest mb-2 px-1 text-slate-400">Logic</p>
+                <div className="space-y-1.5">
+                  {[{ type: 'conditional', label: 'Conditional Branch', icon: GitBranch, color: '#06b6d4', bg: '#06b6d415' },
+                    { type: 'loop', label: 'For Each Loop', icon: Repeat, color: '#8b5cf6', bg: '#8b5cf615' },
+                    { type: SCRIPT_NODE_KIND, label: SCRIPT_NODE_LABEL, icon: TerminalSquare, color: '#2563eb', bg: '#2563eb15' }]
+                  .map(n => (
+                      <div key={n.type}
+                          draggable
+                          onDragStart={(e) => onDragStart(e, n.type)}
+                          className="flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-grab select-none transition-all border border-slate-100 hover:border-slate-200 hover:bg-slate-50"
+                      >
+                          <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style={{ background: n.bg }}>
+                              <n.icon size={14} style={{ color: n.color }} />
+                          </div>
+                          <span className="text-xs font-bold text-slate-600">{n.label}</span>
+                      </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {libraryMode === 'sequence' && (
+              <div>
+                <p className="text-xs font-black uppercase tracking-widest mb-2 px-1 text-slate-400">Actions</p>
+                <div className="space-y-1.5">
+                  {[{ type: 'email', label: 'Email Notification', icon: Mail, color: '#f43f5e', bg: '#f43f5e15' },
+                    { type: 'webhook', label: 'Webhook / HTTP Call', icon: Webhook, color: '#3b82f6', bg: '#3b82f615' },
+                    { type: 'export', label: 'Export Dataset', icon: Download, color: '#10b981', bg: '#10b98115' }]
+                  .map(n => (
+                      <div key={n.type}
+                          draggable
+                          onDragStart={(e) => onDragStart(e, n.type)}
+                          className={`flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-grab select-none transition-all border ${
+                              n.type === 'export'
+                                  ? 'border-emerald-100 bg-emerald-50 hover:bg-emerald-100'
+                                  : 'border-slate-100 hover:border-slate-200 hover:bg-slate-50'
+                          }`}
+                      >
+                          <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style={{ background: n.bg }}>
+                              <n.icon size={14} style={{ color: n.color }} />
+                          </div>
+                          <span className={`text-xs font-bold ${n.type === 'export' ? 'text-emerald-700' : 'text-slate-600'}`}>{n.label}</span>
+                      </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
           </div>
 
           {/* Keyboard hint */}
           <div className="px-4 py-3 border-t border-slate-100">
-              <p className="text-xs text-slate-300">Del — remove selected node</p>
+              <p className="text-xs text-slate-400">Data Flow handles share datasets and define the default runtime path. Use Sequence Flow handles for branches, notifications, and orchestration-only steps. Double-click to configure a node.</p>
           </div>
         </aside>
 
@@ -609,8 +1616,11 @@ export const PipelineBuilder = ({ onComplete }) => {
             {/* Hidden SVG — defines a small circle endpoint marker */}
             <svg style={{ position: 'absolute', width: 0, height: 0, overflow: 'hidden' }}>
                 <defs>
-                    <marker id="cf-dot" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto">
-                        <circle cx="4" cy="4" r="2.5" fill="#94a3b8" />
+                    <marker id="cf-sequence-arrow" markerWidth="12" markerHeight="12" refX="9" refY="6" orient="auto">
+                        <path d="M0,0 L12,6 L0,12 z" fill="#475569" />
+                    </marker>
+                    <marker id="cf-data-arrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto">
+                        <path d="M0,0 L12,6 L0,12 z" fill="#10b981" />
                     </marker>
                 </defs>
             </svg>
@@ -626,16 +1636,15 @@ export const PipelineBuilder = ({ onComplete }) => {
                 onDrop={onDrop}
                 onDragOver={onDragOver}
                 onNodeClick={onNodeClick}
+                onNodeDoubleClick={onNodeDoubleClick}
                 onPaneClick={onPaneClick}
+                isValidConnection={isValidFlowConnection}
                 nodeTypes={nodeTypes}
                 deleteKeyCode="Delete"
-                connectionLineType={ConnectionLineType.Step}
-                connectionLineStyle={{ stroke: '#cbd5e1', strokeWidth: 1.5, strokeDasharray: '4 3' }}
+                connectionLineType={ConnectionLineType.SmoothStep}
+                connectionLineStyle={{ stroke: '#94a3b8', strokeWidth: 2 }}
                 defaultEdgeOptions={{
-                  type: 'step',
-                  animated: false,
-                  style: { stroke: '#cbd5e1', strokeWidth: 1.5 },
-                  markerEnd: 'url(#cf-dot)',
+                  ...getEdgePresentation(EDGE_KINDS.sequence),
                 }}
                 fitView
                 >
@@ -644,9 +1653,42 @@ export const PipelineBuilder = ({ onComplete }) => {
                 </ReactFlow>
             </ReactFlowProvider>
 
-
             {/* Full-Screen Configuration Modal Portal */}
-            {activeNode && createPortal(
+            {activeNode && activeFeatureOverlay && createPortal(
+                <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="fixed inset-0 z-[70] bg-slate-950/45 p-3 backdrop-blur-sm md:p-5"
+                    onClick={closeNodeConfigurator}
+                >
+                    <div className="mx-auto mb-3 flex max-w-[1600px] items-center justify-between gap-3 px-1" onClick={(event) => event.stopPropagation()}>
+                        <div className={`inline-flex items-center gap-3 rounded-full border bg-white/95 px-4 py-2 shadow-lg shadow-slate-900/10 backdrop-blur ${activeFeatureOverlay.pillClass}`}>
+                            <div className={`flex h-10 w-10 items-center justify-center rounded-full border ${activeFeatureOverlay.iconClass}`}>
+                                <activeFeatureOverlay.icon size={18} />
+                            </div>
+                            <div className="min-w-0">
+                                <p className="text-[11px] font-black uppercase tracking-[0.18em] opacity-70">{activeFeatureOverlay.badge}</p>
+                                <p className="truncate text-sm font-bold text-slate-800">{activeNode.data.label}</p>
+                            </div>
+                        </div>
+                        <button onClick={closeNodeConfigurator} className="inline-flex items-center gap-2 rounded-full border border-white/70 bg-white/95 px-4 py-2 text-sm font-semibold text-slate-600 shadow-lg shadow-slate-900/10 transition-all hover:bg-slate-50">
+                            <X size={16} /> Close
+                        </button>
+                    </div>
+                    <motion.div
+                        key={`feature-overlay-${activeNode.id}`}
+                        initial={{ opacity: 0, scale: 0.97, y: 18 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        transition={{ type: 'spring', damping: 28, stiffness: 280 }}
+                        className="mx-auto h-[calc(100%-60px)] w-full max-w-[1600px] overflow-hidden rounded-[28px] border border-white/60 bg-white shadow-2xl shadow-slate-900/25"
+                        onClick={(event) => event.stopPropagation()}
+                    >
+                        {renderFeatureOverlayContent()}
+                    </motion.div>
+                </motion.div>,
+                document.body
+            )}
+            {activeNode && !activeFeatureOverlay && createPortal(
                 <AnimatePresence>
                     <motion.div
                         initial={{ opacity: 0 }}
@@ -682,7 +1724,7 @@ export const PipelineBuilder = ({ onComplete }) => {
                             {/* Body */}
                             <div className="flex-1 overflow-y-auto p-6 bg-slate-50">
                                 {/* Validation Configuration */}
-                                {activeNode.data.label.toLowerCase().includes('validation') && (
+                                {activeNodeKind === 'validation' && (
                                     <RuleBuilder 
                                         isEmbedded={true} 
                                         columns={activeNode.data.columns || pipelineColumns} 
@@ -695,7 +1737,7 @@ export const PipelineBuilder = ({ onComplete }) => {
                                 )}
                                 
                                 {/* Cleaner Configuration */}
-                                {activeNode.data.label.toLowerCase().includes('cleaner') && (
+                                {activeNodeKind === 'cleaner' && (
                                     <CleanerConfigPanel 
                                         node={activeNode} 
                                         columns={activeNode.data.columns || pipelineColumns}
@@ -706,7 +1748,7 @@ export const PipelineBuilder = ({ onComplete }) => {
                                     />
                                 )}
 
-                                {activeNode.data.label.toLowerCase().includes('mapping') && (
+                                {activeNodeKind === 'mapper' && (
                                     <MapperConfigPanel
                                         node={activeNode}
                                         columns={activeNode.data.columns || pipelineColumns}
@@ -717,7 +1759,7 @@ export const PipelineBuilder = ({ onComplete }) => {
                                     />
                                 )}
 
-                                {activeNode.data.label.toLowerCase().includes('matching') && (
+                                {activeNodeKind === 'matching' && (
                                     <MatchingConfigPanel
                                         node={activeNode}
                                         columns={activeNode.data.columns || pipelineColumns}
@@ -728,7 +1770,7 @@ export const PipelineBuilder = ({ onComplete }) => {
                                     />
                                 )}
 
-                                {activeNode.data.label.toLowerCase().includes('scraping') && (
+                                {activeNodeKind === 'scraper' && (
                                     <ScraperConfigPanel
                                         node={activeNode}
                                         onSave={(config) => {
@@ -738,7 +1780,7 @@ export const PipelineBuilder = ({ onComplete }) => {
                                     />
                                 )}
 
-                                {activeNode.data.label.toLowerCase().includes('dataset') && (
+                                {activeNodeKind === 'dataset' && (
                                     <div className="flex flex-col h-full bg-white rounded-2xl shadow-sm border border-slate-100 py-6 px-4">
                                          <h3 className="font-bold text-lg text-slate-800 mb-6">Import Dataset</h3>
                                          <div className="mt-4">
@@ -752,9 +1794,9 @@ export const PipelineBuilder = ({ onComplete }) => {
                                                  setShowViz(false);
                                                  setShowVisualizerOverlay(false);
                                                  setNodes(nds => nds.map(n => n.id === activeNode.id 
-                                                   ? { ...n, data: { ...n.data, sessionId: uploadData.session_id, columns: uploadData.columns || [] } } 
-                                                   : n
-                                                 ));
+                                                    ? { ...n, data: { ...n.data, sessionId: uploadData.session_id, columns: uploadData.columns || [], sourceConfig: getSourceConfigFromResponse(uploadData) } } 
+                                                    : n
+                                                  ));
                                                  setActiveNode(null);
                                             }} />
                                          </div>
@@ -763,57 +1805,48 @@ export const PipelineBuilder = ({ onComplete }) => {
 
                                 {/* NEW NODES START */}
                                 {/* Filter Rows */}
-                                {activeNode.data.label.toLowerCase().includes('filter') && (
+                                {activeNodeKind === 'filter' && (
                                     <FilterConfigPanel node={activeNode} columns={activeNode.data.columns || pipelineColumns} onSave={(config) => { setNodes(nds => nds.map(n => n.id === activeNode.id ? { ...n, data: { ...n.data, ...config } } : n)); setActiveNode(null); }} />
                                 )}
 
                                 {/* Aggregate */}
-                                {activeNode.data.label.toLowerCase().includes('aggregate') && (
+                                {activeNodeKind === 'aggregate' && (
                                     <AggregateConfigPanel node={activeNode} columns={activeNode.data.columns || pipelineColumns} onSave={(config) => { setNodes(nds => nds.map(n => n.id === activeNode.id ? { ...n, data: { ...n.data, ...config } } : n)); setActiveNode(null); }} />
                                 )}
                                 
                                 {/* Join */}
-                                {activeNode.data.label.toLowerCase().includes('join') && (
+                                {activeNodeKind === 'join' && (
                                     <JoinConfigPanel node={activeNode} columns={activeNode.data.columns || pipelineColumns} onSave={(config) => { setNodes(nds => nds.map(n => n.id === activeNode.id ? { ...n, data: { ...n.data, ...config } } : n)); setActiveNode(null); }} />
                                 )}
 
                                 {/* Deduplicate */}
-                                {activeNode.data.label.toLowerCase().includes('deduplicate') && (
+                                {activeNodeKind === 'deduplicate' && (
                                     <DeduplicateConfigPanel node={activeNode} columns={activeNode.data.columns || pipelineColumns} onSave={(config) => { setNodes(nds => nds.map(n => n.id === activeNode.id ? { ...n, data: { ...n.data, ...config } } : n)); setActiveNode(null); }} />
                                 )}
                                 
                                 {/* Loop */}
-                                {activeNode.data.label.toLowerCase().includes('loop') && (
+                                {activeNodeKind === 'loop' && (
                                     <LoopConfigPanel node={activeNode} onSave={(config) => { setNodes(nds => nds.map(n => n.id === activeNode.id ? { ...n, data: { ...n.data, ...config } } : n)); setActiveNode(null); }} />
                                 )}
 
                                 {/* Conditional */}
-                                {activeNode.data.label.toLowerCase().includes('conditional') && (
+                                {activeNodeKind === 'conditional' && (
                                     <ConditionalConfigPanel node={activeNode} columns={activeNode.data.columns || pipelineColumns} onSave={(config) => { setNodes(nds => nds.map(n => n.id === activeNode.id ? { ...n, data: { ...n.data, ...config } } : n)); setActiveNode(null); }} />
                                 )}
 
                                 {/* Email */}
-                                {activeNode.data.label.toLowerCase().includes('email') && (
+                                {activeNodeKind === 'email' && (
                                     <EmailConfigPanel node={activeNode} onSave={(config) => { setNodes(nds => nds.map(n => n.id === activeNode.id ? { ...n, data: { ...n.data, ...config } } : n)); setActiveNode(null); }} />
                                 )}
 
                                 {/* Webhook */}
-                                {activeNode.data.label.toLowerCase().includes('webhook') && (
+                                {activeNodeKind === 'webhook' && (
                                     <WebhookConfigPanel node={activeNode} onSave={(config) => { setNodes(nds => nds.map(n => n.id === activeNode.id ? { ...n, data: { ...n.data, ...config } } : n)); setActiveNode(null); }} />
                                 )}
                                 {/* NEW NODES END */}
 
-                                {activeNode.data.label.toLowerCase().includes('export') && (
-                                    <div className="flex flex-col h-full bg-white rounded-2xl shadow-sm py-16 px-4 text-center items-center justify-center">
-                                        <div className="w-20 h-20 rounded-full bg-emerald-50 flex items-center justify-center mb-6">
-                                            <Download size={36} className="text-emerald-500" />
-                                        </div>
-                                        <h3 className="font-black text-2xl text-slate-800">Export Node Ready</h3>
-                                        <p className="text-slate-500 mt-2 max-w-sm">This node handles automatic file export after the pipeline successfully runs. No further configuration is needed here.</p>
-                                        <button onClick={() => setActiveNode(null)} className="mt-8 px-6 py-3 bg-slate-900 border border-slate-800 hover:bg-slate-800 text-white font-bold rounded-xl shadow-lg transition-transform hover:-translate-y-0.5">
-                                            Awesome, Looks Good
-                                        </button>
-                                    </div>
+                                {activeNodeKind === 'export' && (
+                                    <ExportConfigPanel node={activeNode} onSave={(config) => { setNodes(nds => nds.map(n => n.id === activeNode.id ? { ...n, data: { ...n.data, ...config } } : n)); setActiveNode(null); }} />
                                 )}
                             </div>
                         </motion.div>
@@ -1037,8 +2070,12 @@ export const PipelineBuilder = ({ onComplete }) => {
                 <div className="flex-1 overflow-y-auto p-4 space-y-3">
                     {savedPipelines.map(p => (
                         <div key={p.id} className="p-4 border border-slate-200 rounded-xl hover:border-sky-300 hover:shadow-md transition-all cursor-pointer bg-white group" onClick={() => {
-                            setNodes(p.nodes || (p.pipeline_data?.nodes || []));
-                            setEdges(p.edges || (p.pipeline_data?.edges || []));
+                            const loadedNodes = p.nodes || (p.pipeline_data?.nodes || []);
+                            const loadedEdges = p.edges || (p.pipeline_data?.edges || []);
+                            const { normalizedNodes, normalizedEdges } = hydratePipelineState(loadedNodes, loadedEdges);
+                            setNodes(normalizedNodes);
+                            setEdges(normalizedEdges);
+                            syncPipelineSourceContext(normalizedNodes);
                             setPipelineName(p.name);
                             setPipelineId(p.id);
                             setShowLoadDrawer(false);
@@ -1120,7 +2157,7 @@ export const PipelineBuilder = ({ onComplete }) => {
                                       <option value="America/Los_Angeles">PST</option>
                                       <option value="Europe/London">GMT</option>
                                       <option value="Asia/Tokyo">JST</option>
-                                      <option value="Asia/Kolkata">IST</option>
+                                      <option value="Asia/Kolkata">India Standard Time</option>
                                   </select>
                               </div>
                           </div>
@@ -1134,6 +2171,185 @@ export const PipelineBuilder = ({ onComplete }) => {
           )}
       </AnimatePresence>
 
+    </div>
+  );
+};
+
+const PipelineDatasetWorkspace = ({ sessionId: initialSessionId = null, columns: initialColumns = [], sourceConfig: initialSourceConfig = null, onSave }) => {
+  const [sessionId, setSessionId] = useState(initialSessionId || null);
+  const [columns, setColumns] = useState(initialColumns || []);
+  const [sourceConfig, setSourceConfig] = useState(initialSourceConfig || null);
+  const [workspaceTab, setWorkspaceTab] = useState(initialSessionId ? 'preview' : 'source');
+
+  useEffect(() => {
+    setSessionId(initialSessionId || null);
+    setColumns(initialColumns || []);
+    setSourceConfig(initialSourceConfig || null);
+    setWorkspaceTab(initialSessionId ? 'preview' : 'source');
+  }, [initialSessionId, initialColumns, initialSourceConfig]);
+
+  return (
+    <div className="flex h-full w-full flex-col">
+      <div className="flex shrink-0 items-center justify-between border-b border-slate-200 bg-white px-8 py-5">
+        <div className="flex items-center gap-4">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-blue-100 bg-blue-50">
+            <Database size={20} className="text-blue-600" />
+          </div>
+          <div>
+            <h2 className="text-2xl font-black tracking-tight text-slate-900">Dataset Source</h2>
+            <p className="mt-0.5 text-sm text-slate-500">Upload or replace the source dataset that powers this pipeline.</p>
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={() => onSave({ sessionId, columns, sourceConfig })}
+          disabled={!sessionId}
+          className="flex items-center gap-2 rounded-xl bg-slate-900 px-5 py-2.5 text-sm font-bold text-white shadow-md transition-all hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400"
+        >
+          <Save size={16} /> Save Source
+        </button>
+      </div>
+
+      <div className="flex-1 overflow-y-auto px-8 py-6">
+        <div className="mb-5 flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <h3 className="text-lg font-bold text-slate-800">Source Workspace</h3>
+            <p className="mt-1 text-sm text-slate-500">Keep the pipeline source visible while replacing or reviewing the active dataset.</p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 shadow-sm">
+              {sessionId ? 'Source attached' : 'No source attached'}
+            </span>
+            <span className="rounded-full border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700 shadow-sm">
+              {columns.length} columns
+            </span>
+          </div>
+        </div>
+
+        <WorkspaceTabs
+          tone="blue"
+          activeTab={workspaceTab}
+          onChange={setWorkspaceTab}
+          tabs={[
+            { id: 'source', label: sessionId ? 'Replace Source' : 'Source' },
+            { id: 'preview', label: 'Preview', icon: Database, disabled: !sessionId },
+          ]}
+        />
+
+        <div className="mt-5">
+          {workspaceTab === 'source' ? (
+            <DataConnection
+              compact={true}
+              onUploadSuccess={(data) => {
+                setSessionId(data.session_id);
+                setColumns(data.columns || []);
+                setSourceConfig(getSourceConfigFromResponse(data));
+                setWorkspaceTab('preview');
+              }}
+            />
+          ) : (
+            <DatasetViewer
+              sessionId={sessionId}
+              tone="blue"
+              title="Pipeline Source Dataset"
+              subtitle="Review the active source rows here before saving this dataset back into the pipeline node."
+            />
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const PipelineValidationWorkspace = ({ sessionId: initialSessionId = null, columns: initialColumns = [], initialSourceConfig = null, initialRules = [], onSave }) => {
+  const [sessionId, setSessionId] = useState(initialSessionId || null);
+  const [columns, setColumns] = useState(initialColumns || []);
+  const [sourceConfig, setSourceConfig] = useState(initialSourceConfig || null);
+  const [rules, setRules] = useState(initialRules || []);
+  const [workspaceTab, setWorkspaceTab] = useState(initialSessionId ? 'dataset' : 'source');
+
+  useEffect(() => {
+    setSessionId(initialSessionId || null);
+    setColumns(initialColumns || []);
+    setSourceConfig(initialSourceConfig || null);
+    setRules(initialRules || []);
+    setWorkspaceTab(initialSessionId ? 'dataset' : 'source');
+  }, [initialSessionId, initialColumns, initialSourceConfig, initialRules]);
+
+  return (
+    <div className="flex h-full w-full flex-col">
+      <div className="flex shrink-0 items-center justify-between border-b border-slate-200 bg-white px-8 py-5">
+        <div className="flex items-center gap-4">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-blue-100 bg-blue-50">
+            <ShieldCheck size={20} className="text-blue-600" />
+          </div>
+          <div>
+            <h2 className="text-2xl font-black tracking-tight text-slate-900">Quality Validation</h2>
+            <p className="mt-0.5 text-sm text-slate-500">Use the same validation workspace from Data Service and save the rule set into this node.</p>
+          </div>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 shadow-sm">
+            {columns.length} columns
+          </span>
+          <span className="rounded-full border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700 shadow-sm">
+            {rules.length} rule{rules.length !== 1 ? 's' : ''}
+          </span>
+        </div>
+      </div>
+
+      <div className="flex-1 overflow-y-auto px-8 py-6">
+        <div className="mb-5">
+          <h3 className="text-lg font-bold text-slate-800">Validation Workspace</h3>
+          <p className="mt-1 text-sm text-slate-500">Switch between source upload, dataset preview, and rule design without leaving the pipeline canvas.</p>
+        </div>
+
+        <WorkspaceTabs
+          tone="blue"
+          activeTab={workspaceTab}
+          onChange={setWorkspaceTab}
+          tabs={[
+            { id: 'source', label: 'Source' },
+            { id: 'dataset', label: 'Dataset', icon: Database, disabled: !sessionId },
+            { id: 'rules', label: 'Rules', icon: ShieldCheck },
+          ]}
+        />
+
+        <div className="mt-5">
+          {workspaceTab === 'source' && (
+            <DataConnection
+              compact={true}
+              onUploadSuccess={(data) => {
+                setSessionId(data.session_id);
+                setColumns(data.columns || []);
+                setSourceConfig(getSourceConfigFromResponse(data));
+                setWorkspaceTab('dataset');
+              }}
+            />
+          )}
+
+          {workspaceTab === 'dataset' && sessionId && (
+            <DatasetViewer
+              sessionId={sessionId}
+              tone="blue"
+              title="Validation Dataset"
+              subtitle="Inspect the active dataset, then switch back to rules to save the validation logic into the pipeline."
+            />
+          )}
+
+          {workspaceTab === 'rules' && (
+            <RuleBuilder
+              key={`pipeline-validation-${sessionId || 'no-session'}-${columns.length}`}
+              compact={true}
+              isEmbedded={true}
+              columns={columns}
+              initialRules={rules}
+              onRulesChange={setRules}
+              onSaveRules={(savedRules) => onSave({ sessionId, columns, sourceConfig, rules: savedRules })}
+            />
+          )}
+        </div>
+      </div>
     </div>
   );
 };
@@ -1740,6 +2956,54 @@ const WebhookConfigPanel = ({ node, onSave }) => {
             </div>
             <div className="mt-auto pt-4 border-t border-slate-200 flex justify-end">
                 <button onClick={() => onSave({ webhookUrl, httpMethod })} className="px-5 py-2.5 bg-slate-900 border border-slate-800 hover:bg-slate-800 text-white font-bold rounded-xl shadow-lg transition-transform hover:-translate-y-0.5">Save Target</button>
+            </div>
+        </div>
+    );
+};
+
+const ExportConfigPanel = ({ node, onSave }) => {
+    const [outputFormat, setOutputFormat] = useState(node.data.outputFormat || 'xlsx');
+    const [outputName, setOutputName] = useState(node.data.outputName || '');
+
+    useEffect(() => {
+        setOutputFormat(node.data.outputFormat || 'xlsx');
+        setOutputName(node.data.outputName || '');
+    }, [node]);
+
+    return (
+        <div className="flex flex-col h-full bg-white rounded-3xl shadow-xl border border-slate-100 py-6 px-4">
+            <h3 className="font-bold text-lg text-slate-800 mb-6 flex items-center gap-2"><Download size={20} className="text-emerald-600" /> Export Dataset</h3>
+            <div className="space-y-5 mb-6">
+                <div className="rounded-2xl border border-emerald-100 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
+                    Downloads appear only when this export step is present in the Sequence Flow and a dataset is connected through Data Flow.
+                </div>
+                <div>
+                    <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Output Format</label>
+                    <select
+                        className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 text-sm font-medium text-slate-700 outline-none transition-colors focus:border-emerald-500"
+                        value={outputFormat}
+                        onChange={(e) => setOutputFormat(e.target.value)}
+                    >
+                        <option value="xlsx">Excel Workbook (.xlsx)</option>
+                        <option value="csv">CSV File (.csv)</option>
+                        <option value="json">JSON File (.json)</option>
+                    </select>
+                </div>
+                <div>
+                    <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Optional File Name</label>
+                    <input
+                        type="text"
+                        className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 text-sm text-slate-700 outline-none transition-colors focus:border-emerald-500"
+                        value={outputName}
+                        onChange={(e) => setOutputName(e.target.value)}
+                        placeholder="customer_master_cleaned"
+                    />
+                </div>
+            </div>
+            <div className="mt-auto pt-4 border-t border-slate-200 flex justify-end">
+                <button onClick={() => onSave({ outputFormat, outputName })} className="px-5 py-2.5 bg-slate-900 border border-slate-800 hover:bg-slate-800 text-white font-bold rounded-xl shadow-lg transition-transform hover:-translate-y-0.5">
+                    Save Export Step
+                </button>
             </div>
         </div>
     );

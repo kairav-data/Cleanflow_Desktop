@@ -7,26 +7,40 @@ import WorkspaceTabs from '../components/WorkspaceTabs';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
 const STEPS = ['Upload', 'Configure', 'Results'];
+const DEFAULT_MATCH_RULE = { id: 1, column1: '', column2: '', algorithm: 'fuzzy', threshold: 0.8 };
 
-export default function DataMatchingBuilder({ onComplete }) {
+export default function DataMatchingBuilder({
+    onComplete,
+    initialSessionId = null,
+    initialDatasets = { dataset1: null, dataset2: null },
+    initialDatasetColumns = { dataset1: [], dataset2: [] },
+    initialOutputColumns = { dataset1: [], dataset2: [] },
+    initialMatchRules = [DEFAULT_MATCH_RULE],
+    initialDatasetMode = { dataset1: 'file', dataset2: 'file' },
+    initialDatasetQueries = { dataset1: 'SELECT * FROM table1 LIMIT 100', dataset2: 'SELECT * FROM table2 LIMIT 100' },
+    initialDatasetConnections = { dataset1: '', dataset2: '' },
+    initialWorkspaceTab = 'dataset1',
+    embedded = false,
+    onSaveConfig,
+}) {
     const [algorithms, setAlgorithms] = useState([]);
-    const [matchRules, setMatchRules] = useState([{ id: 1, column1: '', column2: '', algorithm: 'fuzzy', threshold: 0.8 }]);
-    const [datasets, setDatasets] = useState({ dataset1: null, dataset2: null });
-    const [datasetColumns, setDatasetColumns] = useState({ dataset1: [], dataset2: [] });
-    const [outputColumns, setOutputColumns] = useState({ dataset1: [], dataset2: [] });
-    const [sessionId] = useState(`match_${Date.now()}`);
+    const [matchRules, setMatchRules] = useState(initialMatchRules?.length ? initialMatchRules : [DEFAULT_MATCH_RULE]);
+    const [datasets, setDatasets] = useState(initialDatasets);
+    const [datasetColumns, setDatasetColumns] = useState(initialDatasetColumns);
+    const [outputColumns, setOutputColumns] = useState(initialOutputColumns);
+    const [sessionId, setSessionId] = useState(initialSessionId || `match_${Date.now()}`);
     const [finalResults, setFinalResults] = useState(null);
     const [totalMatches, setTotalMatches] = useState(0);
     const [loading, setLoading] = useState(false);
     const [progress, setProgress] = useState({ percent: 0, message: '', status: 'idle' });
-    const [step, setStep] = useState(1);
+    const [step, setStep] = useState(initialDatasets?.dataset1 && initialDatasets?.dataset2 ? 2 : 1);
     const [separators, setSeparators] = useState({ dataset1: ',', dataset2: ',' });
     const [elapsedTime, setElapsedTime] = useState(0);
     const [connections, setConnections] = useState([]);
-    const [datasetMode, setDatasetMode] = useState({ dataset1: 'file', dataset2: 'file' });
-    const [datasetQueries, setDatasetQueries] = useState({ dataset1: 'SELECT * FROM table1 LIMIT 100', dataset2: 'SELECT * FROM table2 LIMIT 100' });
-    const [datasetConnections, setDatasetConnections] = useState({ dataset1: '', dataset2: '' });
-    const [workspaceTab, setWorkspaceTab] = useState('dataset1');
+    const [datasetMode, setDatasetMode] = useState(initialDatasetMode);
+    const [datasetQueries, setDatasetQueries] = useState(initialDatasetQueries);
+    const [datasetConnections, setDatasetConnections] = useState(initialDatasetConnections);
+    const [workspaceTab, setWorkspaceTab] = useState(initialWorkspaceTab);
 
     const token = localStorage.getItem('token');
     const headers = token ? { Authorization: `Bearer ${token}` } : {};
@@ -90,6 +104,21 @@ export default function DataMatchingBuilder({ onComplete }) {
             ...prev,
             [datasetId]: prev[datasetId].includes(column) ? prev[datasetId].filter(c => c !== column) : [...prev[datasetId], column]
         }));
+    };
+
+    const handleSaveConfig = () => {
+        if (!onSaveConfig) return;
+        onSaveConfig({
+            matchingSessionId: sessionId,
+            datasets,
+            datasetColumns,
+            outputColumns,
+            matchRules,
+            datasetMode,
+            datasetQueries,
+            datasetConnections,
+            workspaceTab,
+        });
     };
 
     const handleExecute = async () => {
@@ -475,10 +504,17 @@ export default function DataMatchingBuilder({ onComplete }) {
                             <button onClick={() => setStep(1)} className="flex items-center gap-2 px-4 py-2 border border-slate-200 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-colors">
                                 ← Back
                             </button>
-                            <button onClick={handleExecute} disabled={matchRules.some(r => !r.column1 || !r.column2) || loading}
-                                className="flex items-center gap-2 px-6 py-3 bg-violet-600 hover:bg-violet-700 disabled:bg-slate-200 disabled:text-slate-400 text-white rounded-xl font-bold text-sm transition-all shadow-md shadow-violet-600/20 hover:-translate-y-0.5">
-                                <Play size={16} fill="currentColor" /> Run Matching Algorithms
-                            </button>
+                            <div className="flex items-center gap-3">
+                                {embedded && (
+                                    <button onClick={handleSaveConfig} className="flex items-center gap-2 px-5 py-2.5 border border-slate-200 hover:border-slate-300 hover:bg-slate-50 text-slate-700 rounded-xl font-bold text-sm transition-all">
+                                        Save to Pipeline
+                                    </button>
+                                )}
+                                <button onClick={handleExecute} disabled={matchRules.some(r => !r.column1 || !r.column2) || loading}
+                                    className="flex items-center gap-2 px-6 py-3 bg-violet-600 hover:bg-violet-700 disabled:bg-slate-200 disabled:text-slate-400 text-white rounded-xl font-bold text-sm transition-all shadow-md shadow-violet-600/20 hover:-translate-y-0.5">
+                                    <Play size={16} fill="currentColor" /> Run Matching Algorithms
+                                </button>
+                            </div>
                         </div>
                         </div>
                         ) : (

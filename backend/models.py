@@ -212,8 +212,9 @@ class SavedPipelineItem(SavedPipelineCreate):
 
 
 class PipelineScheduleCreate(BaseModel):
-    pipeline_id: str
-    schedule_name: str
+    id: Optional[str] = None
+    pipeline_id: Optional[str] = None
+    schedule_name: Optional[str] = None
     frequency: str                   # Hourly | Daily | Weekly | Monthly
     run_time: str                    # HH:MM
     day_of_week: Optional[str] = None

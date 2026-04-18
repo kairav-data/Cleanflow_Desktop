@@ -6,20 +6,31 @@ import DataConnection from '../components/DataConnection';
 import DatasetViewer from '../components/DatasetViewer';
 import WorkspaceTabs from '../components/WorkspaceTabs';
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'import.meta.env.VITE_API_URL';
+const API_BASE = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || 'http://localhost:8000';
 const STEPS = ['Upload', 'Configure', 'Results'];
 
-export default function SchemaMapper({ onComplete }) {
+export default function SchemaMapper({
+    sessionId: initialSessionId = null,
+    columns: initialColumns = [],
+    initialSourceConfig = null,
+    initialTargetSchema = '',
+    initialMappings = {},
+    initialTransformations = {},
+    embedded = false,
+    onSaveConfig,
+    onComplete,
+}) {
     const [transformations, setTransformations] = useState([]);
-    const [targetColumns, setTargetColumns] = useState('');
-    const [mappings, setMappings] = useState({});
-    const [columnTransforms, setColumnTransforms] = useState({});
+    const [targetColumns, setTargetColumns] = useState(initialTargetSchema);
+    const [mappings, setMappings] = useState(initialMappings);
+    const [columnTransforms, setColumnTransforms] = useState(initialTransformations);
     const [previewData, setPreviewData] = useState(null);
     const [loading, setLoading] = useState(false);
-    const [step, setStep] = useState(0); // 0: Upload, 1: Configure, 2: Preview, 3: Complete
-    const [sessionId, setSessionId] = useState(null);
-    const [columns, setColumns] = useState([]);
-    const [workspaceTab, setWorkspaceTab] = useState('dataset');
+    const [step, setStep] = useState(initialSessionId ? 1 : 0); // 0: Upload, 1: Configure, 2: Preview, 3: Complete
+    const [sessionId, setSessionId] = useState(initialSessionId);
+    const [columns, setColumns] = useState(initialColumns);
+    const [sourceConfig, setSourceConfig] = useState(initialSourceConfig || null);
+    const [workspaceTab, setWorkspaceTab] = useState(initialSessionId ? 'dataset' : 'dataset');
 
     useEffect(() => { fetchTransformations(); }, []);
 
@@ -75,6 +86,18 @@ export default function SchemaMapper({ onComplete }) {
 
     const addTransformation = (targetCol, transformId) => {
         setColumnTransforms(prev => ({ ...prev, [targetCol]: [...(prev[targetCol] || []), transformId] }));
+    };
+
+    const handleSaveConfig = () => {
+        if (!onSaveConfig) return;
+        onSaveConfig({
+            sessionId,
+            columns,
+            sourceConfig,
+            targetSchema: targetColumns,
+            mappings,
+            columnTransforms,
+        });
     };
 
     const mappedCount = Object.values(mappings).filter(Boolean).length;
@@ -133,6 +156,7 @@ export default function SchemaMapper({ onComplete }) {
                             onUploadSuccess={(data) => {
                                 setSessionId(data.session_id);
                                 setColumns(data.columns || []);
+                                setSourceConfig(data.source_config || data.sourceConfig || null);
                                 setWorkspaceTab('dataset');
                                 setStep(1);
                             }} 
@@ -240,7 +264,13 @@ export default function SchemaMapper({ onComplete }) {
                             </div>
                         </div>
 
-                        <div className="flex justify-end mt-5 pt-4 border-t border-slate-100">
+                        <div className="flex flex-wrap justify-end gap-3 mt-5 pt-4 border-t border-slate-100">
+                            {embedded && (
+                                <button onClick={handleSaveConfig} disabled={!sessionId}
+                                    className="flex items-center gap-2 px-5 py-2.5 border border-slate-200 hover:border-slate-300 hover:bg-slate-50 disabled:bg-slate-100 disabled:text-slate-400 disabled:border-slate-200 text-slate-700 rounded-xl font-bold text-sm transition-all">
+                                    Save to Pipeline
+                                </button>
+                            )}
                             <button onClick={handlePreview} disabled={mappedCount === 0 || loading}
                                 className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-200 disabled:text-slate-400 text-white rounded-xl font-bold text-sm transition-all shadow-md shadow-indigo-600/20 hover:-translate-y-0.5">
                                 <Eye size={16} /> Preview Mapped Data

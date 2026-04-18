@@ -54,11 +54,21 @@ const DownloadCard = ({ fmt, label, Icon, onClick }) => (
     </button>
 );
 
-export default function EnrichmentBuilder({ sessionId: initialSessionId, columns: initialColumns, onComplete, user = null }) {
+export default function EnrichmentBuilder({
+    sessionId: initialSessionId,
+    columns: initialColumns,
+    initialSourceConfig = null,
+    initialRules = [],
+    embedded = false,
+    onSaveConfig,
+    onComplete,
+    user = null,
+}) {
     const [sessionId, setSessionId] = useState(initialSessionId || null);
     const [columns, setColumns] = useState(initialColumns || []);
+    const [sourceConfig, setSourceConfig] = useState(initialSourceConfig || null);
     const [operations, setOperations] = useState([]);
-    const [rules, setRules] = useState([]);
+    const [rules, setRules] = useState(() => mapImportedOperations(initialRules, initialColumns || [], []));
     const [previewData, setPreviewData] = useState([]);
     const [loading, setLoading] = useState(false);
     const [step, setStep] = useState(initialSessionId ? 2 : 1);
@@ -133,6 +143,16 @@ export default function EnrichmentBuilder({ sessionId: initialSessionId, columns
     const buildPayload = () => ({
         rules: rules.map(({ column, operation, params }) => ({ column, operation, params })),
     });
+
+    const handleSaveConfig = () => {
+        if (!onSaveConfig) return;
+        onSaveConfig({
+            sessionId,
+            columns,
+            sourceConfig,
+            rules: buildPayload().rules,
+        });
+    };
 
     const applyRepoOperations = (repoOperations, mode = 'replace') => {
         const mapped = mapImportedOperations(repoOperations || [], columns, operations);
@@ -419,6 +439,7 @@ export default function EnrichmentBuilder({ sessionId: initialSessionId, columns
                             onUploadSuccess={(data) => {
                                 setSessionId(data.session_id);
                                 setColumns(data.columns || []);
+                                setSourceConfig(data.source_config || data.sourceConfig || null);
                                 setRules([]);
                                 setPreviewData([]);
                                 setWorkspaceTab('dataset');
@@ -453,6 +474,11 @@ export default function EnrichmentBuilder({ sessionId: initialSessionId, columns
                                         <p className="mt-1 text-sm text-slate-500">{rules.length} operation{rules.length !== 1 ? 's' : ''} in the current pipeline</p>
                                     </div>
                                     <div className="flex flex-wrap gap-2">
+                                        {embedded && (
+                                            <button type="button" onClick={handleSaveConfig} disabled={!sessionId} className="flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400">
+                                                Apply to Pipeline
+                                            </button>
+                                        )}
                                         <button type="button" onClick={() => setShowRepoSidebar(true)} className="flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-700 transition-colors hover:bg-emerald-100">
                                             <BookOpen size={16} /> Global Repo
                                         </button>
@@ -530,7 +556,7 @@ export default function EnrichmentBuilder({ sessionId: initialSessionId, columns
                                     )}
                                 </div>
 
-                                {rules.length > 0 && (
+                                {rules.length > 0 && !embedded && (
                                     <div className="flex justify-end border-t border-slate-100 pt-4">
                                         <button type="button" onClick={handlePreview} disabled={loading} className="flex items-center gap-2.5 rounded-xl bg-emerald-600 px-6 py-3 text-sm font-bold text-white shadow-md shadow-emerald-600/20 transition-all hover:-translate-y-0.5 hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400">
                                             <Eye size={16} /> Preview Cleaned Data
@@ -542,7 +568,7 @@ export default function EnrichmentBuilder({ sessionId: initialSessionId, columns
                     </motion.div>
                 )}
 
-                {!loading && step === 3 && (
+                {!loading && !embedded && step === 3 && (
                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
                         <div className="mb-5 flex items-center justify-between">
                             <div>
@@ -588,7 +614,7 @@ export default function EnrichmentBuilder({ sessionId: initialSessionId, columns
                     </motion.div>
                 )}
 
-                {!loading && step === 4 && (
+                {!loading && !embedded && step === 4 && (
                     <motion.div initial={{ scale: 0.97, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="py-12 text-center">
                         <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-emerald-100">
                             <CheckCircle className="text-emerald-600" size={44} />

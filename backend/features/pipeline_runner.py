@@ -19,6 +19,7 @@ from features.cleaner import DataCleaner
 from features.mapper import SchemaMapper
 from features.matching import DataMatcher
 from features.scraper import WebScraper
+from features.transformer import DataTransformer
 from features.validation import PolarsValidationEngine, UPLOAD_DIR
 
 logger = logging.getLogger(__name__)
@@ -215,6 +216,28 @@ class PipelineOrchestrator:
             if isinstance(source_df, pl.DataFrame):
                 datasets.append(source_df.clone())
         return datasets
+
+    def _collect_input_bindings(
+        self,
+        node_id: str,
+        incoming_map: Dict[str, List[Dict[str, Any]]],
+        node_outputs: Dict[str, pl.DataFrame],
+        node_map: Dict[str, Dict[str, Any]],
+    ) -> List[Dict[str, Any]]:
+        bindings: List[Dict[str, Any]] = []
+        for edge in incoming_map.get(node_id, []):
+            source_id = edge.get("source")
+            source_df = node_outputs.get(source_id)
+            if not isinstance(source_df, pl.DataFrame):
+                continue
+            source_node = node_map.get(source_id, {})
+            source_data = source_node.get("data", {}) if isinstance(source_node, dict) else {}
+            bindings.append({
+                "source_node_id": source_id,
+                "source_label": source_data.get("label") or source_id or "Connected Dataset",
+                "dataframe": source_df.clone(),
+            })
+        return bindings
 
     async def _resolve_local_dataset(self, node_type: str, data: Dict[str, Any]) -> Optional[pl.DataFrame]:
         session_df = self._resolve_session_dataframe(data.get("sessionId"))
@@ -619,7 +642,8 @@ class PipelineOrchestrator:
                 node = node_map[node_id]
                 node_type = self._node_type(node)
                 data = node.get("data", {})
-                input_datasets = self._collect_inputs(node_id, incoming_map, node_outputs)
+                input_bindings = self._collect_input_bindings(node_id, incoming_map, node_outputs, node_map)
+                input_datasets = [binding["dataframe"].clone() for binding in input_bindings]
                 primary_df = input_datasets[0].clone() if input_datasets else None
 
                 if capture_inputs_for_node_id and node_id == capture_inputs_for_node_id:
@@ -630,6 +654,14 @@ class PipelineOrchestrator:
                         "captured_node_id": node_id,
                         "captured_node_type": node_type,
                         "captured_inputs": [dataset.clone() for dataset in resolved_inputs],
+                        "captured_input_bindings": [
+                            {
+                                "source_node_id": binding["source_node_id"],
+                                "source_label": binding["source_label"],
+                                "dataframe": binding["dataframe"].clone(),
+                            }
+                            for binding in input_bindings
+                        ],
                     }
 
                 if node_type == "dataset":
@@ -662,7 +694,8 @@ class PipelineOrchestrator:
                     continue
 
                 if node_type == "cleaner":
-                    current_df = self._require_dataframe(node_type, node_id, await local_first(node_type, data, input_datasets))
+                    resolved_inputs = await local_first(node_type, data, input_datasets)
+                    current_df = self._require_dataframe(node_type, node_id, resolved_inputs)
                     cleaner = DataCleaner(self.session_id)
                     cleaner.df = current_df
                     result = await cleaner.execute({"rules": data.get("rules", [])})
@@ -751,6 +784,33 @@ class PipelineOrchestrator:
                     node_outputs[node_id] = next_df.clone()
                     final_df = next_df.clone()
                     append_log(node_id, node_type, "success", f"Removed duplicates and kept {len(next_df)} unique row(s)")
+                    continue
+
+                if node_type == "transformer":
+                    current_df = self._require_dataframe(node_type, node_id, await local_first(node_type, data, input_datasets))
+                    transformer_steps = data.get("transformerSteps", [])
+                    if not transformer_steps:
+                        node_outputs[node_id] = current_df.clone()
+                        final_df = current_df.clone()
+                        append_log(node_id, node_type, "skipped", "No transformation steps configured — dataset passed through unchanged.")
+                        continue
+                    t = DataTransformer(self.session_id)
+                    t.df = current_df.clone()
+                    if input_bindings:
+                        for lookup_binding in input_bindings[1:]:
+                            t.register_lookup(
+                                str(lookup_binding["source_node_id"]),
+                                str(lookup_binding["source_label"]),
+                                lookup_binding["dataframe"].clone(),
+                            )
+                    result = t._execute_steps({"steps": transformer_steps}, preview_limit=None)
+                    if not result.success:
+                        raise ValueError(result.error or "Transformation failed")
+                    next_df = pl.from_dicts(result.data) if result.data else current_df
+                    node_outputs[node_id] = next_df.clone()
+                    final_df = next_df.clone()
+                    step_count = len(transformer_steps)
+                    append_log(node_id, node_type, "success", f"Applied {step_count} transformation step(s): {len(current_df)} → {len(next_df)} rows, {len(next_df.columns)} cols")
                     continue
 
                 if node_type == "conditional":

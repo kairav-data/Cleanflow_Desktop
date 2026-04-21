@@ -14,7 +14,7 @@ import {
   MarkerType,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import { Database, Sparkles, ShieldCheck, Download, Play, CheckCircle, X, Plus, Trash2, AlertCircle, Globe, GitMerge, Shuffle, BarChart3, Activity, TrendingUp, PieChart as PieIcon, RefreshCw, ChevronDown, ChevronUp, Zap, Settings, Filter, Calculator, Link, Files, Repeat, GitBranch, Mail, Webhook, Save, FolderOpen, Clock, CalendarDays, Workflow, ArrowDownUp, ArrowRightLeft, TerminalSquare } from 'lucide-react';
+import { Database, Sparkles, ShieldCheck, Download, Play, CheckCircle, X, Plus, Trash2, AlertCircle, Globe, GitMerge, Shuffle, BarChart3, Activity, TrendingUp, PieChart as PieIcon, RefreshCw, ChevronDown, ChevronUp, Zap, Settings, Filter, Calculator, Link, Files, Repeat, GitBranch, Mail, Webhook, Save, FolderOpen, Clock, CalendarDays, Workflow, ArrowDownUp, ArrowRightLeft, TerminalSquare, ArrowLeftRight } from 'lucide-react';
 import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -24,6 +24,7 @@ import EnrichmentBuilder from './EnrichmentBuilder';
 import SchemaMapper from './SchemaMapper';
 import DataMatchingBuilder from './DataMatchingBuilder';
 import DataVisualizer from './DataVisualizer';
+import DataTransformer from './DataTransformer';
 import PipelineScriptWorkspace from './PipelineScriptWorkspace';
 import {
   SCRIPT_NODE_KIND,
@@ -231,6 +232,22 @@ const PIPELINE_NODE_DEFS = {
     accent: '#475569',
     bg: '#f8fafc',
     libraryBadgeClass: 'border-slate-200 bg-slate-50 text-slate-700',
+    supportsSequenceIn: true,
+    supportsSequenceOut: true,
+    supportsDataIn: true,
+    supportsDataOut: true,
+  },
+  transformer: {
+    kind: 'transformer',
+    label: 'Data Transformation',
+    library: 'data',
+    section: 'services',
+    sectionLabel: 'Data Services',
+    description: 'Apply a low-code chain of Polars transformations — rename, split, lookup join, math, and more.',
+    icon: ArrowLeftRight,
+    accent: '#7c3aed',
+    bg: '#f5f3ff',
+    libraryBadgeClass: 'border-violet-200 bg-violet-50 text-violet-700',
     supportsSequenceIn: true,
     supportsSequenceOut: true,
     supportsDataIn: true,
@@ -568,6 +585,13 @@ const FEATURE_OVERLAY_META = {
     pillClass: 'border-violet-100 bg-violet-50 text-violet-700',
     iconClass: 'border-violet-100 bg-violet-50 text-violet-600',
   },
+  transformer: {
+    badge: 'Transformation',
+    description: 'Build low-code transformation steps against the main input and any connected lookup datasets.',
+    icon: ArrowLeftRight,
+    pillClass: 'border-violet-100 bg-violet-50 text-violet-700',
+    iconClass: 'border-violet-100 bg-violet-50 text-violet-600',
+  },
   script: {
     badge: 'Script',
     description: 'Choose SQL or Python, validate syntax, preview the incoming dataset, and save the script back into this node.',
@@ -589,6 +613,9 @@ const isNodeConfigured = (node) => {
   }
   if (kind === 'matching') {
     return Array.isArray(node.data?.matchRules) && node.data.matchRules.length > 0;
+  }
+  if (kind === 'transformer') {
+    return Array.isArray(node.data?.transformerSteps) && node.data.transformerSteps.length > 0;
   }
   if (kind === 'scraper') {
     return !!node.data?.template && (((node.data?.urls || []).length > 0) || !!node.data?.url?.trim());
@@ -986,6 +1013,14 @@ export const PipelineBuilder = ({ onComplete }) => {
       if (kind === 'matching' && incomingDataEdges.length === 1 && !hasLocalSource) {
         issues.push('Data Matching needs two connected datasets or a saved matching workspace.');
       }
+      if (kind === 'transformer') {
+        const usesLookupJoin = Array.isArray(node.data?.transformerSteps)
+          && node.data.transformerSteps.some((step) => step?.operation === 'lookup_join');
+        const availableInputs = incomingDataEdges.length + (hasLocalSource ? 1 : 0);
+        if (usesLookupJoin && availableInputs < 2) {
+          issues.push('Data Transformation lookup joins need a main input plus at least one additional lookup dataset connection.');
+        }
+      }
     });
 
     return issues;
@@ -1294,6 +1329,30 @@ export const PipelineBuilder = ({ onComplete }) => {
       );
     }
 
+    if (activeNodeKind === 'transformer') {
+      return (
+        <DataTransformer
+          key={`transformer-workspace-${nodeId}`}
+          embedded={true}
+          embeddedSessionId={sharedSessionId}
+          embeddedColumns={sharedColumns}
+          initialSteps={activeNode.data.transformerSteps || []}
+          pipelineContext={{
+            sessionId: resolveExecutionSessionId(nodes),
+            targetNodeId: nodeId,
+            pipelineId,
+            pipelineName,
+            nodes: serializeNodes(nodes),
+            edges: serializeEdges(edges),
+          }}
+          onSaveConfig={({ columns, steps }) => {
+            updateNodeData(nodeId, { columns, transformerSteps: steps });
+            closeNodeConfigurator();
+          }}
+        />
+      );
+    }
+
     if (activeNodeKind === SCRIPT_NODE_KIND) {
       return (
         <PipelineScriptWorkspace
@@ -1435,7 +1494,8 @@ export const PipelineBuilder = ({ onComplete }) => {
                     { type: 'filter', label: 'Filter Rows', icon: Filter, color: '#f59e0b', bg: '#f59e0b15' },
                     { type: 'aggregate', label: 'Aggregate', icon: Calculator, color: '#ec4899', bg: '#ec489915' },
                     { type: 'join', label: 'Dataset Join', icon: ArrowRightLeft, color: '#14b8a6', bg: '#14b8a615' },
-                    { type: 'deduplicate', label: 'Deduplicate', icon: Files, color: '#64748b', bg: '#64748b15' }]
+                    { type: 'deduplicate', label: 'Deduplicate', icon: Files, color: '#64748b', bg: '#64748b15' },
+                    { type: 'transformer', label: 'Data Transformation', icon: ArrowLeftRight, color: '#7c3aed', bg: '#7c3aed15' }]
                   .map(n => (
                       <div key={n.type}
                           draggable
@@ -1529,7 +1589,8 @@ export const PipelineBuilder = ({ onComplete }) => {
                           { type: 'filter', label: 'Filter Rows', icon: Filter, color: '#f59e0b', bg: '#f59e0b15' },
                           { type: 'aggregate', label: 'Aggregate', icon: Calculator, color: '#ec4899', bg: '#ec489915' },
                           { type: 'join', label: 'Dataset Join', icon: ArrowRightLeft, color: '#14b8a6', bg: '#14b8a615' },
-                          { type: 'deduplicate', label: 'Deduplicate', icon: Files, color: '#64748b', bg: '#64748b15' }]
+                          { type: 'deduplicate', label: 'Deduplicate', icon: Files, color: '#64748b', bg: '#64748b15' },
+                          { type: 'transformer', label: 'Data Transformation', icon: ArrowLeftRight, color: '#7c3aed', bg: '#7c3aed15' }]
                         .map(n => (
                             <div key={n.type}
                                 draggable

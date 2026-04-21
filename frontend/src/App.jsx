@@ -5,7 +5,7 @@ import {
     LogOut, Search, Sparkles, Database,
     FileCheck, ArrowRight, Zap, Check,
     Globe, ChevronRight, Shuffle, GitMerge, RefreshCw, Trash2, ShieldCheck, AlertTriangle, BarChart3, TrendingUp,
-    Menu, X, Home, LayoutDashboard, Settings, User, FolderClock, Clock3, BarChart2, BookOpen
+    Menu, X, Home, LayoutDashboard, Settings, User, FolderClock, Clock3, BarChart2, BookOpen, ArrowLeftRight
 } from 'lucide-react';
 
 // Components
@@ -17,7 +17,7 @@ import ChatBot from './components/ChatBot';
 import { formatDateTimeInIST } from './lib/utils';
 
 // Feature Builders
-import { EnrichmentBuilder, ScraperBuilder, SchemaMapper, DataMatchingBuilder, PricingIntelligenceBuilder, PipelineBuilder, SchedulerBuilder, PipelineRuns, DataVisualizer, GlobalRepositoryBuilder } from './features';
+import { EnrichmentBuilder, ScraperBuilder, SchemaMapper, DataMatchingBuilder, PricingIntelligenceBuilder, PipelineBuilder, SchedulerBuilder, PipelineRuns, DataVisualizer, GlobalRepositoryBuilder, DataTransformer } from './features';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || 'http://localhost:8000';
 const Motion = motion;
@@ -774,6 +774,13 @@ function App() {
                 </motion.div>
             )}
 
+            {/* 13. DATA TRANSFORMER VIEW */}
+            {activeTab === 'transformer' && (
+                <motion.div key="transformer-tab" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="w-full h-full">
+                    <DataTransformer />
+                </motion.div>
+            )}
+
             {/* USAGE VIEW */}
             {activeTab === 'usage' && (
                 <motion.div key="usage-tab" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="w-full h-full">
@@ -911,6 +918,7 @@ function App() {
                             {[
                                 { id: 'validate', label: 'Quality Validation', icon: ShieldCheck },
                                 { id: 'enrichment', label: 'Data Cleaning', icon: Sparkles },
+                                { id: 'transformer', label: 'Data Transformation', icon: ArrowLeftRight },
                                 { id: 'mapper', label: 'Schema Mapping', icon: GitMerge },
                                 { id: 'scraper', label: 'Web Scraping', icon: Globe },
                                 { id: 'matching', label: 'Data Matching', icon: Shuffle },
@@ -1004,7 +1012,7 @@ function App() {
 
             {/* Main Central Content Area */}
             <main className="relative flex h-screen flex-1 flex-col overflow-hidden bg-slate-50 pt-14 lg:pt-0">
-                <div className={`h-full w-full max-w-full flex-1 overflow-y-auto ${activeTab === 'pipeline' ? 'p-0' : activeTab === 'validate' || activeTab === 'repository' || activeTab === 'enrichment' || activeTab === 'scraper' || activeTab === 'mapper' || activeTab === 'matching' || activeTab === 'pricing-intelligence' || activeTab === 'visualizer' ? 'p-0' : 'p-4 md:p-6'}`}>
+                <div className={`h-full w-full max-w-full flex-1 overflow-y-auto ${activeTab === 'pipeline' ? 'p-0' : activeTab === 'validate' || activeTab === 'repository' || activeTab === 'enrichment' || activeTab === 'scraper' || activeTab === 'mapper' || activeTab === 'matching' || activeTab === 'pricing-intelligence' || activeTab === 'visualizer' || activeTab === 'transformer' ? 'p-0' : 'p-4 md:p-6'}`}>
                     {renderWorkspaceContent()}
                 </div>
             </main>

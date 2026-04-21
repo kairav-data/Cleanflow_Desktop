@@ -390,7 +390,151 @@ async def execute_cleaner(session_id: str, config: dict):
         engine.df = pl.DataFrame(result.data)
     return result.dict()
 
+
+# ─── Data Transformer Feature ────────────────────────────────────────────────
+
+transformer_sessions: dict = {}
+
+
+def _get_or_create_transformer(session_id: str):
+    from features.transformer import DataTransformer
+    if session_id not in transformer_sessions:
+        transformer_sessions[session_id] = DataTransformer(session_id)
+    return transformer_sessions[session_id]
+
+
+def _sync_transformer_df(session_id: str) -> bool:
+    if session_id not in sessions:
+        return False
+    eng = sessions[session_id]
+    if not hasattr(eng, "df") or eng.df is None:
+        return False
+    _get_or_create_transformer(session_id).df = eng.df.clone()
+    return True
+
+
+@app.get("/features/transformer/operations")
+async def get_transformer_operations():
+    from features.transformer import DataTransformer
+    return {"operations": DataTransformer.get_operations(), "categories": DataTransformer.get_categories()}
+
+
+@app.post("/features/transformer/preview/{session_id}")
+async def preview_transformer(session_id: str, config: dict):
+    if session_id not in sessions:
+        raise HTTPException(status_code=404, detail="Session not found")
+    if not _sync_transformer_df(session_id):
+        raise HTTPException(status_code=400, detail="No data loaded in this session")
+    t = _get_or_create_transformer(session_id)
+    result = await t.preview(config, limit=config.get("preview_limit", 200))
+    if not result.success:
+        raise HTTPException(status_code=400, detail=result.error)
+    return result.dict()
+
+
+@app.post("/features/transformer/execute/{session_id}")
+async def execute_transformer(session_id: str, config: dict):
+    if session_id not in sessions:
+        raise HTTPException(status_code=404, detail="Session not found")
+    if not _sync_transformer_df(session_id):
+        raise HTTPException(status_code=400, detail="No data loaded in this session")
+    t = _get_or_create_transformer(session_id)
+    result = await t.execute(config)
+    if not result.success:
+        raise HTTPException(status_code=400, detail=result.error)
+    if result.data:
+        new_df = pl.from_dicts(result.data)
+        sessions[session_id].df = new_df
+        t.df = new_df.clone()
+    return result.dict()
+
+
+@app.get("/features/transformer/export/{session_id}")
+async def export_transformer_data(session_id: str, format: str = "csv", filename: str = "transformed"):
+    if session_id not in sessions:
+        raise HTTPException(status_code=404, detail="Session not found")
+    eng = sessions[session_id]
+    if not hasattr(eng, "df") or eng.df is None:
+        raise HTTPException(status_code=400, detail="No data available")
+    import re as _re, json as _json
+    safe_name = _re.sub(r"[^A-Za-z0-9_-]+", "_", filename.strip()).strip("_") or "transformed"
+    os.makedirs(RESULTS_DIR, exist_ok=True)
+    file_path = os.path.join(RESULTS_DIR, f"{safe_name}.{format}")
+    df = eng.df
+    if format == "csv":
+        df.write_csv(file_path); media_type = "text/csv"
+    elif format == "json":
+        with open(file_path, "w", encoding="utf-8") as fh:
+            _json.dump(df.to_dicts(), fh, ensure_ascii=False, indent=2)
+        media_type = "application/json"
+    elif format == "xlsx":
+        df.write_excel(file_path)
+        media_type = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    else:
+        raise HTTPException(status_code=400, detail=f"Unsupported format: {format!r}")
+    return FileResponse(file_path, media_type=media_type, filename=f"{safe_name}.{format}")
+
+
+@app.post("/features/transformer/lookup/upload/{session_id}")
+async def upload_lookup_dataset(
+    session_id: str,
+    lookup_name: str = Form(...),
+    delimiter: str = Form(","),
+    file: UploadFile = File(...),
+):
+    if session_id not in sessions:
+        raise HTTPException(status_code=404, detail="Main dataset session not found")
+    try:
+        os.makedirs(UPLOAD_DIR, exist_ok=True)
+        stored = f"lkp_{session_id[:8]}_{uuid.uuid4().hex[:8]}_{_sanitize_upload_filename(file.filename)}"
+        file_path = os.path.join(UPLOAD_DIR, stored)
+        contents = await file.read()
+        with open(file_path, "wb") as buf:
+            buf.write(contents)
+        loop = asyncio.get_event_loop()
+        lkp_engine = ValidationEngine()
+        await loop.run_in_executor(None, lambda: lkp_engine.load_data(file_path=file_path, sep=delimiter))
+        if lkp_engine.df is None:
+            raise HTTPException(status_code=400, detail="Failed to read lookup file.")
+        lookup_id = uuid.uuid4().hex
+        _get_or_create_transformer(session_id).register_lookup(lookup_id, lookup_name or file.filename, lkp_engine.df)
+        return {"lookup_id": lookup_id, "name": lookup_name or file.filename,
+                "columns": lkp_engine.df.columns, "rows": len(lkp_engine.df)}
+    except HTTPException:
+        raise
+    except Exception as exc:
+        logger.exception("Lookup upload error")
+        raise HTTPException(status_code=500, detail=str(exc))
+
+
+@app.get("/features/transformer/lookup/list/{session_id}")
+async def list_lookup_datasets(session_id: str):
+    if session_id not in transformer_sessions:
+        return {"lookups": []}
+    return {"lookups": transformer_sessions[session_id].get_lookup_meta()}
+
+
+@app.get("/features/transformer/lookup/columns/{session_id}/{lookup_id}")
+async def get_lookup_columns_route(session_id: str, lookup_id: str):
+    if session_id not in transformer_sessions:
+        raise HTTPException(status_code=404, detail="Transformer session not found")
+    cols = transformer_sessions[session_id].get_lookup_columns(lookup_id)
+    if not cols:
+        raise HTTPException(status_code=404, detail="Lookup dataset not found")
+    return {"lookup_id": lookup_id, "columns": cols}
+
+
+@app.delete("/features/transformer/lookup/{session_id}/{lookup_id}")
+async def delete_lookup_dataset(session_id: str, lookup_id: str):
+    if session_id not in transformer_sessions:
+        raise HTTPException(status_code=404, detail="Transformer session not found")
+    if not transformer_sessions[session_id].remove_lookup(lookup_id):
+        raise HTTPException(status_code=404, detail="Lookup dataset not found")
+    return {"removed": lookup_id}
+
+
 @app.get("/features/export/{session_id}")
+
 async def export_data(session_id: str, format: str = "csv"):
     """Export current session data directly"""
     import os
@@ -1204,6 +1348,79 @@ async def preview_pipeline_script(session_id: str, config: dict, current_user: U
         })
 
     return response
+
+
+@app.post("/features/pipeline/transformer-workspace/{session_id}")
+async def resolve_pipeline_transformer_workspace(session_id: str, config: dict, current_user: UserInDB = Depends(get_current_user)):
+    target_node_id = str(config.get("targetNodeId") or "").strip()
+    if not target_node_id:
+        raise HTTPException(status_code=400, detail="Target node ID is required for the transformer workspace.")
+
+    engine = sessions.get(session_id)
+    initial_df = getattr(engine, "df", None) if engine is not None else None
+    orchestrator = PipelineOrchestrator(
+        session_id=session_id,
+        initial_df=initial_df,
+        session_store=sessions,
+        user_email=current_user.email,
+    )
+
+    capture_result = await orchestrator.execute_graph(
+        {
+            "pipelineId": config.get("pipelineId") or config.get("pipeline_id"),
+            "pipelineName": config.get("pipelineName") or config.get("pipeline_name") or "Untitled Pipeline",
+            "nodes": config.get("nodes") or [],
+            "edges": config.get("edges") or [],
+        },
+        capture_inputs_for_node_id=target_node_id,
+    )
+    if not capture_result.get("success"):
+        raise HTTPException(status_code=400, detail=capture_result.get("error", "Unable to resolve transformer inputs."))
+
+    captured_inputs = capture_result.get("captured_inputs") or []
+    if not captured_inputs:
+        raise HTTPException(
+            status_code=400,
+            detail="Connect a Data Flow input to this transformation task before opening the workspace.",
+        )
+
+    input_df = captured_inputs[0]
+    workspace_session = create_dataframe_session(input_df, sessions)
+    transformer = _get_or_create_transformer(workspace_session["session_id"])
+    transformer.df = input_df.clone()
+    transformer.lookup_datasets = {}
+
+    captured_input_bindings = capture_result.get("captured_input_bindings") or []
+    lookup_datasets = []
+    for index, binding in enumerate(captured_input_bindings[1:], start=1):
+        lookup_df = binding.get("dataframe")
+        if not isinstance(lookup_df, pl.DataFrame):
+            continue
+        lookup_id = str(binding.get("source_node_id") or f"lookup_{index}")
+        lookup_name = str(binding.get("source_label") or f"Lookup Dataset {index}")
+        transformer.register_lookup(lookup_id, lookup_name, lookup_df.clone())
+        lookup_datasets.append({
+            "lookup_id": lookup_id,
+            "name": lookup_name,
+            "columns": lookup_df.columns,
+            "rows": len(lookup_df),
+            "locked": True,
+            "source": "pipeline",
+        })
+
+    primary_binding = captured_input_bindings[0] if captured_input_bindings else None
+    primary_label = None
+    if isinstance(primary_binding, dict):
+        primary_label = primary_binding.get("source_label")
+
+    return {
+        "session_id": workspace_session["session_id"],
+        "columns": workspace_session["columns"],
+        "row_count": workspace_session["row_count"],
+        "preview_data": input_df.head(200).to_dicts(),
+        "primary_input_label": primary_label or "Pipeline Input",
+        "lookup_datasets": lookup_datasets,
+    }
 
 if __name__ == "__main__":
     import uvicorn

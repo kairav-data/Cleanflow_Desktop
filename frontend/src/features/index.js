@@ -9,4 +9,6 @@ export { default as SchedulerBuilder } from './SchedulerBuilder';
 export { default as PipelineRuns } from './PipelineRuns';
 export { default as DataVisualizer } from './DataVisualizer';
 export { default as GlobalRepositoryBuilder } from './GlobalRepositoryBuilder';
+export { default as DataTransformer } from './DataTransformer';
+
 

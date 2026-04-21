@@ -57,6 +57,27 @@ function App() {
                     localStorage.removeItem('token');
                     setUser(null);
                 });
+        } else {
+            // Check for OAuth callback token
+            const urlParams = new URLSearchParams(window.location.search);
+            const oauthToken = urlParams.get('token');
+            if (oauthToken) {
+                localStorage.setItem('token', oauthToken);
+                // Clean URL
+                window.history.replaceState({}, document.title, window.location.pathname);
+                // Fetch user
+                axios.get(`${API_BASE}/users/me`, {
+                    headers: { Authorization: `Bearer ${oauthToken}` }
+                })
+                    .then(res => {
+                        setUser(res.data);
+                        setActiveTab('dashboard');
+                    })
+                    .catch(() => {
+                        localStorage.removeItem('token');
+                        setUser(null);
+                    });
+            }
         }
     }, []);
 

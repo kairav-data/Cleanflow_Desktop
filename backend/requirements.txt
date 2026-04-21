@@ -27,3 +27,5 @@ resend
 huggingface_hub
 python-dotenv
 xlsxwriter
+authlib
+httpx

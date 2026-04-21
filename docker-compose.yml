@@ -12,11 +12,19 @@ services:
       # The static list in main.py already includes http://localhost:5173,
       # so this override is only needed if you change FRONTEND_PORT.
       - FRONTEND_URL=http://localhost:${FRONTEND_PORT:-5173}
+      - BASE_URL=http://localhost:${BACKEND_PORT:-8000}
       # ── Email Notification node credentials ──────────────────────────────────
       # Set these in ./backend/.env  (never commit real passwords to git)
       - SMTP_USER=${SMTP_USER:-}
       - SMTP_PASSWORD=${SMTP_PASSWORD:-}
       - SMTP_PORT=${SMTP_PORT:-587}
+      # ── OAuth Credentials ──────────────────────────────────────────────────────
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-}
+      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET:-}
+      - MICROSOFT_CLIENT_ID=${MICROSOFT_CLIENT_ID:-}
+      - MICROSOFT_CLIENT_SECRET=${MICROSOFT_CLIENT_SECRET:-}
+      - APPLE_CLIENT_ID=${APPLE_CLIENT_ID:-}
+      - APPLE_CLIENT_SECRET=${APPLE_CLIENT_SECRET:-}
     ports:
       - "${BACKEND_PORT:-8000}:8000"
     volumes:

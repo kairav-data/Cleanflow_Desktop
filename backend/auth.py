@@ -10,6 +10,8 @@ from database import get_user, create_user, update_user_otp, verify_user
 from email_utils import send_otp_email
 
 import os
+from authlib.integrations.httpx_client import AsyncOAuth2Client
+from starlette.responses import RedirectResponse
 
 # Configuration
 SECRET_KEY = os.getenv("AUTH_SECRET_KEY")
@@ -18,6 +20,14 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto") # Changed to bcrypt for standard PG compatibility
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+
+# OAuth Configuration
+GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
+GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET")
+MICROSOFT_CLIENT_ID = os.getenv("MICROSOFT_CLIENT_ID")
+MICROSOFT_CLIENT_SECRET = os.getenv("MICROSOFT_CLIENT_SECRET")
+APPLE_CLIENT_ID = os.getenv("APPLE_CLIENT_ID")
+APPLE_CLIENT_SECRET = os.getenv("APPLE_CLIENT_SECRET")
 
 router = APIRouter()
 
@@ -157,3 +167,152 @@ async def resend_otp(request: ResendOTPRequest):
 @router.get("/users/me", response_model=UserInDB)
 async def read_users_me(current_user: UserInDB = Depends(get_current_user)):
     return current_user
+
+# OAuth Routes
+@router.get("/auth/google")
+async def google_login():
+    if not GOOGLE_CLIENT_ID or not GOOGLE_CLIENT_SECRET:
+        raise HTTPException(status_code=500, detail="Google OAuth not configured")
+    client = AsyncOAuth2Client(
+        GOOGLE_CLIENT_ID,
+        GOOGLE_CLIENT_SECRET,
+        redirect_uri=f"{os.getenv('BASE_URL', 'http://localhost:8000')}/auth/google/callback"
+    )
+    authorization_url, state = client.create_authorization_url(
+        'https://accounts.google.com/o/oauth2/auth',
+        scope=['openid', 'email', 'profile']
+    )
+    return RedirectResponse(authorization_url)
+
+@router.get("/auth/google/callback")
+async def google_callback(code: str, state: str):
+    client = AsyncOAuth2Client(
+        GOOGLE_CLIENT_ID,
+        GOOGLE_CLIENT_SECRET,
+        redirect_uri=f"{os.getenv('BASE_URL', 'http://localhost:8000')}/auth/google/callback"
+    )
+    token = await client.fetch_token(
+        'https://oauth2.googleapis.com/token',
+        code=code
+    )
+    user_info = await client.get('https://www.googleapis.com/oauth2/v2/userinfo')
+    user_data = user_info.json()
+    
+    # Check if user exists, if not create
+    user = await get_user(user_data['email'])
+    if not user:
+        user_in_db = {
+            "email": user_data['email'],
+            "hashed_password": "",  # No password for OAuth
+            "full_name": user_data.get('name', ''),
+            "phone_number": "",
+            "professional_field": "",
+            "country": "",
+            "company_name": "",
+            "is_premium": False,
+            "is_verified": True
+        }
+        await create_user(user_in_db)
+    
+    access_token = create_access_token(data={"sub": user_data['email']})
+    frontend_url = os.getenv('FRONTEND_URL', 'http://localhost:3000')
+    return RedirectResponse(f"{frontend_url}/auth/callback?token={access_token}")
+
+@router.get("/auth/microsoft")
+async def microsoft_login():
+    if not MICROSOFT_CLIENT_ID or not MICROSOFT_CLIENT_SECRET:
+        raise HTTPException(status_code=500, detail="Microsoft OAuth not configured")
+    client = AsyncOAuth2Client(
+        MICROSOFT_CLIENT_ID,
+        MICROSOFT_CLIENT_SECRET,
+        redirect_uri=f"{os.getenv('BASE_URL', 'http://localhost:8000')}/auth/microsoft/callback"
+    )
+    authorization_url, state = client.create_authorization_url(
+        'https://login.microsoftonline.com/common/oauth2/v2.0/authorize',
+        scope=['openid', 'email', 'profile']
+    )
+    return RedirectResponse(authorization_url)
+
+@router.get("/auth/microsoft/callback")
+async def microsoft_callback(code: str, state: str):
+    client = AsyncOAuth2Client(
+        MICROSOFT_CLIENT_ID,
+        MICROSOFT_CLIENT_SECRET,
+        redirect_uri=f"{os.getenv('BASE_URL', 'http://localhost:8000')}/auth/microsoft/callback"
+    )
+    token = await client.fetch_token(
+        'https://login.microsoftonline.com/common/oauth2/v2.0/token',
+        code=code
+    )
+    user_info = await client.get('https://graph.microsoft.com/v1.0/me')
+    user_data = user_info.json()
+    
+    user = await get_user(user_data['mail'])
+    if not user:
+        user_in_db = {
+            "email": user_data['mail'],
+            "hashed_password": "",
+            "full_name": user_data.get('displayName', ''),
+            "phone_number": "",
+            "professional_field": "",
+            "country": "",
+            "company_name": "",
+            "is_premium": False,
+            "is_verified": True
+        }
+        await create_user(user_in_db)
+    
+    access_token = create_access_token(data={"sub": user_data['mail']})
+    frontend_url = os.getenv('FRONTEND_URL', 'http://localhost:3000')
+    return RedirectResponse(f"{frontend_url}/auth/callback?token={access_token}")
+
+@router.get("/auth/apple")
+async def apple_login():
+    if not APPLE_CLIENT_ID or not APPLE_CLIENT_SECRET:
+        raise HTTPException(status_code=500, detail="Apple OAuth not configured")
+    client = AsyncOAuth2Client(
+        APPLE_CLIENT_ID,
+        APPLE_CLIENT_SECRET,
+        redirect_uri=f"{os.getenv('BASE_URL', 'http://localhost:8000')}/auth/apple/callback"
+    )
+    authorization_url, state = client.create_authorization_url(
+        'https://appleid.apple.com/auth/authorize',
+        scope=['name', 'email']
+    )
+    return RedirectResponse(authorization_url)
+
+@router.get("/auth/apple/callback")
+async def apple_callback(code: str, state: str):
+    client = AsyncOAuth2Client(
+        APPLE_CLIENT_ID,
+        APPLE_CLIENT_SECRET,
+        redirect_uri=f"{os.getenv('BASE_URL', 'http://localhost:8000')}/auth/apple/callback"
+    )
+    token = await client.fetch_token(
+        'https://appleid.apple.com/auth/token',
+        code=code
+    )
+    # Apple doesn't provide user info directly, need to decode JWT
+    import base64
+    payload = token['id_token'].split('.')[1]
+    decoded = base64.urlsafe_b64decode(payload + '==')
+    user_data = jwt.decode(decoded, options={"verify_signature": False})
+    
+    user = await get_user(user_data['email'])
+    if not user:
+        user_in_db = {
+            "email": user_data['email'],
+            "hashed_password": "",
+            "full_name": "",
+            "phone_number": "",
+            "professional_field": "",
+            "country": "",
+            "company_name": "",
+            "is_premium": False,
+            "is_verified": True
+        }
+        await create_user(user_in_db)
+    
+    access_token = create_access_token(data={"sub": user_data['email']})
+    frontend_url = os.getenv('FRONTEND_URL', 'http://localhost:3000')
+    return RedirectResponse(f"{frontend_url}/auth/callback?token={access_token}")

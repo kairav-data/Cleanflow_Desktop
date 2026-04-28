@@ -1,0 +1,80 @@
+{
+  "name": "cleanflow-desktop",
+  "private": true,
+  "version": "1.0.0",
+  "description": "CleanFlow desktop application",
+  "main": "desktop/main.cjs",
+  "scripts": {
+    "install:frontend": "npm install --prefix frontend",
+    "install:backend": "python -m pip install -r backend/requirements.txt pyinstaller",
+    "build:renderer": "npm run install:frontend && npm --prefix frontend run build:desktop",
+    "build:backend": "npm run install:backend && python -m PyInstaller backend/CleanFlowBackend.spec --noconfirm",
+    "dist": "npm run build:renderer && npm run build:backend && electron-builder",
+    "start": "electron ."
+  },
+  "devDependencies": {
+    "electron": "^41.3.0",
+    "electron-builder": "^26.8.1"
+  },
+  "build": {
+    "appId": "com.cleanflow.desktop",
+    "productName": "CleanFlow Desktop",
+    "asar": true,
+    "directories": {
+      "output": "dist-electron"
+    },
+    "files": [
+      "desktop/**/*",
+      {
+        "from": "frontend/dist",
+        "to": "frontend/dist",
+        "filter": [
+          "**/*"
+        ]
+      }
+    ],
+    "extraResources": [
+      {
+        "from": "dist/CleanFlowBackend",
+        "to": "backend",
+        "filter": [
+          "**/*"
+        ]
+      },
+      {
+        "from": ".env",
+        "to": "config/root.env"
+      },
+      {
+        "from": "backend/.env",
+        "to": "config/backend.env"
+      }
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "artifactName": "CleanFlow-Desktop-${version}-${arch}.${ext}"
+    },
+    "portable": {
+      "artifactName": "CleanFlow-Desktop-Portable-${version}-${arch}.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "shortcutName": "CleanFlow Desktop"
+    }
+  }
+}

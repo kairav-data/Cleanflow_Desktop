@@ -17,6 +17,7 @@ from rapidfuzz import process, fuzz, utils
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.metrics.pairwise import cosine_similarity as sklearn_cosine_similarity
 from .base import BaseFeature, FeatureResult
+from .validation import UPLOAD_DIR
 try:
     from logger import setup_logger
     logger = setup_logger(__name__)
@@ -491,9 +492,8 @@ class DataMatcher(BaseFeature):
             else:
                 df = pl.DataFrame({"Message": ["No matches found"]})
 
-            upload_dir = os.path.join(os.getcwd(), "uploads")
-            os.makedirs(upload_dir, exist_ok=True)
-            file_path = os.path.join(upload_dir, f"matching_results_{self.session_id}.csv")
+            os.makedirs(UPLOAD_DIR, exist_ok=True)
+            file_path = os.path.join(UPLOAD_DIR, f"matching_results_{self.session_id}.csv")
             df.write_csv(file_path)
             return file_path
         except Exception as e:
@@ -509,9 +509,8 @@ class DataMatcher(BaseFeature):
             else:
                 df = pl.DataFrame({"Message": ["No matches found"]})
 
-            upload_dir = os.path.join(os.getcwd(), "uploads")
-            os.makedirs(upload_dir, exist_ok=True)
-            file_path = os.path.join(upload_dir, f"matching_results_{self.session_id}.xlsx")
+            os.makedirs(UPLOAD_DIR, exist_ok=True)
+            file_path = os.path.join(UPLOAD_DIR, f"matching_results_{self.session_id}.xlsx")
 
             try:
                 df.write_excel(file_path)

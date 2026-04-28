@@ -1,1047 +1,1183 @@
-import React, { useState, useEffect } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import axios from 'axios';
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 import {
-    LogOut, Search, Sparkles, Database,
-    FileCheck, ArrowRight, Zap, Check,
-    Globe, ChevronRight, Shuffle, GitMerge, RefreshCw, Trash2, ShieldCheck, AlertTriangle, BarChart3, TrendingUp,
-    Menu, X, Home, LayoutDashboard, Settings, User, FolderClock, Clock3, BarChart2, BookOpen, ArrowLeftRight
+  ArrowLeftRight,
+  BarChart2,
+  BarChart3,
+  Bell,
+  BookOpen,
+  Check,
+  ChevronDown,
+  ChevronsLeft,
+  Clock3,
+  FolderClock,
+  FolderCog,
+  Globe,
+  GripVertical,
+  Home,
+  LayoutDashboard,
+  LoaderCircle,
+  LogOut,
+  Logs,
+  Moon,
+  Play,
+  RefreshCw,
+  Search,
+  Settings,
+  ShieldCheck,
+  Shuffle,
+  Sparkles,
+  SunMedium,
+  TrendingUp,
+  UserCircle2,
+  Wand2,
+  X,
+  GitMerge,
+  Trash2,
 } from 'lucide-react';
 
-// Components
-import { DataConnection, RuleBuilder, ResultsDashboard, DatasetViewer, WorkspaceTabs } from './components';
-import { AuthModal, PaymentModal } from './components/modals';
-import { Footer, PlatformDropdown } from './components/common';
-import { HomePage, PricingPage, UserProfilePage, UsagePage } from './components/pages';
+import { DataConnection, DatasetViewer, ResultsDashboard, RuleBuilder } from './components';
+import { AuthModal } from './components/modals';
+import { UsagePage, UserProfilePage } from './components/pages';
 import ChatBot from './components/ChatBot';
+import {
+  DataMatchingBuilder,
+  DataTransformer,
+  DataVisualizer,
+  EnrichmentBuilder,
+  GlobalRepositoryBuilder,
+  PipelineBuilder,
+  PipelineRuns,
+  PricingIntelligenceBuilder,
+  SchedulerBuilder,
+  SchemaMapper,
+  ScraperBuilder,
+} from './features';
 import { formatDateTimeInIST } from './lib/utils';
 
-// Feature Builders
-import { EnrichmentBuilder, ScraperBuilder, SchemaMapper, DataMatchingBuilder, PricingIntelligenceBuilder, PipelineBuilder, SchedulerBuilder, PipelineRuns, DataVisualizer, GlobalRepositoryBuilder, DataTransformer } from './features';
-
 const API_BASE = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || 'http://localhost:8000';
-const Motion = motion;
+const IS_DESKTOP_APP = import.meta.env.VITE_DESKTOP_APP === 'true' || Boolean(window.cleanflowDesktop);
+
+const sectionItems = [
+  { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { id: 'tasks', label: 'Tasks', icon: Sparkles },
+  { id: 'configuration', label: 'Configuration', icon: FolderCog },
+  { id: 'logs', label: 'Logs', icon: Logs },
+  { id: 'settings', label: 'Settings', icon: Settings },
+];
+
+const featureGroups = {
+  dashboard: [
+    { id: 'dashboard', label: 'Overview', icon: Home, description: 'Workspace summary and shortcuts' },
+  ],
+  tasks: [
+    { id: 'validate', label: 'Validation', icon: ShieldCheck, description: 'Rule-based data quality checks' },
+    { id: 'enrichment', label: 'Data Cleaning', icon: Sparkles, description: 'Smart enrichment and cleanup' },
+    { id: 'transformer', label: 'Data Transformation', icon: ArrowLeftRight, description: 'Guided data transformation' },
+    { id: 'mapper', label: 'Schema Mapper', icon: GitMerge, description: 'Schema mapping and remapping' },
+    { id: 'scraper', label: 'Web Scraper', icon: Globe, description: 'Web data extraction' },
+    { id: 'matching', label: 'Data Matching', icon: Shuffle, description: 'Record matching and comparisons' },
+    { id: 'pricing-intelligence', label: 'Pricing Intelligence', icon: TrendingUp, description: 'Pricing intelligence flows' },
+    { id: 'visualizer', label: 'Data Visualizer', icon: BarChart3, description: 'AI charts and insights' },
+    { id: 'pipeline', label: 'Pipeline Builder', icon: GripVertical, description: 'Workflow builder and orchestration' },
+    { id: 'scheduler', label: 'Scheduler', icon: Clock3, description: 'Scheduled workflow execution' },
+    { id: 'pipeline-runs', label: 'Pipeline Runs', icon: FolderClock, description: 'Execution history and runs' },
+  ],
+  configuration: [
+    { id: 'repository', label: 'Repository', icon: BookOpen, description: 'Global reusable assets' },
+    { id: 'usage', label: 'Usage', icon: BarChart2, description: 'Workspace usage and resources' },
+  ],
+  logs: [
+    { id: 'logs', label: 'Execution Logs', icon: Logs, description: 'Recent jobs and outcomes' },
+  ],
+  settings: [
+    { id: 'workspace-settings', label: 'Workspace', icon: Settings, description: 'Appearance and behavior' },
+    { id: 'profile', label: 'Profile', icon: UserCircle2, description: 'Account details' },
+  ],
+};
+
+const featureCards = [
+  { id: 'validate', title: 'Quality Validation', subtitle: 'Upload, configure, preview, and validate with no code.', icon: ShieldCheck },
+  { id: 'enrichment', title: 'Data Cleaning', subtitle: 'Clean and enrich records with guided inputs.', icon: Sparkles },
+  { id: 'transformer', title: 'Data Transformation', subtitle: 'Apply structured transformations safely.', icon: ArrowLeftRight },
+  { id: 'mapper', title: 'Schema Mapping', subtitle: 'Map source and target columns visually.', icon: GitMerge },
+  { id: 'scraper', title: 'Web Scraping', subtitle: 'Capture structured web data with workflows.', icon: Globe },
+  { id: 'matching', title: 'Data Matching', subtitle: 'Compare and resolve entity matches.', icon: Shuffle },
+  { id: 'pricing-intelligence', title: 'Pricing Intelligence', subtitle: 'Run pricing-specific analysis and flows.', icon: TrendingUp },
+  { id: 'visualizer', title: 'AI Visualizer', subtitle: 'Turn data into charts and summaries.', icon: BarChart3 },
+  { id: 'pipeline', title: 'Pipeline Builder', subtitle: 'Build orchestrated workflows across modules.', icon: GripVertical },
+  { id: 'scheduler', title: 'Scheduler', subtitle: 'Plan recurring pipeline execution.', icon: Clock3 },
+  { id: 'pipeline-runs', title: 'Pipeline Runs', subtitle: 'Inspect completed and active runs.', icon: FolderClock },
+  { id: 'repository', title: 'Global Repository', subtitle: 'Store shared logic and reusable building blocks.', icon: BookOpen },
+];
+
+const moduleSectionMap = Object.entries(featureGroups).reduce((acc, [section, items]) => {
+  items.forEach((item) => {
+    acc[item.id] = section;
+  });
+  return acc;
+}, {});
+
+const fullDesktopTabs = new Set([
+  'validate',
+  'enrichment',
+  'transformer',
+  'mapper',
+  'scraper',
+  'matching',
+  'pricing-intelligence',
+  'visualizer',
+  'pipeline',
+  'scheduler',
+  'pipeline-runs',
+  'repository',
+  'usage',
+]);
 
 function App() {
-    const [activeTab, setActiveTab] = useState('home');
-    const [step, setStep] = useState(1);
-    const [sessionId, setSessionId] = useState(null);
-    const [columns, setColumns] = useState([]);
-    const [filename, setFilename] = useState('');
-    const [validationResults, setValidationResults] = useState(null);
-    const [validationView, setValidationView] = useState('dataset');
-    const [validationRules, setValidationRules] = useState([]); // lifted so rules survive tab switches
+  const [activeTab, setActiveTab] = useState('dashboard');
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [moduleRailState, setModuleRailState] = useState('expanded');
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+  const [theme, setTheme] = useState('light');
 
-    const [user, setUser] = useState(null);
-    const [isAuthOpen, setIsAuthOpen] = useState(false);
-    const [intendedTab, setIntendedTab] = useState(null);
-    const [authDefaultMode, setAuthDefaultMode] = useState('login');
-    const [recentJobs, setRecentJobs] = useState([]);
-    const [jobsLoading, setJobsLoading] = useState(false);
-    const [historyModuleTab, setHistoryModuleTab] = useState('validation');
+  const [step, setStep] = useState(1);
+  const [sessionId, setSessionId] = useState(null);
+  const [columns, setColumns] = useState([]);
+  const [filename, setFilename] = useState('');
+  const [validationResults, setValidationResults] = useState(null);
+  const [validationView, setValidationView] = useState('dataset');
+  const [validationRules, setValidationRules] = useState([]);
 
-    // Mobile Sidebar Toggle
-    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [user, setUser] = useState(null);
+  const [isAuthOpen, setIsAuthOpen] = useState(false);
+  const [intendedTab, setIntendedTab] = useState(null);
+  const [authDefaultMode, setAuthDefaultMode] = useState('login');
+  const [recentJobs, setRecentJobs] = useState([]);
+  const [jobsLoading, setJobsLoading] = useState(false);
+  const [historyModuleTab, setHistoryModuleTab] = useState('validation');
+  const [searchText, setSearchText] = useState('');
+  const [backendStatus, setBackendStatus] = useState({ state: 'checking', message: 'Connecting to the local CleanFlow service...' });
+  const [desktopRuntime, setDesktopRuntime] = useState(null);
 
-    useEffect(() => {
-        const token = localStorage.getItem('token');
-        if (token) {
-            axios.get(`${API_BASE}/users/me`, {
-                headers: { Authorization: `Bearer ${token}` }
-            })
-                .then(res => {
-                    setUser(res.data);
-                    setActiveTab((prev) => (prev === 'home' ? 'dashboard' : prev));
-                })
-                .catch(() => {
-                    localStorage.removeItem('token');
-                    setUser(null);
-                });
-        } else {
-            // Check for OAuth callback token
-            const urlParams = new URLSearchParams(window.location.search);
-            const oauthToken = urlParams.get('token');
-            if (oauthToken) {
-                localStorage.setItem('token', oauthToken);
-                // Clean URL
-                window.history.replaceState({}, document.title, window.location.pathname);
-                // Fetch user
-                axios.get(`${API_BASE}/users/me`, {
-                    headers: { Authorization: `Bearer ${oauthToken}` }
-                })
-                    .then(res => {
-                        setUser(res.data);
-                        setActiveTab('dashboard');
-                    })
-                    .catch(() => {
-                        localStorage.removeItem('token');
-                        setUser(null);
-                    });
-            }
+  useEffect(() => {
+    let isActive = true;
+
+    const loadDesktopRuntime = async () => {
+      if (!IS_DESKTOP_APP || !window.cleanflowDesktop?.getRuntimeInfo) return;
+      try {
+        const runtimeInfo = await window.cleanflowDesktop.getRuntimeInfo();
+        if (isActive) {
+          setDesktopRuntime(runtimeInfo);
         }
-    }, []);
-
-    const fetchRecentJobs = async () => {
-        const token = localStorage.getItem('token');
-        if (!token) return;
-
-        setJobsLoading(true);
-        try {
-            const res = await axios.get(`${API_BASE}/history/jobs`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            const sorted = (res.data || []).sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-            setRecentJobs(sorted);
-        } catch (e) {
-            console.error("Failed to fetch user history:", e);
-        } finally {
-            setJobsLoading(false);
-        }
+      } catch (error) {
+        console.error('Failed to load desktop runtime info:', error);
+      }
     };
 
-    useEffect(() => {
-        if (!user) {
-            setRecentJobs([]);
-            return;
+    const checkBackendHealth = async () => {
+      try {
+        const { data } = await axios.get(`${API_BASE}/health`);
+        if (!isActive) return;
+        if (data?.status === 'ok') {
+          setBackendStatus({ state: 'online', message: 'Local desktop service is connected and ready.' });
+          return;
         }
-        fetchRecentJobs();
-    }, [user, activeTab]);
-
-
-
-    const handleLogout = () => {
-        const shouldLogout = window.confirm("Are you sure you want to log out?");
-        if (!shouldLogout) return;
-
-        localStorage.removeItem('token');
-        setUser(null);
-        setStep(1);
-        setActiveTab('home');
+        if (data?.status === 'degraded') {
+          setBackendStatus({ state: 'degraded', message: 'Desktop service is running, but its database connection is unavailable.' });
+          return;
+        }
+        setBackendStatus({ state: 'offline', message: 'Unable to verify the desktop service status.' });
+      } catch (error) {
+        if (!isActive) return;
+        setBackendStatus({ state: 'offline', message: 'CleanFlow Desktop cannot reach its local backend service.' });
+      }
     };
 
-    const handleFeatureAccess = (tabName) => {
-        if (!user) {
-            setIntendedTab(tabName);
-            setAuthDefaultMode('login');
-            setIsAuthOpen(true);
-            return;
-        }
-        setActiveTab(tabName);
-        if (tabName === 'validate') setStep(1);
-        setIsSidebarOpen(false); // Close mobile sidebar if open
+    loadDesktopRuntime();
+    checkBackendHealth();
+
+    const intervalId = window.setInterval(checkBackendHealth, user ? 60000 : 15000);
+    return () => {
+      isActive = false;
+      window.clearInterval(intervalId);
     };
+  }, [user]);
 
-    const startValidation = () => {
-        if (!user) {
-            setIntendedTab('validate');
-            setAuthDefaultMode('signup');
-            setIsAuthOpen(true);
-            return;
-        }
-        setValidationResults(null);
-        setColumns([]);
-        setFilename('');
-        setSessionId(null);
-        setValidationRules([]);
-        setValidationView('dataset');
-        handleFeatureAccess('validate');
-    };
-    const goToLanding = () => setActiveTab(user ? 'dashboard' : 'home');
-    const formatJobDate = (iso) => {
-        try {
-            return formatDateTimeInIST(iso);
-        } catch {
-            return iso;
-        }
-    };
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      axios.get(`${API_BASE}/users/me`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+        .then((res) => {
+          setUser(res.data);
+          setActiveTab('dashboard');
+        })
+        .catch(() => {
+          localStorage.removeItem('token');
+          setUser(null);
+        });
+    }
+  }, []);
 
-    const getTabFromModule = (moduleName) => {
-        if (moduleName === 'mapper') return 'mapper';
-        if (moduleName === 'enrichment') return 'enrichment';
-        if (moduleName === 'scraper') return 'scraper';
-        if (moduleName === 'matching') return 'matching';
-        if (moduleName === 'pricing') return 'pricing-intelligence';
-        if (moduleName === 'pipeline') return 'pipeline-runs';
-        return 'validate';
-    };
+  const fetchRecentJobs = async () => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
 
-    const resumeJob = (job) => {
-        const targetTab = getTabFromModule(job.module);
-        if (targetTab === 'validate') {
-            setFilename(job.file_name || job.filename || '');
-            setValidationRules(job.rules || []);
-            const allColumns = job.column_stats ? Object.keys(job.column_stats) : [];
-            const uniqueColumns = Array.from(new Set([...allColumns, ...(job.rules || []).map(r => r.column).filter(Boolean)]));
-            if (uniqueColumns.length > 0) {
-                setColumns(uniqueColumns);
-            }
-            setValidationResults({
-                total_rows: job.total_rows || 0,
-                valid_rows: job.valid_rows || 0,
-                invalid_rows: job.invalid_rows || 0,
-                column_stats: job.column_stats || {},
-                rules: job.rules || []
-            });
-            setStep(3);
-        }
-        setActiveTab(targetTab);
-    };
+    setJobsLoading(true);
+    try {
+      const res = await axios.get(`${API_BASE}/history/jobs`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const sorted = (res.data || []).sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+      setRecentJobs(sorted);
+    } catch (error) {
+      console.error('Failed to fetch user history:', error);
+    } finally {
+      setJobsLoading(false);
+    }
+  };
 
-    const deleteHistoryItem = async (jobId) => {
-        if (!window.confirm("Delete this history item?")) return;
-        const token = localStorage.getItem('token');
-        if (!token) return;
-
-        try {
-            await axios.delete(`${API_BASE}/history/jobs/${jobId}`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            fetchRecentJobs();
-        } catch (err) {
-            console.error("Failed to delete history item:", err);
-            alert("Failed to delete history item.");
-        }
-    };
-
-    const clearHistory = async (moduleName) => {
-        const title = moduleName === 'all' ? 'all history' : `${moduleName} history`;
-        if (!window.confirm(`Clear ${title}? This cannot be undone.`)) return;
-        const token = localStorage.getItem('token');
-        if (!token) return;
-
-        try {
-            const url = moduleName === 'all'
-                ? `${API_BASE}/history/jobs`
-                : `${API_BASE}/history/jobs?module=${moduleName}`;
-            await axios.delete(url, { headers: { Authorization: `Bearer ${token}` } });
-            fetchRecentJobs();
-        } catch (err) {
-            console.error("Failed to clear history:", err);
-            alert("Failed to clear history.");
-        }
-    };
-
-    const handleRunValidation = async (rules) => {
-        if (!sessionId) {
-            alert('This validation session is no longer active. Please upload the dataset again to run validation.');
-            return;
-        }
-
-        try {
-            const res = await axios.post(`${API_BASE}/validate/${sessionId}`, { rules });
-            const nextResults = { ...res.data, rules };
-
-            setValidationResults(nextResults);
-            setStep(3);
-
-            try {
-                const token = localStorage.getItem('token');
-                const headers = token ? { Authorization: `Bearer ${token}` } : {};
-
-                await axios.post(`${API_BASE}/history/jobs`, {
-                    session_id: sessionId,
-                    file_name: filename || 'Validation Job',
-                    rules,
-                    total_rows: nextResults.total_rows || 0,
-                    valid_rows: nextResults.valid_rows || 0,
-                    invalid_rows: nextResults.invalid_rows || 0,
-                    column_stats: nextResults.column_stats || {},
-                    module: 'validation',
-                }, { headers });
-
-                fetchRecentJobs();
-            } catch (historyError) {
-                console.error('Failed to save validation history:', historyError);
-            }
-        } catch (err) {
-            alert(`Validation failed: ${err.response?.data?.detail || err.message}`);
-        }
-    };
-
-    // Main UI components (Workspace / Feature Tabs)
-    const renderWorkspaceContent = () => (
-        <AnimatePresence mode='wait'>
-            {/* DASHBOARD VIEW */}
-            {activeTab === 'dashboard' && user && (
-                <motion.div
-                    key="dashboard-tab"
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
-                    className="w-full max-w-7xl mx-auto pb-16"
-                >
-                    {/* Hero Section */}
-                    <div className="mb-8 relative overflow-hidden rounded-[28px] border border-gray-800 shadow-2xl bg-[#030303]">
-                        {/* Ambient glow blobs for an impressive color gradient */}
-                        <div className="absolute inset-0" style={{ background: 'linear-gradient(135deg, #050505 0%, #0a0a0a 50%, #020202 100%)' }} />
-                        <div className="absolute top-0 left-1/4 h-[400px] w-[400px] rounded-full bg-purple-500/20 blur-[100px] pointer-events-none mix-blend-screen" />
-                        <div className="absolute bottom-0 right-1/4 h-[400px] w-[400px] rounded-full bg-emerald-500/20 blur-[100px] pointer-events-none mix-blend-screen" />
-                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-[500px] w-[500px] bg-blue-600/10 blur-[120px] pointer-events-none mix-blend-screen" />
-                        <div className="absolute -top-10 -right-10 opacity-[0.04]"><Sparkles size={250} className="text-white" /></div>
-
-                        <div className="relative z-10 px-6 py-8 md:px-8 md:py-9">
-                            <div className="flex flex-col gap-7 lg:flex-row lg:items-center lg:justify-between">
-                                {/* Left: Text + CTAs */}
-                                <div className="flex-1 min-w-0">
-                                    {/* Badge */}
-                                    <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.18em] text-emerald-400">
-                                        <span className="relative flex h-2 w-2">
-                                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                                            <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                                        </span>
-                                        Active Workspace
-                                    </div>
-
-                                    {/* Heading */}
-                                    <h1 className="mb-1 text-3xl font-black leading-tight tracking-tight text-white md:text-4xl">
-                                        Welcome back,
-                                    </h1>
-                                    <p className="mb-4 bg-gradient-to-r from-emerald-400 via-sky-400 to-indigo-400 bg-clip-text text-3xl font-black leading-tight tracking-tight text-transparent md:text-4xl">
-                                        {user.full_name || 'User'}
-                                    </p>
-
-                                    {/* Subtitle */}
-                                    <p className="mb-6 max-w-lg text-sm font-medium leading-relaxed text-slate-400 md:text-[15px]">
-                                        Execute intelligent data workflows, manage your recent jobs, and read through how to leverage the toolset below.
-                                    </p>
-
-                                    {/* CTA Buttons */}
-                                    <div className="flex flex-wrap items-center gap-3">
-                                        <button
-                                            onClick={() => setActiveTab('pipeline')}
-                                            className="inline-flex items-center gap-2 rounded-lg bg-white px-5 py-2.5 text-sm font-semibold text-slate-900 shadow-md transition-all hover:bg-slate-100"
-                                        >
-                                            <Zap size={16} className="text-emerald-600" /> New Workflow
-                                        </button>
-                                        <button
-                                            onClick={() => document.getElementById('job-history-section')?.scrollIntoView({ behavior: 'smooth' })}
-                                            className="inline-flex items-center gap-2 rounded-lg border border-white/20 bg-white/10 px-5 py-2.5 text-sm font-semibold text-white transition-all hover:bg-white/20"
-                                        >
-                                            <BarChart3 size={16} /> View Recent Jobs
-                                        </button>
-                                    </div>
-                                </div>
-
-                                {/* Right: Stats */}
-                                <div className="flex shrink-0 flex-row gap-5 lg:flex-col lg:gap-4">
-                                    {[
-                                        { value: recentJobs.length, label: 'active jobs', color: 'text-white' },
-                                        { value: recentJobs.length > 0 ? '98%' : '—', label: 'success rate', color: 'text-emerald-400' },
-                                        { value: recentJobs.reduce((acc, j) => acc + (j.total_rows || 0), 0).toLocaleString() || '0', label: 'rows processed', color: 'text-sky-400' },
-                                    ].map(({ value, label, color }) => (
-                                        <div key={label} className="flex flex-col items-center lg:items-end">
-                                            <span className={`text-2xl font-black tracking-tight ${color}`}>{value}</span>
-                                            <span className="mt-0.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">{label}</span>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-
-                    {/* Section: Tutorials & Tools */}
-                    <div className="mb-10">
-                        <h2 className="mb-5 flex items-center gap-2 text-xl font-bold text-slate-900">
-                            <Database className="text-emerald-500" /> Data Services & Tutorials
-                        </h2>
-
-                        <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
-                            {[
-                                {
-                                    title: 'Quality Validation',
-                                    description: 'Upload data, configure rules, and validate records.',
-                                    tutorial: '1. Connect your dataset via file upload or DB.\n2. Define column rules (e.g., regex, ranges).\n3. Review pass/fail metrics and export clean data.',
-                                    icon: ShieldCheck,
-                                    color: 'text-blue-500',
-                                    bg: 'bg-blue-50',
-                                    action: () => {
-                                        setValidationResults(null);
-                                        setColumns([]);
-                                        setFilename('');
-                                        setSessionId(null);
-                                        setValidationRules([]);
-                                        setStep(1);
-                                        setActiveTab('validate');
-                                    }
-                                },
-                                {
-                                    title: 'Data Cleaning',
-                                    description: 'Clean data and enhance records with verified attributes.',
-                                    tutorial: '1. Select an entity type.\n2. Upload source rows with target attributes.\n3. The engine automatically finds missing data via web integration.',
-                                    icon: Sparkles,
-                                    color: 'text-emerald-500',
-                                    bg: 'bg-emerald-50',
-                                    action: () => setActiveTab('enrichment'),
-                                },
-                                {
-                                    title: 'Schema Mapping',
-                                    description: 'Map and transform columns between datasets.',
-                                    tutorial: '1. Define your target schema (e.g., standard standard_name).\n2. Drag & Drop columns from source to target.\n3. Validate the structural transformation.',
-                                    icon: GitMerge,
-                                    color: 'text-indigo-500',
-                                    bg: 'bg-indigo-50',
-                                    action: () => setActiveTab('mapper'),
-                                },
-                                {
-                                    title: 'Web Scraping',
-                                    description: 'Extract structured data from URLs at scale.',
-                                    tutorial: '1. Choose an extraction template.\n2. Paste target URLs or CSS selectors.\n3. The system parallelizes the scrape and chunks the HTML to JSON.',
-                                    icon: Globe,
-                                    color: 'text-orange-500',
-                                    bg: 'bg-orange-50',
-                                    action: () => setActiveTab('scraper'),
-                                },
-                                {
-                                    title: 'Data Matching',
-                                    description: 'Identify duplicate or related entities across datasets.',
-                                    tutorial: '1. Select two datasets for comparison.\n2. Choose algorithms (Fuzzy, Cosine, Exact) and set thresholds.\n3. Review similarity scores and merge rows.',
-                                    icon: Shuffle,
-                                    color: 'text-purple-500',
-                                    bg: 'bg-purple-50',
-                                    action: () => setActiveTab('matching'),
-                                },
-                                {
-                                    title: 'Pricing Intelligence',
-                                    description: 'Recommend margin-safe prices after benchmarking against competitor products.',
-                                    tutorial: '1. Load your catalog and competitor price feed.\n2. Choose Below / Match / Above market and your margin floor.\n3. Review dynamic repricing signals and export recommended prices.',
-                                    icon: TrendingUp,
-                                    color: 'text-amber-500',
-                                    bg: 'bg-amber-50',
-                                    action: () => setActiveTab('pricing-intelligence'),
-                                },
-                                {
-                                    title: 'AI Visualizer',
-                                    description: 'Upload a dataset and get an instant AI-generated chart dashboard.',
-                                    tutorial: '1. Upload your CSV or TSV file.\n2. AI analyzes column types & distributions.\n3. A beautiful dashboard of charts is auto-generated.',
-                                    icon: BarChart3,
-                                    color: 'text-violet-600',
-                                    bg: 'bg-violet-50',
-                                    action: () => setActiveTab('visualizer'),
-                                },
-                                {
-                                    title: 'Pipeline Builder',
-                                    description: 'Design orchestrated flows across multiple data operations.',
-                                    tutorial: '1. Drag Data Sources to the canvas.\n2. Connect them to Cleaning/Validation nodes.\n3. Route the output to an Export node, then click Run.',
-                                    icon: GitMerge,
-                                    color: 'text-slate-700',
-                                    bg: 'bg-slate-100',
-                                    action: () => setActiveTab('pipeline'),
-                                }
-                            ].map((item) => (
-
-                                <div key={item.title} className="group flex h-full flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm transition-all hover:border-slate-300 hover:shadow-lg">
-                                    <div className="flex-1 p-5">
-                                        <div className={`mb-5 flex h-10 w-10 items-center justify-center rounded-lg ${item.bg}`}>
-                                            <item.icon size={20} className={item.color} />
-                                        </div>
-                                        <h3 className="mb-2 text-lg font-bold text-slate-900">{item.title}</h3>
-                                        <p className="mb-5 text-sm font-medium text-slate-500">{item.description}</p>
-
-                                        <div className="relative overflow-hidden rounded-lg border border-slate-100 bg-slate-50 p-3.5 transition-colors group-hover:border-slate-300">
-                                            <h4 className="mb-3 text-[11px] font-black uppercase tracking-[0.16em] text-slate-400">How it works</h4>
-                                            <ul className="space-y-2">
-                                                {item.tutorial.split('\n').map((step, idx) => (
-                                                    <li key={idx} className="flex gap-2 text-[13px] text-slate-600">
-                                                        <span className="text-slate-400 font-bold shrink-0">{step.charAt(0)}</span>
-                                                        <span>{step.substring(2)}</span>
-                                                    </li>
-                                                ))}
-                                            </ul>
-                                        </div>
-                                    </div>
-                                    <div className="shrink-0 border-t border-slate-100 bg-slate-50 p-4">
-                                        <button
-                                            onClick={item.action}
-                                            className="flex w-full items-center justify-center gap-2 rounded-lg bg-slate-900 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-slate-800"
-                                        >
-                                            Launch Tool <ArrowRight size={16} />
-                                        </button>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-
-                    {/* Section: Job History & Orchestration */}
-                    <div id="job-history-section" className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-12">
-                        <div className="lg:col-span-3">
-                            <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden flex flex-col">
-                                <div className="p-6 border-b border-slate-100 bg-slate-50 flex items-center justify-between">
-                                    <div>
-                                        <h3 className="text-xl font-bold text-slate-900">Job History</h3>
-                                        <p className="text-sm text-slate-500 mt-1">Review outputs from your recent pipeline runs and data services.</p>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        <button onClick={fetchRecentJobs} className="p-2 text-slate-400 hover:text-slate-900 hover:bg-slate-200 rounded-lg transition-colors" title="Refresh">
-                                            <RefreshCw size={18} />
-                                        </button>
-                                        <button onClick={() => clearHistory(historyModuleTab)} className="px-4 py-2 text-sm font-bold rounded-lg bg-red-50 text-red-700 hover:bg-red-100 transition-colors">
-                                            Clear Data
-                                        </button>
-                                    </div>
-                                </div>
-
-                                <div className="p-4 flex flex-wrap gap-2 border-b border-slate-100 bg-white">
-                                    {[
-                                        { id: 'validation', label: 'Quality Validation' },
-                                        { id: 'enrichment', label: 'Data Enrichment' },
-                                        { id: 'mapper', label: 'Schema Mapping' },
-                                        { id: 'scraper', label: 'Web Scraping' },
-                                        { id: 'matching', label: 'Data Matching' },
-                                        { id: 'pricing', label: 'Pricing Intelligence' },
-                                        { id: 'pipeline', label: 'Pipelines' }
-                                    ].map((tab) => {
-                                        const count = recentJobs.filter(j => (j.module || 'validation') === tab.id).length;
-                                        return (
-                                            <button
-                                                key={tab.id}
-                                                onClick={() => setHistoryModuleTab(tab.id)}
-                                                className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${historyModuleTab === tab.id
-                                                    ? 'bg-slate-900 text-white shadow-md'
-                                                    : 'bg-slate-50 text-slate-600 hover:bg-slate-100 border border-slate-200 hover:border-slate-300'
-                                                    }`}
-                                            >
-                                                {tab.label} <span className={`ml-2 px-2 py-0.5 rounded-full text-xs ${historyModuleTab === tab.id ? 'bg-slate-700 text-slate-300' : 'bg-slate-200 text-slate-500'}`}>{count}</span>
-                                            </button>
-                                        );
-                                    })}
-                                </div>
-
-                                <div className="bg-white rounded-b-2xl">
-                                    {jobsLoading ? (
-                                        <div className="py-16 text-center text-slate-400 flex flex-col items-center">
-                                            <RefreshCw size={32} className="animate-spin mb-4 text-emerald-500" />
-                                            <p className="font-medium">Loading historical records...</p>
-                                        </div>
-                                    ) : recentJobs.filter(j => (j.module || 'validation') === historyModuleTab).length === 0 ? (
-                                        <div className="py-16 text-center flex flex-col items-center justify-center">
-                                            <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-4 border border-slate-100">
-                                                <FolderClock className="text-slate-300" size={32} />
-                                            </div>
-                                            <p className="text-lg font-bold text-slate-900 mb-1">No execution history</p>
-                                            <p className="text-sm text-slate-500 max-w-sm">You haven't executed any jobs using the {historyModuleTab} module yet. Launch the tool above to get started.</p>
-                                        </div>
-                                    ) : (
-                                        <div className="overflow-x-auto">
-                                            <table className="w-full text-left border-collapse">
-                                                <thead>
-                                                    <tr className="bg-slate-50/50 border-b border-slate-100 text-xs font-black uppercase text-slate-400 tracking-wider">
-                                                        <th className="p-4 pl-6">Job Summary</th>
-                                                        <th className="p-4">Status</th>
-                                                        <th className="p-4">Execution Time</th>
-                                                        <th className="p-4 pr-6 text-right">Actions</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                    {recentJobs
-                                                        .filter(j => (j.module || 'validation') === historyModuleTab)
-                                                        .map((job) => (
-                                                            <tr key={job.id} className="border-b border-slate-50 hover:bg-slate-50/80 transition-colors group">
-                                                                <td className="p-4 pl-6 align-middle">
-                                                                    <div className="flex items-center gap-3">
-                                                                        <div className="w-2 h-2 rounded-full bg-emerald-500 flex-shrink-0" />
-                                                                        <span className="font-bold text-slate-800 truncate block max-w-[200px] md:max-w-md xl:max-w-lg" title={job.file_name || job.filename || 'Automated Job'}>
-                                                                            {job.file_name || job.filename || 'Automated Job'}
-                                                                        </span>
-                                                                    </div>
-                                                                </td>
-                                                                <td className="p-4 align-middle">
-                                                                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-100">
-                                                                        <Check size={12} /> Completed
-                                                                    </span>
-                                                                </td>
-                                                                <td className="p-4 align-middle text-sm text-slate-500 font-medium">
-                                                                    {formatJobDate(job.created_at)}
-                                                                </td>
-                                                                <td className="p-4 pr-6 align-middle text-right">
-                                                                    <div className="flex items-center justify-end gap-2 opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity">
-                                                                        <button
-                                                                            onClick={() => resumeJob(job)}
-                                                                            className="px-4 py-2 text-xs font-bold rounded-lg bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 hover:text-slate-900 shadow-sm transition-all"
-                                                                        >
-                                                                            View Insights
-                                                                        </button>
-                                                                        <button
-                                                                            onClick={() => deleteHistoryItem(job.id)}
-                                                                            className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg border border-transparent hover:border-red-100 transition-all"
-                                                                            title="Delete Record"
-                                                                        >
-                                                                            <Trash2 size={16} />
-                                                                        </button>
-                                                                    </div>
-                                                                </td>
-                                                            </tr>
-                                                        ))}
-                                                </tbody>
-                                            </table>
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </motion.div>
-            )}
-
-            {/* 2. QUALITY VALIDATION VIEW */}
-            {activeTab === 'validate' && (
-                <motion.div key="validate-tab" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="w-full h-full flex flex-col">
-                    {/* Page Header */}
-                    <div className="flex shrink-0 items-center justify-between border-b border-slate-200 bg-white px-6 py-4">
-                        <div className="flex items-center gap-4">
-                            <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-blue-100 bg-blue-50">
-                                <ShieldCheck size={18} className="text-blue-600" />
-                            </div>
-                            <div>
-                                <h2 className="text-xl font-black tracking-tight text-slate-900">Quality Validation</h2>
-                                <p className="mt-0.5 text-sm text-slate-500">Upload, define rules, and review quality issues in one place.</p>
-                            </div>
-                        </div>
-                        <div className="flex items-center gap-1">
-                            {['Upload', 'Configure', 'Results'].map((label, i) => {
-                                const s = i + 1;
-                                return (
-                                    <div key={s} className="flex items-center">
-                                        <div className={`flex items-center gap-2 rounded-full px-3 py-1 text-[11px] font-bold uppercase tracking-[0.14em] transition-all ${step === s ? 'bg-slate-900 text-white' :
-                                            step > s ? 'bg-emerald-100 text-emerald-700' :
-                                                'bg-slate-100 text-slate-400'
-                                            }`}>
-                                            <span className={`flex h-4 w-4 items-center justify-center rounded-full text-[10px] font-black ${step === s ? 'bg-white text-slate-900' :
-                                                step > s ? 'bg-emerald-500 text-white' :
-                                                    'bg-slate-300 text-slate-500'
-                                                }`}>{step > s ? '✓' : s}</span>
-                                            {label}
-                                        </div>
-                                        {s < 3 && <div className={`w-6 h-px mx-1 ${step > s ? 'bg-emerald-300' : 'bg-slate-200'}`} />}
-                                    </div>
-                                );
-                            })}
-                        </div>
-                    </div>
-
-                    {/* Content Area */}
-                    <div className="flex-1 overflow-y-auto px-6 py-5">
-                        {step === 1 && (
-                            <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
-                                <div className="mb-5">
-                                    <h3 className="text-lg font-bold text-slate-800">Import Dataset</h3>
-                                    <p className="mt-1 text-sm text-slate-500">Upload a file or connect a database to begin your quality validation run.</p>
-                                </div>
-                                <DataConnection
-                                    compact={true}
-                                    onUploadSuccess={(data) => {
-                                        setSessionId(data.session_id);
-                                        setColumns(data.columns || []);
-                                        setFilename(data.filename || data.file_name || '');
-                                        setValidationResults(null);
-                                        setValidationRules([]); // reset rules on new dataset
-                                        setValidationView('dataset');
-                                        setStep(2);
-                                    }}
-                                />
-                            </motion.div>
-                        )}
-
-                        {step === 2 && (
-                            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-5">
-                                <div className="flex flex-wrap items-start justify-between gap-4">
-                                    <div>
-                                        <h3 className="text-lg font-bold text-slate-800">Validation Workspace</h3>
-                                        <p className="mt-1 text-sm text-slate-500">Switch between the live dataset preview and the rules builder while you configure the validation run.</p>
-                                    </div>
-                                    <div className="flex flex-wrap items-center gap-2">
-                                        {filename && (
-                                            <span className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 shadow-sm">
-                                                {filename}
-                                            </span>
-                                        )}
-                                        <span className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 shadow-sm">
-                                            {columns.length} columns
-                                        </span>
-                                    </div>
-                                </div>
-
-                                <WorkspaceTabs
-                                    tone="blue"
-                                    activeTab={validationView}
-                                    onChange={setValidationView}
-                                    tabs={[
-                                        { id: 'dataset', label: 'Dataset', icon: Database, disabled: !sessionId },
-                                        { id: 'rules', label: 'Rules', icon: FileCheck },
-                                    ]}
-                                />
-
-                                {/* Dataset panel */}
-                                <div style={{ display: validationView === 'dataset' && sessionId ? 'block' : 'none' }}>
-                                    <DatasetViewer
-                                        sessionId={sessionId}
-                                        tone="blue"
-                                        title="Validation Dataset"
-                                        subtitle="Review inserted rows before switching back to rules or running validation."
-                                    />
-                                </div>
-
-                                {/* Rules panel – always mounted so rules are never lost on tab switch */}
-                                <div style={{ display: validationView === 'rules' || !sessionId ? 'block' : 'none' }}>
-                                    <RuleBuilder
-                                        compact={true}
-                                        columns={columns}
-                                        initialRules={validationRules}
-                                        onRulesChange={setValidationRules}
-                                        onRunValidation={handleRunValidation}
-                                        showRepoLibrary={true}
-                                        user={user}
-                                    />
-                                </div>
-                            </motion.div>
-                        )}
-
-                        {step === 3 && validationResults && (
-                            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                                <ResultsDashboard
-                                    results={validationResults}
-                                    onReset={() => {
-                                        setValidationResults(null);
-                                        setColumns([]);
-                                        setFilename('');
-                                        setSessionId(null);
-                                        setValidationView('dataset');
-                                        setStep(1);
-                                    }}
-                                    onEditRules={() => {
-                                        setValidationRules(validationResults?.rules || []);
-                                        setValidationView('rules');
-                                        setStep(2);
-                                    }}
-                                />
-                            </motion.div>
-                        )}
-                    </div>
-                </motion.div>
-            )}
-
-            {/* 3. GLOBAL REPOSITORY VIEW */}
-            {activeTab === 'repository' && (
-                <motion.div key="repository-tab" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="w-full h-full">
-                    <GlobalRepositoryBuilder user={user} />
-                </motion.div>
-            )}
-
-            {/* 4. ENRICHMENT VIEW */}
-            {activeTab === 'enrichment' && (
-                <motion.div key="enrichment-tab" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="w-full h-full">
-
-                    <EnrichmentBuilder user={user} onComplete={goToLanding} />
-                </motion.div>
-            )}
-
-            {/* 5. SCRAPER VIEW */}
-            {activeTab === 'scraper' && (
-                <motion.div key="scraper-tab" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="w-full h-full">
-
-                    <ScraperBuilder onComplete={goToLanding} />
-                </motion.div>
-            )}
-
-            {/* 6. MAPPER VIEW */}
-            {activeTab === 'mapper' && (
-                <motion.div key="mapper-tab" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="w-full h-full">
-
-                    <SchemaMapper onComplete={goToLanding} />
-                </motion.div>
-            )}
-
-            {/* 7. DATA MATCHING VIEW */}
-            {activeTab === 'matching' && (
-                <motion.div key="matching-tab" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="w-full h-full">
-
-                    <DataMatchingBuilder />
-                </motion.div>
-            )}
-
-            {/* 8. PRICING INTELLIGENCE VIEW */}
-            {activeTab === 'pricing-intelligence' && (
-                <motion.div key="pricing-intelligence-tab" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="w-full h-full">
-                    <PricingIntelligenceBuilder />
-                </motion.div>
-            )}
-
-            {/* 9. AI VISUALIZER VIEW */}
-            {activeTab === 'visualizer' && (
-                <motion.div key="visualizer-tab" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="w-full h-full">
-                    <DataVisualizer />
-                </motion.div>
-            )}
-
-            {/* 10. PIPELINE ORCHESTRATOR VIEW */}
-            {activeTab === 'pipeline' && (
-                <motion.div key="pipeline-tab" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="w-full h-full">
-                    <PipelineBuilder onComplete={goToLanding} />
-                </motion.div>
-            )}
-
-            {/* 11. PIPELINE SCHEDULER VIEW */}
-            {activeTab === 'scheduler' && (
-                <motion.div key="scheduler-tab" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="w-full">
-                    <SchedulerBuilder />
-                </motion.div>
-            )}
-
-            {/* 12. PIPELINE RUNS VIEW */}
-            {activeTab === 'pipeline-runs' && (
-                <motion.div key="pipeline-runs-tab" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="w-full">
-                    <PipelineRuns />
-                </motion.div>
-            )}
-
-            {/* 13. DATA TRANSFORMER VIEW */}
-            {activeTab === 'transformer' && (
-                <motion.div key="transformer-tab" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="w-full h-full">
-                    <DataTransformer />
-                </motion.div>
-            )}
-
-            {/* USAGE VIEW */}
-            {activeTab === 'usage' && (
-                <motion.div key="usage-tab" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="w-full h-full">
-                    <UsagePage user={user} />
-                </motion.div>
-            )}
-
-            {/* USER PROFILE VIEW */}
-            {activeTab === 'profile' && user && (
-                <motion.div key="profile-tab" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="w-full pb-20 pt-4">
-                    <UserProfilePage
-                        user={user}
-                        onClose={goToLanding}
-                        onLogout={handleLogout}
-                    />
-                </motion.div>
-            )}
-        </AnimatePresence>
-    );
-
-    // Unauthenticated / Landing Page Render
+  useEffect(() => {
     if (!user) {
-        return (
-            <div className="min-h-screen font-sans overflow-x-hidden bg-white text-slate-900">
-                {/* Navigation */}
-                <nav className="fixed top-0 z-50 w-full bg-white/90 backdrop-blur-md">
-                    <div className="mx-auto flex h-24 max-w-[1200px] items-center justify-between px-6 lg:px-8">
-                        <div className="flex items-center gap-6">
-                            <div className="flex items-center gap-2 cursor-pointer transition-opacity" onClick={goToLanding}>
-                                <span className="uncial-antiqua-regular text-[28px] text-black leading-none">Cleanflow</span>
-                            </div>
-                        </div>
-                        <div className="flex items-center gap-3">
-                            <button
-                                onClick={() => { setAuthDefaultMode('login'); setIsAuthOpen(true); }}
-                                className="rounded-full bg-[#1c1c1c] shadow-[0_4px_14px_0_rgb(0,0,0,0.39)] hover:shadow-[0_6px_20px_rgba(0,0,0,0.23)] hover:bg-[#000000] px-8 py-2.5 text-[15px] font-medium text-white transition-all hover:scale-[1.02]"
-                            >
-                                Sign up
-                            </button>
-                        </div>
-                    </div>
-                </nav>
+      setRecentJobs([]);
+      return;
+    }
+    fetchRecentJobs();
+  }, [user, activeTab]);
 
-                <main className={`${activeTab === 'home' ? 'relative flex min-h-screen flex-col pb-16 pt-16' : activeTab === 'pricing' ? 'relative pb-16 pt-24' : 'relative mx-auto max-w-7xl px-5 pb-16 pt-24 lg:px-6'}`}>
-                    <AnimatePresence mode='wait'>
-                        {activeTab === 'home' && (
-                            <motion.div
-                                key="home-tab"
-                                initial={{ opacity: 0, y: 15 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                exit={{ opacity: 0, y: -15 }}
-                                className="flex flex-col items-center"
-                            >
-                                <HomePage
-                                    startValidation={startValidation}
-                                    onViewPricing={() => setActiveTab('pricing')}
-                                    handleFeatureAccess={handleFeatureAccess}
-                                />
-                            </motion.div>
-                        )}
+  const currentSection = moduleSectionMap[activeTab] || 'dashboard';
+  const currentModules = featureGroups[currentSection] || featureGroups.dashboard;
+  const activeSection = sectionItems.find((item) => item.id === currentSection);
+  const activeModule = currentModules.find((item) => item.id === activeTab) || currentModules[0];
+  const isDark = theme === 'dark';
+  const isFullDesktopModule = fullDesktopTabs.has(activeTab);
+  const moduleRailVisible = currentModules.length > 1 && moduleRailState !== 'hidden';
+  const moduleRailCompact = moduleRailState === 'icons';
 
-                        {activeTab === 'pricing' && (
-                            <motion.div key="pricing-tab-landing" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="w-full">
-                                <PricingPage onClose={goToLanding} />
-                            </motion.div>
-                        )}
-                    </AnimatePresence>
-                </main>
+  const cycleModuleRail = () => {
+    setModuleRailState((current) => {
+      if (current === 'expanded') return 'icons';
+      if (current === 'icons') return 'hidden';
+      return 'expanded';
+    });
+  };
 
-                <AuthModal
-                    isOpen={isAuthOpen}
-                    defaultMode={authDefaultMode}
-                    onClose={() => {
-                        setIsAuthOpen(false);
-                        setIntendedTab(null);
-                    }}
-                    onLoginSuccess={(u) => {
-                        setUser(u);
-                        fetchRecentJobs();
-                        if (intendedTab) {
-                            setActiveTab(intendedTab);
-                            if (intendedTab === 'validate') setStep(1);
-                            setIntendedTab(null);
-                        } else {
-                            setActiveTab('dashboard');
-                        }
-                    }}
-                />
-                <Footer />
-            </div>
-        );
+  const visibleJobs = useMemo(() => {
+    const query = searchText.trim().toLowerCase();
+    return recentJobs.filter((job) => {
+      const jobModule = job.module || 'validation';
+      const matchesModule = historyModuleTab === 'all' ? true : jobModule === historyModuleTab;
+      if (!matchesModule) return false;
+      if (!query) return true;
+      return [job.file_name, job.filename, job.module, job.status]
+        .filter(Boolean)
+        .some((value) => String(value).toLowerCase().includes(query));
+    });
+  }, [recentJobs, historyModuleTab, searchText]);
+
+  const moduleCounts = useMemo(() => ({
+    validation: recentJobs.filter((job) => (job.module || 'validation') === 'validation').length,
+    enrichment: recentJobs.filter((job) => job.module === 'enrichment').length,
+    mapper: recentJobs.filter((job) => job.module === 'mapper').length,
+    scraper: recentJobs.filter((job) => job.module === 'scraper').length,
+    matching: recentJobs.filter((job) => job.module === 'matching').length,
+    pricing: recentJobs.filter((job) => job.module === 'pricing').length,
+    pipeline: recentJobs.filter((job) => job.module === 'pipeline').length,
+  }), [recentJobs]);
+
+  const setModule = (tab) => {
+    setActiveTab(tab);
+    setIsMobileSidebarOpen(false);
+  };
+
+  const goToSection = (sectionId) => {
+    const firstModule = featureGroups[sectionId]?.[0]?.id || 'dashboard';
+    setModule(firstModule);
+  };
+
+  const handleFeatureAccess = (tabName) => {
+    if (!user) {
+      setIntendedTab(tabName);
+      setAuthDefaultMode(tabName === 'validate' ? 'signup' : 'login');
+      setIsAuthOpen(true);
+      return;
     }
 
-    // Authenticated Sidebar Workspace Layout (Databricks-style)
-    return (
-        <div className="flex h-screen w-full overflow-hidden bg-black font-sans">
+    if (tabName === 'validate') {
+      setStep(1);
+    }
+    setModule(tabName);
+  };
 
-            {/* Mobile Header Toggle */}
-            <div className="fixed top-0 z-40 flex h-14 w-full items-center justify-between border-b border-gray-800 bg-black px-3.5 lg:hidden">
-                <span className="uncial-antiqua-regular text-[24px] leading-none text-white">Cleanflow</span>
-                <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="p-2 text-gray-300 hover:text-white transition-colors">
-                    {isSidebarOpen ? <X size={22} /> : <Menu size={22} />}
+  const handleLogout = () => {
+    const shouldLogout = window.confirm('Are you sure you want to log out?');
+    if (!shouldLogout) return;
+
+    localStorage.removeItem('token');
+    setUser(null);
+    setStep(1);
+    setActiveTab('dashboard');
+    setIsAuthOpen(false);
+    setAuthDefaultMode('login');
+  };
+
+  const formatJobDate = (iso) => {
+    try {
+      return formatDateTimeInIST(iso);
+    } catch {
+      return iso;
+    }
+  };
+
+  const getTabFromModule = (moduleName) => {
+    if (moduleName === 'mapper') return 'mapper';
+    if (moduleName === 'enrichment') return 'enrichment';
+    if (moduleName === 'scraper') return 'scraper';
+    if (moduleName === 'matching') return 'matching';
+    if (moduleName === 'pricing') return 'pricing-intelligence';
+    if (moduleName === 'pipeline') return 'pipeline-runs';
+    return 'validate';
+  };
+
+  const resumeJob = (job) => {
+    const targetTab = getTabFromModule(job.module);
+    if (targetTab === 'validate') {
+      setFilename(job.file_name || job.filename || '');
+      setValidationRules(job.rules || []);
+      const allColumns = job.column_stats ? Object.keys(job.column_stats) : [];
+      const uniqueColumns = Array.from(new Set([...allColumns, ...(job.rules || []).map((rule) => rule.column).filter(Boolean)]));
+      if (uniqueColumns.length > 0) {
+        setColumns(uniqueColumns);
+      }
+      setValidationResults({
+        total_rows: job.total_rows || 0,
+        valid_rows: job.valid_rows || 0,
+        invalid_rows: job.invalid_rows || 0,
+        column_stats: job.column_stats || {},
+        rules: job.rules || [],
+      });
+      setStep(3);
+    }
+    setModule(targetTab);
+  };
+
+  const deleteHistoryItem = async (jobId) => {
+    if (!window.confirm('Delete this history item?')) return;
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    try {
+      await axios.delete(`${API_BASE}/history/jobs/${jobId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      fetchRecentJobs();
+    } catch (error) {
+      console.error('Failed to delete history item:', error);
+      alert('Failed to delete history item.');
+    }
+  };
+
+  const clearHistory = async (moduleName) => {
+    const title = moduleName === 'all' ? 'all history' : `${moduleName} history`;
+    if (!window.confirm(`Clear ${title}? This cannot be undone.`)) return;
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    try {
+      const url = moduleName === 'all'
+        ? `${API_BASE}/history/jobs`
+        : `${API_BASE}/history/jobs?module=${moduleName}`;
+      await axios.delete(url, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      fetchRecentJobs();
+    } catch (error) {
+      console.error('Failed to clear history:', error);
+      alert('Failed to clear history.');
+    }
+  };
+
+  const handleRunValidation = async (rules) => {
+    if (!sessionId) {
+      alert('This validation session is no longer active. Please upload the dataset again to run validation.');
+      return;
+    }
+
+    try {
+      const res = await axios.post(`${API_BASE}/validate/${sessionId}`, { rules });
+      const nextResults = { ...res.data, rules };
+
+      setValidationResults(nextResults);
+      setStep(3);
+
+      try {
+        const token = localStorage.getItem('token');
+        const headers = token ? { Authorization: `Bearer ${token}` } : {};
+
+        await axios.post(`${API_BASE}/history/jobs`, {
+          session_id: sessionId,
+          file_name: filename || 'Validation Job',
+          rules,
+          total_rows: nextResults.total_rows || 0,
+          valid_rows: nextResults.valid_rows || 0,
+          invalid_rows: nextResults.invalid_rows || 0,
+          column_stats: nextResults.column_stats || {},
+          module: 'validation',
+        }, { headers });
+
+        fetchRecentJobs();
+      } catch (historyError) {
+        console.error('Failed to save validation history:', historyError);
+      }
+    } catch (error) {
+      alert(`Validation failed: ${error.response?.data?.detail || error.message}`);
+    }
+  };
+
+  const renderDashboard = () => (
+    <div className="space-y-6">
+      <section className="grid gap-6 xl:grid-cols-[1.45fr_0.9fr]">
+        <Surface className="overflow-hidden">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(16,185,129,0.18),transparent_32%),radial-gradient(circle_at_bottom_left,rgba(14,165,233,0.14),transparent_24%)]" />
+          <div className="relative z-10">
+            <Badge label="All original features restored" />
+            <h1 className="mt-5 max-w-3xl text-4xl font-semibold tracking-tight">
+              Modern desktop workspace, with every major CleanFlow module still available.
+            </h1>
+            <p className="mt-4 max-w-2xl text-base text-[var(--text-secondary)]">
+              Use guided inputs for validation, cleaning, mapping, scraping, matching, orchestration, repository assets,
+              usage insights, and execution history without dropping back to a cluttered interface.
+            </p>
+            <div className="mt-8 flex flex-wrap gap-3">
+              <PrimaryButton icon={Play} label="Open Validation" onClick={() => handleFeatureAccess('validate')} />
+              <SecondaryButton icon={Wand2} label="Open Pipeline Builder" onClick={() => handleFeatureAccess('pipeline')} />
+            </div>
+            <div className="mt-10 grid gap-3 md:grid-cols-3">
+              <StatTile title="Available modules" value="12" detail="Validation to orchestration" />
+              <StatTile title="Recent jobs" value={String(recentJobs.length)} detail="Resume from logs anytime" />
+              <StatTile title="Rows processed" value={recentJobs.reduce((acc, job) => acc + (job.total_rows || 0), 0).toLocaleString()} detail="Across tracked runs" />
+            </div>
+          </div>
+        </Surface>
+
+        <Surface>
+          <SectionTitle eyebrow="Workspace Health" title="Desktop status" />
+          <div className="mt-5 space-y-3">
+            <InfoRow title="Backend" value={backendStatus.state} detail={backendStatus.message} />
+            <InfoRow title="Theme" value={isDark ? 'Dark' : 'Light'} detail="Switch any time from the header." />
+            <InfoRow title="Runtime" value={IS_DESKTOP_APP ? 'Desktop app' : 'Browser mode'} detail={desktopRuntime?.apiBaseUrl || 'Using current frontend runtime'} />
+          </div>
+        </Surface>
+      </section>
+
+      <section className="grid gap-6 lg:grid-cols-3">
+        {featureCards.map(({ id, title, subtitle, icon: Icon }) => (
+          <button
+            key={id}
+            type="button"
+            onClick={() => handleFeatureAccess(id)}
+            className="rounded-[28px] border border-[var(--border-soft)] bg-[var(--panel)] p-6 text-left shadow-[var(--shadow-soft)] transition hover:-translate-y-1 hover:border-[var(--border-strong)]"
+          >
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[var(--accent-soft)] text-[var(--accent-strong)]">
+              <Icon className="h-6 w-6" />
+            </div>
+            <h3 className="mt-4 text-lg font-semibold">{title}</h3>
+            <p className="mt-2 text-sm text-[var(--text-secondary)]">{subtitle}</p>
+          </button>
+        ))}
+      </section>
+    </div>
+  );
+
+  const renderValidation = () => (
+    <div className="flex h-full min-h-0 flex-col gap-4 overflow-y-auto px-4 py-4 md:px-5">
+      <div className="flex flex-col gap-4 rounded-[28px] border border-[var(--border-soft)] bg-[var(--panel)] px-5 py-4 shadow-[var(--shadow-soft)] lg:flex-row lg:items-start lg:justify-between">
+        <div className="min-w-0">
+          <h3 className="text-[30px] font-semibold tracking-tight text-[var(--text-primary)]">Validation</h3>
+          <p className="mt-1 max-w-2xl text-sm text-[var(--text-secondary)]">
+            Upload your dataset, configure quality rules, and review the final validation results in one guided flow.
+          </p>
+        </div>
+
+        <div className="flex flex-wrap justify-start gap-2 lg:justify-end">
+          <StepPill stepNumber={1} label="Connect Data" active={step === 1} completed={step > 1} />
+          <StepPill stepNumber={2} label="Configure Rules" active={step === 2} completed={step > 2} />
+          <StepPill stepNumber={3} label="Review Results" active={step === 3} completed={false} />
+        </div>
+      </div>
+
+      {step === 1 && (
+        <Surface className="p-5 md:p-6">
+          <DataConnection
+            compact={true}
+            onUploadSuccess={(data) => {
+              setSessionId(data.session_id);
+              setColumns(data.columns || []);
+              setFilename(data.filename || data.file_name || '');
+              setValidationResults(null);
+              setValidationRules([]);
+              setValidationView('dataset');
+              setStep(2);
+            }}
+          />
+        </Surface>
+      )}
+
+      {step === 2 && (
+        <div className="grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
+          <Surface>
+            <div className="flex items-center justify-between gap-3">
+              <SectionTitle eyebrow="Preview" title={filename || 'Uploaded dataset'} />
+              <div className="flex gap-2 rounded-2xl bg-[var(--panel-muted)] p-1">
+                <button
+                  type="button"
+                  onClick={() => setValidationView('dataset')}
+                  className={`rounded-xl px-3 py-2 text-sm font-medium transition ${validationView === 'dataset' ? 'bg-[var(--panel)] shadow-[var(--shadow-soft)]' : 'text-[var(--text-secondary)]'}`}
+                >
+                  Data
                 </button>
+                <button
+                  type="button"
+                  onClick={() => setValidationView('rules')}
+                  className={`rounded-xl px-3 py-2 text-sm font-medium transition ${validationView === 'rules' ? 'bg-[var(--panel)] shadow-[var(--shadow-soft)]' : 'text-[var(--text-secondary)]'}`}
+                >
+                  Rules
+                </button>
+              </div>
             </div>
 
-            {/* Left Vertical Sidebar Workspace */}
-            <nav className={`fixed top-0 left-0 z-50 flex h-screen w-[244px] flex-col border-r border-gray-800 bg-black transform transition-transform duration-300 ease-in-out lg:static ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
-                <div className="flex h-16 shrink-0 items-center border-b border-gray-800 px-5 pt-14 lg:pt-0">
-                    <span
-                        className="uncial-antiqua-regular cursor-pointer text-[24px] leading-none text-white opacity-90 transition-opacity hover:opacity-100"
-                        onClick={() => handleFeatureAccess('dashboard')}
+            <div className="mt-5">
+              {validationView === 'dataset' && sessionId ? (
+                <DatasetViewer
+                  sessionId={sessionId}
+                  tone="blue"
+                  title="Validation Dataset"
+                  subtitle="Review inserted rows before switching back to rules or running validation."
+                />
+              ) : (
+                <div className="rounded-[24px] border border-dashed border-[var(--border-strong)] bg-[var(--panel-muted)] p-8 text-sm text-[var(--text-secondary)]">
+                  Choose the rules tab to configure guided validation logic with inline help.
+                </div>
+              )}
+            </div>
+          </Surface>
+
+          <Surface>
+            <SectionTitle eyebrow="Smart Form" title="Validation rules" />
+            <div className="mt-5">
+              <RuleBuilder
+                compact={true}
+                columns={columns}
+                initialRules={validationRules}
+                onRulesChange={setValidationRules}
+                onRunValidation={handleRunValidation}
+                showRepoLibrary={true}
+                user={user}
+              />
+            </div>
+          </Surface>
+        </div>
+      )}
+
+      {step === 3 && validationResults && (
+        <ResultsDashboard
+          results={validationResults}
+          onReset={() => {
+            setValidationResults(null);
+            setColumns([]);
+            setFilename('');
+            setSessionId(null);
+            setValidationView('dataset');
+            setStep(1);
+          }}
+          onEditRules={() => {
+            setValidationRules(validationResults?.rules || []);
+            setValidationView('rules');
+            setStep(2);
+          }}
+        />
+      )}
+    </div>
+  );
+
+  const renderLogs = () => (
+    <div className="space-y-6">
+      <Surface>
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <SectionTitle eyebrow="Traceability" title="Recent execution logs" />
+            <p className="mt-2 text-sm text-[var(--text-secondary)]">
+              Resume past runs, review module-specific history, and remove outdated records.
+            </p>
+          </div>
+          <div className="flex gap-2">
+            <SecondaryButton icon={RefreshCw} label="Refresh" onClick={fetchRecentJobs} />
+            <button
+              type="button"
+              onClick={() => clearHistory(historyModuleTab)}
+              className="inline-flex items-center gap-2 rounded-2xl bg-rose-500/10 px-4 py-3 text-sm font-semibold text-rose-700 transition hover:bg-rose-500/15 dark:text-rose-200"
+            >
+              <Trash2 className="h-4 w-4" />
+              Clear
+            </button>
+          </div>
+        </div>
+
+        <div className="mt-5 flex flex-wrap gap-2">
+          {[
+            { id: 'validation', label: 'Validation', count: moduleCounts.validation },
+            { id: 'enrichment', label: 'Cleaning', count: moduleCounts.enrichment },
+            { id: 'mapper', label: 'Mapper', count: moduleCounts.mapper },
+            { id: 'scraper', label: 'Scraper', count: moduleCounts.scraper },
+            { id: 'matching', label: 'Matching', count: moduleCounts.matching },
+            { id: 'pricing', label: 'Pricing', count: moduleCounts.pricing },
+            { id: 'pipeline', label: 'Pipelines', count: moduleCounts.pipeline },
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => setHistoryModuleTab(tab.id)}
+              className={`rounded-2xl px-4 py-2 text-sm font-semibold transition ${historyModuleTab === tab.id ? 'bg-[var(--accent-strong)] text-white' : 'bg-[var(--panel-muted)] text-[var(--text-secondary)]'}`}
+            >
+              {tab.label} <span className="ml-2 opacity-80">{tab.count}</span>
+            </button>
+          ))}
+        </div>
+      </Surface>
+
+      <Surface>
+        {jobsLoading ? (
+          <div className="flex items-center gap-3 py-12 text-[var(--text-secondary)]">
+            <LoaderCircle className="h-5 w-5 animate-spin" />
+            Loading execution history...
+          </div>
+        ) : visibleJobs.length === 0 ? (
+          <div className="rounded-[24px] border border-dashed border-[var(--border-strong)] bg-[var(--panel-muted)] p-10 text-center">
+            <Logs className="mx-auto h-10 w-10 text-[var(--text-muted)]" />
+            <p className="mt-4 text-lg font-semibold">No execution history in this module yet</p>
+            <p className="mt-2 text-sm text-[var(--text-secondary)]">
+              Run a workflow and it will appear here with resume and cleanup actions.
+            </p>
+          </div>
+        ) : (
+          <div className="overflow-hidden rounded-[24px] border border-[var(--border-soft)]">
+            <table className="min-w-full divide-y divide-[var(--border-soft)] text-left text-sm">
+              <thead className="bg-[var(--panel-muted)]">
+                <tr>
+                  {['Job', 'Module', 'Rows', 'Date', 'Actions'].map((heading) => (
+                    <th key={heading} className="px-4 py-3 font-semibold text-[var(--text-secondary)]">{heading}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[var(--border-soft)] bg-[var(--panel)]">
+                {visibleJobs.map((job) => (
+                  <tr key={job.id} className="transition hover:bg-[var(--panel-muted)]">
+                    <td className="px-4 py-4">
+                      <div className="font-semibold">{job.file_name || job.filename || 'Untitled Job'}</div>
+                      <div className="mt-1 text-xs text-[var(--text-muted)]">{job.status || 'Completed'}</div>
+                    </td>
+                    <td className="px-4 py-4 capitalize text-[var(--text-secondary)]">{job.module || 'validation'}</td>
+                    <td className="px-4 py-4">{(job.total_rows || 0).toLocaleString()}</td>
+                    <td className="px-4 py-4 text-[var(--text-secondary)]">{formatJobDate(job.created_at)}</td>
+                    <td className="px-4 py-4">
+                      <div className="flex flex-wrap gap-2">
+                        <button
+                          type="button"
+                          onClick={() => resumeJob(job)}
+                          className="rounded-xl border border-[var(--border-soft)] px-3 py-2 font-semibold text-[var(--text-secondary)] transition hover:text-[var(--text-primary)]"
+                        >
+                          View
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => deleteHistoryItem(job.id)}
+                          className="rounded-xl border border-rose-200 px-3 py-2 font-semibold text-rose-700 transition hover:bg-rose-50 dark:border-rose-500/20 dark:text-rose-200 dark:hover:bg-rose-500/10"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </Surface>
+    </div>
+  );
+
+  const renderWorkspaceSettings = () => (
+    <div className="grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
+      <Surface>
+        <SectionTitle eyebrow="Appearance" title="Workspace settings" />
+        <div className="mt-5 space-y-4">
+          <SettingsRow
+            title="Color mode"
+            description="Switch between light and dark themes while keeping the same feature access."
+            actionLabel={`Switch to ${isDark ? 'light' : 'dark'} mode`}
+            onAction={() => setTheme((current) => (current === 'light' ? 'dark' : 'light'))}
+          />
+          <SettingsRow
+            title="Backend connection"
+            description={backendStatus.message}
+            actionLabel="Open logs"
+            onAction={() => setModule('logs')}
+          />
+          <SettingsRow
+            title="Feature access"
+            description="All previous builders remain available through grouped module chips."
+            actionLabel="Open tasks"
+            onAction={() => setModule('validate')}
+          />
+        </div>
+      </Surface>
+
+      <Surface>
+        <SectionTitle eyebrow="System" title="Reusable UI structure" />
+        <div className="mt-5 space-y-3">
+          <InfoRow title="Sidebar" value="Grouped navigation" detail="Dashboard, Tasks, Configuration, Logs, Settings." />
+          <InfoRow title="Header" value="Module context" detail="Search, notifications, theme toggle, and active module chips." />
+          <InfoRow title="Main area" value="Dynamic module content" detail="Existing feature screens render inside the new shell." />
+          <InfoRow title="Scalability" value="Future modules ready" detail="Add new builders to a group without redesigning the frame." />
+        </div>
+      </Surface>
+    </div>
+  );
+
+  const renderActiveModule = () => {
+    if (activeTab === 'dashboard') return renderDashboard();
+    if (activeTab === 'validate') return renderValidation();
+    if (activeTab === 'repository') return <GlobalRepositoryBuilder user={user} />;
+    if (activeTab === 'enrichment') return <EnrichmentBuilder user={user} onComplete={() => setModule('dashboard')} />;
+    if (activeTab === 'scraper') return <ScraperBuilder onComplete={() => setModule('dashboard')} />;
+    if (activeTab === 'mapper') return <SchemaMapper onComplete={() => setModule('dashboard')} />;
+    if (activeTab === 'matching') return <DataMatchingBuilder />;
+    if (activeTab === 'pricing-intelligence') return <PricingIntelligenceBuilder />;
+    if (activeTab === 'visualizer') return <DataVisualizer />;
+    if (activeTab === 'pipeline') return <PipelineBuilder onComplete={() => setModule('dashboard')} />;
+    if (activeTab === 'scheduler') return <SchedulerBuilder />;
+    if (activeTab === 'pipeline-runs') return <PipelineRuns />;
+    if (activeTab === 'transformer') return <DataTransformer />;
+    if (activeTab === 'usage') return <UsagePage user={user} />;
+    if (activeTab === 'profile' && user) return <UserProfilePage user={user} onClose={() => setModule('dashboard')} onLogout={handleLogout} />;
+    if (activeTab === 'logs') return renderLogs();
+    if (activeTab === 'workspace-settings') return renderWorkspaceSettings();
+    return renderDashboard();
+  };
+
+  if (!user) {
+    return (
+      <div className={isDark ? 'dark' : ''}>
+        <div className="h-screen w-screen overflow-hidden bg-[var(--app-bg)]">
+          <AuthModal
+            isOpen={true}
+            defaultMode={authDefaultMode}
+            allowClose={false}
+            connectionStatus={backendStatus.state}
+            connectionMessage={backendStatus.message}
+            isDesktop={IS_DESKTOP_APP}
+            runtimeInfo={desktopRuntime}
+            onClose={() => setIsAuthOpen(false)}
+            onLoginSuccess={(loggedInUser) => {
+              setUser(loggedInUser);
+              fetchRecentJobs();
+              if (intendedTab) {
+                setActiveTab(intendedTab);
+                if (intendedTab === 'validate') setStep(1);
+                setIntendedTab(null);
+              } else {
+                setActiveTab('dashboard');
+              }
+            }}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className={isDark ? 'dark' : ''}>
+      <div className="cf-workspace h-screen w-screen overflow-hidden bg-[var(--app-bg)] text-[var(--text-primary)] transition-colors duration-300">
+        <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_top_left,rgba(16,185,129,0.12),transparent_28%),radial-gradient(circle_at_top_right,rgba(14,165,233,0.1),transparent_24%),linear-gradient(180deg,var(--app-bg)_0%,var(--app-bg-elevated)_100%)]" />
+
+        <div className="lg:hidden">
+          <button
+            type="button"
+            onClick={() => setIsMobileSidebarOpen((current) => !current)}
+            className="fixed left-4 top-4 z-40 flex h-11 w-11 items-center justify-center rounded-2xl border border-[var(--border-soft)] bg-[var(--panel)] shadow-[var(--shadow-soft)]"
+          >
+            {isMobileSidebarOpen ? <X className="h-5 w-5" /> : <ChevronDown className="h-5 w-5 rotate-[-90deg]" />}
+          </button>
+        </div>
+
+        <div className="flex h-full">
+          <aside className={`group fixed inset-y-0 left-0 z-30 border-r border-[var(--border-soft)] bg-[var(--panel)]/95 backdrop-blur-xl transition-all duration-300 lg:relative ${sidebarCollapsed ? 'w-[72px]' : 'w-[240px]'} ${isMobileSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
+            <button
+              type="button"
+              onClick={() => setSidebarCollapsed((current) => !current)}
+              className="absolute -right-3 top-6 z-40 hidden h-6 w-6 items-center justify-center rounded-full border border-[var(--border-soft)] bg-[var(--panel)] text-[var(--text-secondary)] shadow-sm opacity-0 transition-all hover:scale-110 hover:text-[var(--text-primary)] group-hover:opacity-100 lg:flex"
+            >
+              <ChevronsLeft className={`h-3 w-3 transition-transform ${sidebarCollapsed ? 'rotate-180' : ''}`} />
+            </button>
+            <div className="flex h-full flex-col px-3 py-3">
+              <div className="flex items-center pb-3">
+                <div className="overflow-hidden">
+                  <p className={`text-[10px] font-semibold uppercase tracking-widest text-[var(--text-muted)] transition-opacity ${sidebarCollapsed ? 'opacity-0' : 'opacity-100'}`}>
+                    CleanFlow
+                  </p>
+                  <h1 className={`mt-0.5 text-base font-semibold tracking-tight transition-opacity ${sidebarCollapsed ? 'opacity-0' : 'opacity-100'}`}>
+                    Desktop Studio
+                  </h1>
+                </div>
+              </div>
+
+              <nav className="space-y-1">
+                {sectionItems.map((item) => {
+                  const Icon = item.icon;
+                  const active = currentSection === item.id;
+                  return (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => goToSection(item.id)}
+                      className={`group flex w-full items-center gap-2.5 rounded-xl px-2.5 py-1.5 text-left transition ${active ? 'bg-[var(--accent-soft)] text-[var(--accent-strong)] shadow-[var(--shadow-soft)]' : 'text-[var(--text-secondary)] hover:bg-[var(--panel-muted)] hover:text-[var(--text-primary)]'}`}
                     >
-                        Cleanflow
-                    </span>
+                      <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${active ? 'bg-white/80 text-[var(--accent-strong)] dark:bg-white/10' : 'bg-[var(--panel)] text-[var(--text-muted)]'}`}>
+                        <Icon className="h-3.5 w-3.5" />
+                      </span>
+                      {!sidebarCollapsed && (
+                        <span className="flex-1 min-w-0">
+                          <span className="block truncate text-xs font-medium">{item.label}</span>
+                          <span className="block truncate text-[10px] leading-tight opacity-80 text-[var(--text-muted)]">
+                            {item.id === 'tasks' ? 'All builders and workflows' : item.id === 'configuration' ? 'Repository and usage' : item.id === 'logs' ? 'Recent execution history' : item.id === 'settings' ? 'Profile and preferences' : 'Workspace overview'}
+                          </span>
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </nav>
+
+              {!sidebarCollapsed && (
+                <div className="mt-3 rounded-[20px] border border-[var(--border-soft)] bg-[var(--panel-muted)] p-2.5">
+                  <p className="text-[10px] font-semibold uppercase tracking-widest text-[var(--text-muted)]">Live Summary</p>
+                  <div className="mt-2.5 space-y-1.5">
+                    <MiniMetric label="Connected modules" value="12" />
+                    <MiniMetric label="Recent jobs" value={String(recentJobs.length)} />
+                    <MiniMetric label="Backend status" value={backendStatus.state} />
+                  </div>
+                </div>
+              )}
+
+              <div className="mt-auto rounded-[20px] border border-[var(--border-soft)] bg-[var(--panel)] p-2 shadow-[var(--shadow-soft)]">
+                <div className="flex items-center gap-2.5">
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[var(--accent-soft)] text-[var(--accent-strong)]">
+                    <UserCircle2 className="h-4 w-4" />
+                  </div>
+                  {!sidebarCollapsed && (
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-xs font-medium">{user.full_name || 'My Account'}</p>
+                      <p className="truncate text-[10px] text-[var(--text-muted)]">{user.email}</p>
+                    </div>
+                  )}
+                  {!sidebarCollapsed && (
+                    <button
+                      type="button"
+                      onClick={handleLogout}
+                      className="rounded-lg p-1.5 text-[var(--text-muted)] transition hover:bg-rose-500/10 hover:text-rose-500"
+                      title="Log out"
+                    >
+                      <LogOut className="h-3.5 w-3.5" />
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          </aside>
+
+          {isMobileSidebarOpen && (
+            <div className="fixed inset-0 z-20 bg-black/40 lg:hidden" onClick={() => setIsMobileSidebarOpen(false)} />
+          )}
+
+          <div className="relative flex min-w-0 flex-1 min-h-0">
+            {moduleRailVisible && (
+              <aside className={`group hidden min-h-0 border-r border-[var(--border-soft)] bg-[var(--panel)]/88 backdrop-blur-xl lg:relative lg:flex lg:flex-col lg:z-10 ${moduleRailCompact ? 'w-[64px]' : 'w-[240px]'}`}>
+                <button
+                  type="button"
+                  onClick={cycleModuleRail}
+                  className="absolute -right-3 top-6 z-40 flex h-6 w-6 items-center justify-center rounded-full border border-[var(--border-soft)] bg-[var(--panel)] text-[var(--text-secondary)] shadow-sm opacity-0 transition-all hover:scale-110 hover:text-[var(--text-primary)] group-hover:opacity-100"
+                >
+                  <ChevronsLeft className={`h-3 w-3 transition-transform ${moduleRailCompact ? 'rotate-180' : ''}`} />
+                </button>
+                <div className="flex min-h-[46px] items-center border-b border-[var(--border-soft)] px-3 py-3">
+                  {!moduleRailCompact && (
+                    <div>
+                      <p className="text-[10px] font-semibold uppercase tracking-widest text-[var(--text-muted)]">{activeSection?.label}</p>
+                      <p className="mt-0.5 text-xs font-medium text-[var(--text-primary)]">Features</p>
+                    </div>
+                  )}
                 </div>
 
-                <div className="sidebar-scrollbar flex-1 space-y-6 overflow-y-auto px-3.5 py-5">
-
-                    {/* Section: Core Workspace */}
-                    <div>
-                        <h4 className="mb-2 px-3 text-[11px] font-black uppercase tracking-[0.16em] text-gray-500">Workspace</h4>
-                        <ul className="space-y-1">
-                            <li>
-                                <button onClick={() => handleFeatureAccess('dashboard')} className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-[13px] font-semibold transition-all ${activeTab === 'dashboard' ? 'border border-gray-700 bg-[#1f2937] text-white shadow-lg' : 'text-gray-400 hover:bg-[#1f2937] hover:text-gray-100'}`}>
-                                    <Home size={18} /> Home
-                                </button>
-                            </li>
-                        </ul>
-                    </div>
-
-                    {/* Section: Data Operation Features */}
-                    <div>
-                        <h4 className="mb-2 px-3 text-[11px] font-black uppercase tracking-[0.16em] text-gray-500">Data Services</h4>
-                        <ul className="space-y-1">
-                            {[
-                                { id: 'validate', label: 'Quality Validation', icon: ShieldCheck },
-                                { id: 'enrichment', label: 'Data Cleaning', icon: Sparkles },
-                                { id: 'transformer', label: 'Data Transformation', icon: ArrowLeftRight },
-                                { id: 'mapper', label: 'Schema Mapping', icon: GitMerge },
-                                { id: 'scraper', label: 'Web Scraping', icon: Globe },
-                                { id: 'matching', label: 'Data Matching', icon: Shuffle },
-                                { id: 'pricing-intelligence', label: 'Pricing Intelligence', icon: TrendingUp },
-                                { id: 'visualizer', label: 'AI Visualizer', icon: BarChart3 }
-                            ].map(feat => (
-                                <li key={feat.id}>
-                                    <button onClick={() => handleFeatureAccess(feat.id)} className={`group flex w-full items-center justify-between rounded-lg px-3 py-2 text-[13px] font-semibold transition-all ${activeTab === feat.id ? 'border border-emerald-900/50 bg-emerald-600/10 text-emerald-400' : 'text-gray-400 hover:bg-[#1f2937] hover:text-gray-100'}`}>
-                                        <div className="flex items-center gap-3">
-                                            <feat.icon size={18} className={activeTab === feat.id ? 'text-emerald-500' : 'text-gray-500 group-hover:text-gray-300'} />
-                                            {feat.label}
-                                        </div>
-                                        {activeTab === feat.id && <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]" />}
-                                    </button>
-                                </li>
-                            ))}
-                        </ul>
-                    </div>
-
-                    <div>
-                        <h4 className="mb-2 px-3 text-[11px] font-black uppercase tracking-[0.16em] text-gray-500">Data Orchestrate</h4>
-                        <ul className="space-y-1">
-                            {[
-                                { id: 'pipeline', label: 'Pipeline Builder', icon: GitMerge },
-                                { id: 'scheduler', label: 'Scheduler', icon: Clock3 },
-                                { id: 'pipeline-runs', label: 'Pipeline Runs', icon: FolderClock }
-                            ].map(feat => (
-                                <li key={feat.id}>
-                                    <button onClick={() => handleFeatureAccess(feat.id)} className={`group flex w-full items-center justify-between rounded-lg px-3 py-2 text-[13px] font-semibold transition-all ${activeTab === feat.id ? 'border border-emerald-900/50 bg-emerald-600/10 text-emerald-400' : 'text-gray-400 hover:bg-[#1f2937] hover:text-gray-100'}`}>
-                                        <div className="flex items-center gap-3">
-                                            <feat.icon size={18} className={activeTab === feat.id ? 'text-emerald-500' : 'text-gray-500 group-hover:text-gray-300'} />
-                                            {feat.label}
-                                        </div>
-                                        {activeTab === feat.id && <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]" />}
-                                    </button>
-                                </li>
-                            ))}
-                        </ul>
-                    </div>
-
-                    {/* Section: Resources */}
-                    <div>
-                        <h4 className="mb-2 px-3 text-[11px] font-black uppercase tracking-[0.16em] text-gray-500">Resources</h4>
-                        <ul className="space-y-1">
-                            <li>
-                                <button onClick={() => handleFeatureAccess('repository')} className={`group flex w-full items-center justify-between rounded-lg px-3 py-2 text-[13px] font-semibold transition-all ${activeTab === 'repository' ? 'border border-emerald-900/50 bg-emerald-600/10 text-emerald-400' : 'text-gray-400 hover:bg-[#1f2937] hover:text-gray-100'}`}>
-                                    <div className="flex items-center gap-3">
-                                        <BookOpen size={18} className={activeTab === 'repository' ? 'text-emerald-500' : 'text-gray-500 group-hover:text-gray-300'} />
-                                        Global Repository
-                                    </div>
-                                    {activeTab === 'repository' && <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]" />}
-                                </button>
-                            </li>
-                            <li>
-                                <button onClick={() => handleFeatureAccess('usage')} className={`group flex w-full items-center justify-between rounded-lg px-3 py-2 text-[13px] font-semibold transition-all ${activeTab === 'usage' ? 'border border-emerald-900/50 bg-emerald-600/10 text-emerald-400' : 'text-gray-400 hover:bg-[#1f2937] hover:text-gray-100'}`}>
-                                    <div className="flex items-center gap-3">
-                                        <BarChart2 size={18} className={activeTab === 'usage' ? 'text-emerald-500' : 'text-gray-500 group-hover:text-gray-300'} />
-                                        Usage & Resources
-                                    </div>
-                                    {activeTab === 'usage' && <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]" />}
-                                </button>
-                            </li>
-                        </ul>
-                    </div>
-
-                </div>
-
-                {/* Bottom Profile Section */}
-                <div className="shrink-0 border-t border-gray-800 bg-[#0a0a0a] p-3.5">
-                    <div className="flex items-center justify-between">
-                        <button onClick={() => handleFeatureAccess('profile')} className="group flex flex-1 items-center gap-3 overflow-hidden rounded-lg px-2 py-1.5 transition-colors hover:bg-[#1f2937]">
-                            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-600 text-xs font-bold text-white">
-                                {user.full_name?.[0] || user.email?.[0]?.toUpperCase() || 'U'}
-                            </div>
-                            <div className="text-left overflow-hidden">
-                                <p className="truncate text-[13px] font-bold text-gray-200">{user.full_name || 'My Account'}</p>
-                                <p className="text-xs text-gray-500 truncate">{user.email}</p>
-                            </div>
+                <div className="glass-scrollbar flex-1 overflow-y-auto px-3 py-3">
+                  <div className="space-y-1">
+                    {currentModules.map((item) => {
+                      const Icon = item.icon;
+                      const active = activeTab === item.id;
+                      return (
+                        <button
+                          key={item.id}
+                          type="button"
+                          onClick={() => setModule(item.id)}
+                          className={`group flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-left transition ${active ? 'bg-[var(--accent-soft)] text-[var(--accent-strong)] shadow-[var(--shadow-soft)]' : 'text-[var(--text-secondary)] hover:bg-[var(--panel-muted)] hover:text-[var(--text-primary)]'}`}
+                        >
+                          <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${active ? 'bg-white/80 text-[var(--accent-strong)] dark:bg-white/10' : 'bg-[var(--panel)] text-[var(--text-muted)]'}`}>
+                            <Icon className="h-3.5 w-3.5" />
+                          </span>
+                          {!moduleRailCompact && (
+                            <span className="min-w-0 flex-1">
+                              <span className="block truncate text-xs font-medium">{item.label}</span>
+                              <span className="block truncate text-[10px] leading-tight opacity-80 text-[var(--text-muted)]">{item.description}</span>
+                            </span>
+                          )}
                         </button>
-                        <button onClick={handleLogout} className="p-2 text-gray-500 hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-colors" title="Log Out">
-                            <LogOut size={18} />
-                        </button>
-                    </div>
+                      );
+                    })}
+                  </div>
                 </div>
-            </nav>
-
-            {/* Overlay for mobile sidebar */}
-            {isSidebarOpen && (
-                <div className="fixed inset-0 bg-black/60 z-40 lg:hidden" onClick={() => setIsSidebarOpen(false)} />
+              </aside>
             )}
 
-            {/* Main Central Content Area */}
-            <main className="relative flex h-screen flex-1 flex-col overflow-hidden bg-slate-50 pt-14 lg:pt-0">
-                <div className={`h-full w-full max-w-full flex-1 overflow-y-auto ${activeTab === 'pipeline' ? 'p-0' : activeTab === 'validate' || activeTab === 'repository' || activeTab === 'enrichment' || activeTab === 'scraper' || activeTab === 'mapper' || activeTab === 'matching' || activeTab === 'pricing-intelligence' || activeTab === 'visualizer' || activeTab === 'transformer' ? 'p-0' : 'p-4 md:p-6'}`}>
-                    {renderWorkspaceContent()}
-                </div>
-            </main>
+            {currentModules.length > 1 && moduleRailState === 'hidden' && (
+              <button
+                type="button"
+                onClick={cycleModuleRail}
+                className="absolute left-3 top-3 z-20 hidden h-10 w-10 items-center justify-center rounded-2xl border border-[var(--border-soft)] bg-[var(--panel)]/95 text-[var(--text-secondary)] shadow-[var(--shadow-soft)] backdrop-blur-xl transition hover:text-[var(--text-primary)] lg:flex"
+                title="Show feature rail"
+              >
+                <ChevronsLeft className="h-4 w-4 rotate-180" />
+              </button>
+            )}
 
-            {/* Support Tools */}
-            <ChatBot />
+            <div className="flex min-w-0 flex-1 flex-col min-h-0">
+            <header className="shrink-0 border-b border-[var(--border-soft)] bg-[var(--panel)]/85 backdrop-blur-xl">
+              <div className="flex items-center justify-between gap-4 px-6 py-3">
+                <div className="min-w-0">
+                  <h2 className="truncate text-[28px] font-semibold tracking-tight">
+                    {activeModule?.label || 'Overview'}
+                  </h2>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <div className="hidden items-center gap-2 rounded-2xl border border-[var(--border-soft)] bg-[var(--panel-muted)] px-4 py-3 md:flex">
+                    <Search className="h-4 w-4 text-[var(--text-muted)]" />
+                    <input
+                      value={searchText}
+                      onChange={(event) => setSearchText(event.target.value)}
+                      className="w-56 bg-transparent text-sm outline-none placeholder:text-[var(--text-muted)]"
+                      placeholder="Search jobs, modules, datasets"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setTheme((current) => (current === 'light' ? 'dark' : 'light'))}
+                    className="flex h-11 w-11 items-center justify-center rounded-2xl border border-[var(--border-soft)] bg-[var(--panel-muted)] text-[var(--text-secondary)] transition hover:text-[var(--text-primary)]"
+                  >
+                    {isDark ? <SunMedium className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+                  </button>
+                  <button
+                    type="button"
+                    className="relative flex h-11 w-11 items-center justify-center rounded-2xl border border-[var(--border-soft)] bg-[var(--panel-muted)] text-[var(--text-secondary)] transition hover:text-[var(--text-primary)]"
+                  >
+                    <Bell className="h-5 w-5" />
+                    <span className="absolute right-2 top-2 h-2.5 w-2.5 rounded-full bg-[var(--accent-strong)]" />
+                  </button>
+                </div>
+              </div>
+
+            </header>
+
+            <main className={`flex-1 min-h-0 ${isFullDesktopModule ? 'overflow-hidden px-0 py-0' : 'overflow-y-auto px-4 py-4 md:px-6 md:py-6'}`}>
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={activeTab}
+                  initial={{ opacity: 0, y: 14 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ duration: 0.22, ease: 'easeOut' }}
+                  className={isFullDesktopModule ? 'h-full min-h-0' : ''}
+                >
+                  {renderActiveModule()}
+                </motion.div>
+              </AnimatePresence>
+            </main>
+          </div>
+          </div>
         </div>
-    );
+
+        <ChatBot />
+
+        <AuthModal
+          isOpen={isAuthOpen}
+          defaultMode={authDefaultMode}
+          connectionStatus={backendStatus.state}
+          connectionMessage={backendStatus.message}
+          isDesktop={IS_DESKTOP_APP}
+          runtimeInfo={desktopRuntime}
+          onClose={() => {
+            setIsAuthOpen(false);
+            setIntendedTab(null);
+          }}
+          onLoginSuccess={(loggedInUser) => {
+            setUser(loggedInUser);
+            fetchRecentJobs();
+            if (intendedTab) {
+              setActiveTab(intendedTab);
+              if (intendedTab === 'validate') setStep(1);
+              setIntendedTab(null);
+            } else {
+              setActiveTab('dashboard');
+            }
+            setIsAuthOpen(false);
+          }}
+        />
+      </div>
+    </div>
+  );
+}
+
+function Surface({ children, className = '' }) {
+  return (
+    <section className={`relative rounded-[32px] border border-[var(--border-soft)] bg-[var(--panel)] p-6 shadow-[var(--shadow-soft)] ${className}`}>
+      {children}
+    </section>
+  );
+}
+
+function SectionTitle({ eyebrow, title }) {
+  return (
+    <div>
+      <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[var(--text-muted)]">{eyebrow}</p>
+      <h3 className="mt-2 text-2xl font-semibold tracking-tight">{title}</h3>
+    </div>
+  );
+}
+
+function Badge({ label }) {
+  return <span className="rounded-full bg-[var(--accent-soft)] px-4 py-2 text-xs font-semibold uppercase tracking-[0.22em] text-[var(--accent-strong)]">{label}</span>;
+}
+
+function MiniMetric({ label, value }) {
+  return (
+    <div className="rounded-lg bg-[var(--panel)] p-2">
+      <p className="text-[10px] text-[var(--text-muted)]">{label}</p>
+      <p className="mt-0.5 text-sm font-medium">{value}</p>
+    </div>
+  );
+}
+
+function StatTile({ title, value, detail }) {
+  return (
+    <div className="rounded-[24px] border border-[var(--border-soft)] bg-white/70 p-4 backdrop-blur dark:bg-white/5">
+      <p className="text-sm text-[var(--text-secondary)]">{title}</p>
+      <p className="mt-2 text-3xl font-semibold">{value}</p>
+      <p className="mt-1 text-sm text-[var(--text-muted)]">{detail}</p>
+    </div>
+  );
+}
+
+function InfoRow({ title, value, detail }) {
+  return (
+    <div className="rounded-[24px] border border-[var(--border-soft)] bg-[var(--panel-muted)] p-4">
+      <div className="flex items-center justify-between gap-4">
+        <p className="font-semibold">{title}</p>
+        <span className="rounded-full bg-[var(--panel)] px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.12em] text-[var(--text-secondary)]">
+          {value}
+        </span>
+      </div>
+      <p className="mt-2 text-sm text-[var(--text-secondary)]">{detail}</p>
+    </div>
+  );
+}
+
+function StepPill({ stepNumber, active, completed, label }) {
+  return (
+    <span
+      className={`inline-flex min-w-[160px] items-center justify-between gap-3 rounded-2xl border px-3 py-2.5 transition ${
+        active
+          ? 'border-[var(--accent-strong)] bg-[var(--accent-soft)] text-[var(--accent-strong)]'
+          : completed
+            ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+            : 'border-[var(--border-soft)] bg-[var(--panel-muted)] text-[var(--text-secondary)]'
+      }`}
+    >
+      <span className="flex flex-col leading-tight">
+        <span className="text-[10px] font-semibold uppercase tracking-[0.18em] opacity-70">Step {stepNumber}</span>
+        <span className="mt-1 text-sm font-semibold">{label}</span>
+      </span>
+
+      <span
+        className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border ${
+          active
+            ? 'border-[var(--accent-strong)] bg-[var(--accent-strong)] text-white'
+            : completed
+              ? 'border-emerald-500 bg-emerald-500 text-white'
+              : 'border-[var(--border-strong)] text-[var(--text-muted)]'
+        }`}
+      >
+        {completed ? <Check className="h-3.5 w-3.5" /> : <span className="text-[11px] font-bold">{stepNumber}</span>}
+      </span>
+    </span>
+  );
+}
+
+function SettingsRow({ title, description, actionLabel, onAction }) {
+  return (
+    <div className="rounded-[24px] border border-[var(--border-soft)] bg-[var(--panel-muted)] p-5">
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div className="max-w-lg">
+          <p className="font-semibold">{title}</p>
+          <p className="mt-1 text-sm text-[var(--text-secondary)]">{description}</p>
+        </div>
+        <button
+          type="button"
+          onClick={onAction}
+          className="rounded-2xl bg-[var(--accent-strong)] px-4 py-2.5 text-sm font-semibold text-white"
+        >
+          {actionLabel}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function PrimaryButton({ icon: Icon, label, onClick }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="inline-flex items-center gap-2 rounded-2xl bg-[var(--accent-strong)] px-5 py-3 text-sm font-semibold text-white shadow-[var(--shadow-soft)] transition hover:-translate-y-0.5 hover:shadow-[var(--shadow-strong)]"
+    >
+      <Icon className="h-4 w-4" />
+      {label}
+    </button>
+  );
+}
+
+function SecondaryButton({ icon: Icon, label, onClick }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="inline-flex items-center gap-2 rounded-2xl border border-[var(--border-soft)] bg-[var(--panel)] px-5 py-3 text-sm font-semibold text-[var(--text-primary)] shadow-[var(--shadow-soft)] transition hover:-translate-y-0.5"
+    >
+      <Icon className="h-4 w-4" />
+      {label}
+    </button>
+  );
 }
 
 export default App;

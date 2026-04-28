@@ -6,7 +6,7 @@ from typing import Any, Dict, Optional
 
 from database import db
 from features.pipeline_runner import PipelineOrchestrator
-from features.validation import PolarsValidationEngine as ValidationEngine
+from features.validation import PolarsValidationEngine as ValidationEngine, RESULTS_DIR
 
 
 logger = logging.getLogger(__name__)
@@ -99,10 +99,10 @@ async def execute_saved_pipeline(
         output_df = result.get("output_df")
         if output_df is not None:
             try:
-                os.makedirs("results", exist_ok=True)
+                os.makedirs(RESULTS_DIR, exist_ok=True)
                 safe_name = re.sub(r"[^A-Za-z0-9_-]+", "_", pipeline["name"].strip()).strip("_") or "pipeline"
                 timestamp = _dt.utcnow().strftime("%Y%m%d_%H%M%S")
-                out_path = os.path.join("results", f"{safe_name}_{trigger}_{timestamp}.csv")
+                out_path = os.path.join(RESULTS_DIR, f"{safe_name}_{trigger}_{timestamp}.csv")
                 output_df.write_csv(out_path)
                 result["output_file"] = out_path
                 # Update the run record with the auto-exported file path

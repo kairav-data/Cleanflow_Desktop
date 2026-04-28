@@ -75,10 +75,10 @@ def send_otp_email(to_email: str, otp: str):
         }
         
         response = resend.Emails.send(params)
-        logger.info(f"✅ OTP Email sent successfully to {to_email}. Resend Email ID: {response.get('id')}")
+        logger.info(f"OTP email sent successfully to {to_email}. Resend Email ID: {response.get('id')}")
         
     except Exception as e:
-        logger.error(f"❌ [RESEND API ERROR] General failure sending OTP email to {to_email}: {e}")
+        logger.error(f"[RESEND API ERROR] General failure sending OTP email to {to_email}: {e}")
 
 
 def send_pipeline_email(to_email: str, subject: str, body: str, pipeline_name: str = "Pipeline") -> dict:
@@ -89,7 +89,7 @@ def send_pipeline_email(to_email: str, subject: str, body: str, pipeline_name: s
     import datetime
 
     if not resend.api_key:
-        logger.warning("[PIPELINE EMAIL] Missing RESEND_API_KEY — email not sent.")
+        logger.warning("[PIPELINE EMAIL] Missing RESEND_API_KEY - email not sent.")
         return {"success": False, "error": "RESEND_API_KEY not configured on server."}
 
     # Safely escape body for HTML and convert newlines to <br>
@@ -145,8 +145,8 @@ def send_pipeline_email(to_email: str, subject: str, body: str, pipeline_name: s
             "text": body,  # plain-text fallback
         }
         response = resend.Emails.send(params)
-        logger.info(f"✅ Pipeline email sent to {to_email}. Resend ID: {response.get('id')}")
+        logger.info(f"Pipeline email sent to {to_email}. Resend ID: {response.get('id')}")
         return {"success": True, "resend_id": response.get("id")}
     except Exception as e:
-        logger.error(f"❌ [PIPELINE EMAIL ERROR] Failed to send to {to_email}: {e}")
+        logger.error(f"[PIPELINE EMAIL ERROR] Failed to send to {to_email}: {e}")
         return {"success": False, "error": str(e)}

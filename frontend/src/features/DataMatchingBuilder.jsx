@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
+import FeatureLayout from './FeatureLayout';
 import { GitMerge, Upload, Play, CheckCircle, TrendingUp, Plus, Trash2, Database, File, FileSpreadsheet, FileText, AlertCircle } from 'lucide-react';
 import DatasetViewer from '../components/DatasetViewer';
 import WorkspaceTabs from '../components/WorkspaceTabs';
@@ -199,14 +200,14 @@ export default function DataMatchingBuilder({
     return (
         <div className="w-full h-full flex flex-col">
             {/* ── Page Header ── */}
-            <div className="flex items-center justify-between px-8 py-5 border-b border-slate-200 bg-white shrink-0">
+            <div className="flex items-center justify-between px-8 py-5 border-b border-[var(--border-soft)] bg-[var(--panel)] shrink-0">
                 <div className="flex items-center gap-4">
                     <div className="w-10 h-10 rounded-xl bg-violet-50 border border-violet-100 flex items-center justify-center">
                         <GitMerge size={20} className="text-violet-600" />
                     </div>
                     <div>
-                        <h2 className="text-2xl font-black text-slate-900 tracking-tight">Data Matching</h2>
-                        <p className="text-sm text-slate-500 mt-0.5">Match records across two datasets using fuzzy or exact algorithms.</p>
+                        <h2 className="text-2xl font-semibold text-[var(--text-primary)] tracking-tight">Data Matching</h2>
+                        <p className="text-sm text-[var(--text-secondary)] mt-0.5">Match records across two datasets using fuzzy or exact algorithms.</p>
                     </div>
                 </div>
 
@@ -218,16 +219,16 @@ export default function DataMatchingBuilder({
                                 <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold transition-all ${
                                     step === s ? 'bg-violet-600 text-white' :
                                     step > s ? 'bg-violet-100 text-violet-700' :
-                                    'bg-slate-100 text-slate-400'
+                                    'bg-[var(--panel-muted)] text-[var(--text-muted)]'
                                 }`}>
-                                    <span className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-black ${
-                                        step === s ? 'bg-white text-violet-600' :
+                                    <span className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-semibold ${
+                                        step === s ? 'bg-[var(--panel)] text-violet-600' :
                                         step > s ? 'bg-violet-500 text-white' :
-                                        'bg-slate-300 text-slate-500'
+                                        'bg-slate-300 text-[var(--text-secondary)]'
                                     }`}>{step > s ? '✓' : s}</span>
                                     {label}
                                 </div>
-                                {s < STEPS.length && <div className={`w-6 h-px mx-1 ${step > s ? 'bg-violet-300' : 'bg-slate-200'}`} />}
+                                {s < STEPS.length && <div className={`w-6 h-px mx-1 ${step > s ? 'bg-violet-300' : 'bg-[var(--panel-muted)]'}`} />}
                             </div>
                         );
                     })}
@@ -241,11 +242,11 @@ export default function DataMatchingBuilder({
                 {loading && (
                     <div className="flex flex-col items-center justify-center h-64 gap-5">
                         <div className="w-full max-w-md">
-                            <div className="flex items-center justify-between text-sm font-semibold text-slate-600 mb-2">
+                            <div className="flex items-center justify-between text-sm font-semibold text-[var(--text-secondary)] mb-2">
                                 <span>{progress.message || 'Initializing…'}</span>
                                 <span>{progress.percent}%</span>
                             </div>
-                            <div className="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden">
+                            <div className="w-full bg-[var(--panel-muted)] rounded-full h-2.5 overflow-hidden">
                                 <motion.div
                                     className="bg-violet-600 h-full rounded-full"
                                     initial={{ width: 0 }}
@@ -254,7 +255,7 @@ export default function DataMatchingBuilder({
                                 />
                             </div>
                         </div>
-                        <p className="text-slate-400 text-sm">Elapsed: <span className="font-mono font-bold">{Math.floor(elapsedTime / 60)}:{String(elapsedTime % 60).padStart(2, '0')}</span></p>
+                        <p className="text-[var(--text-muted)] text-sm">Elapsed: <span className="font-mono font-bold">{Math.floor(elapsedTime / 60)}:{String(elapsedTime % 60).padStart(2, '0')}</span></p>
                     </div>
                 )}
 
@@ -262,26 +263,26 @@ export default function DataMatchingBuilder({
                 {!loading && step === 1 && (
                     <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
                         <div className="mb-5">
-                            <h3 className="text-base font-bold text-slate-800">Upload Two Datasets</h3>
-                            <p className="text-sm text-slate-500 mt-1">Provide both datasets you want to match records across.</p>
+                            <h3 className="text-base font-bold text-[var(--text-primary)]">Upload Two Datasets</h3>
+                            <p className="text-sm text-[var(--text-secondary)] mt-1">Provide both datasets you want to match records across.</p>
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-6">
                             {['dataset1', 'dataset2'].map((dsId, idx) => (
-                                <div key={dsId} className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
+                                <div key={dsId} className="bg-[var(--panel)] border border-[var(--border-soft)] rounded-2xl p-5 shadow-sm">
                                     {/* Header */}
                                     <div className="flex items-center justify-between mb-4">
                                         <div className="flex items-center gap-2">
                                             <div className="w-7 h-7 rounded-lg bg-violet-100 flex items-center justify-center">
-                                                <span className="text-xs font-black text-violet-600">{idx + 1}</span>
+                                                <span className="text-xs font-semibold text-violet-600">{idx + 1}</span>
                                             </div>
-                                            <h3 className="font-bold text-sm text-slate-800">Dataset {idx + 1}</h3>
+                                            <h3 className="font-bold text-sm text-[var(--text-primary)]">Dataset {idx + 1}</h3>
                                         </div>
                                         {/* File / DB Toggle */}
-                                        <div className="flex bg-slate-100 rounded-lg p-0.5">
+                                        <div className="flex bg-[var(--panel-muted)] rounded-lg p-0.5">
                                             {['file', 'database'].map(mode => (
                                                 <button key={mode} onClick={() => setDatasetMode(prev => ({ ...prev, [dsId]: mode }))}
-                                                    className={`px-3 py-1 text-xs font-bold rounded-md transition-all ${datasetMode[dsId] === mode ? 'bg-white text-violet-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>
+                                                    className={`px-3 py-1 text-xs font-bold rounded-md transition-all ${datasetMode[dsId] === mode ? 'bg-[var(--panel)] text-violet-600 shadow-sm' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}>
                                                     {mode === 'file' ? 'File' : 'Database'}
                                                 </button>
                                             ))}
@@ -291,11 +292,11 @@ export default function DataMatchingBuilder({
                                     {datasetMode[dsId] === 'file' ? (
                                         <div className="flex flex-col items-center gap-4">
                                             <div className="flex flex-col items-center gap-2 mb-1">
-                                                <span className="text-xs font-semibold text-slate-500">Separator:</span>
+                                                <span className="text-xs font-semibold text-[var(--text-secondary)]">Separator:</span>
                                                 <div className="flex flex-wrap items-center justify-center gap-1.5">
                                                     {[',', ';', '|'].map(d => (
                                                         <button key={d} onClick={() => setSeparators(prev => ({ ...prev, [dsId]: d }))}
-                                                            className={`w-7 h-7 rounded-lg flex items-center justify-center font-mono border text-xs transition-all ${separators[dsId] === d ? 'bg-violet-600 text-white border-violet-600' : 'bg-white text-slate-400 border-slate-200 hover:border-violet-400'}`}>
+                                                            className={`w-7 h-7 rounded-lg flex items-center justify-center font-mono border text-xs transition-all ${separators[dsId] === d ? 'bg-violet-600 text-white border-violet-600' : 'bg-[var(--panel)] text-[var(--text-muted)] border-[var(--border-soft)] hover:border-violet-400'}`}>
                                                             {d}
                                                         </button>
                                                     ))}
@@ -306,7 +307,7 @@ export default function DataMatchingBuilder({
                                                         className={`w-16 h-7 px-2 py-1 border rounded-lg text-xs font-mono focus:outline-none transition-all ${
                                                             ![',', ';', '|'].includes(separators[dsId]) && separators[dsId]
                                                                 ? 'border-violet-600 bg-violet-50 text-violet-700'
-                                                                : 'border-slate-200 text-slate-600 focus:border-violet-400'
+                                                                : 'border-[var(--border-soft)] text-[var(--text-secondary)] focus:border-violet-400'
                                                         }`}
                                                     />
                                                 </div>
@@ -322,35 +323,35 @@ export default function DataMatchingBuilder({
                                                 }`}>
                                                 {datasets[dsId] ? <><CheckCircle size={15} /> Uploaded — Click to Replace</> : <><Upload size={15} /> Upload File</>}
                                             </label>
-                                            <p className="text-xs text-slate-400">Supports CSV, Excel (.xlsx)</p>
+                                            <p className="text-xs text-[var(--text-muted)]">Supports CSV, Excel (.xlsx)</p>
                                         </div>
                                     ) : (
                                         <div className="space-y-3">
                                             {connections.length === 0 ? (
-                                                <div className="text-center py-6 text-slate-500 text-sm">
-                                                    <Database size={28} className="mx-auto text-slate-300 mb-2" />
+                                                <div className="text-center py-6 text-[var(--text-secondary)] text-sm">
+                                                    <Database size={28} className="mx-auto text-[var(--text-muted)] mb-2" />
                                                     No connections. Add one from the sidebar.
                                                 </div>
                                             ) : (
                                                 <>
                                                     <div>
-                                                        <label className="block text-xs font-bold text-slate-500 mb-1">Connection</label>
+                                                        <label className="block text-xs font-bold text-[var(--text-secondary)] mb-1">Connection</label>
                                                         <select value={datasetConnections[dsId]}
                                                             onChange={e => setDatasetConnections(prev => ({ ...prev, [dsId]: e.target.value }))}
-                                                            className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-medium focus:border-violet-400 outline-none">
+                                                            className="w-full px-3 py-2 bg-[var(--panel-muted)] border border-[var(--border-soft)] rounded-lg text-sm font-medium focus:border-violet-400 outline-none">
                                                             <option value="">Select…</option>
                                                             {connections.map(c => <option key={c.id} value={c.id}>{c.name} ({c.db_type})</option>)}
                                                         </select>
                                                     </div>
                                                     <div>
-                                                        <label className="block text-xs font-bold text-slate-500 mb-1">SQL Query</label>
+                                                        <label className="block text-xs font-bold text-[var(--text-secondary)] mb-1">SQL Query</label>
                                                         <textarea value={datasetQueries[dsId]}
                                                             onChange={e => setDatasetQueries(prev => ({ ...prev, [dsId]: e.target.value }))}
-                                                            className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-mono min-h-[80px] resize-none focus:border-violet-400 outline-none"
+                                                            className="w-full px-3 py-2 bg-[var(--panel-muted)] border border-[var(--border-soft)] rounded-lg text-sm font-mono min-h-[80px] resize-none focus:border-violet-400 outline-none"
                                                             placeholder="SELECT * FROM table" />
                                                     </div>
                                                     <button onClick={() => handleDatabaseIngest(dsId)} disabled={!datasetConnections[dsId] || !datasetQueries[dsId]}
-                                                        className="w-full py-2.5 bg-violet-600 hover:bg-violet-700 disabled:bg-slate-200 disabled:text-slate-400 text-white rounded-xl font-bold text-sm transition-colors">
+                                                        className="w-full py-2.5 bg-violet-600 hover:bg-violet-700 disabled:bg-[var(--panel-muted)] disabled:text-[var(--text-muted)] text-white rounded-xl font-bold text-sm transition-colors">
                                                         {datasets[dsId] ? '✓ Re-import Database' : 'Import from Database'}
                                                     </button>
                                                 </>
@@ -359,18 +360,18 @@ export default function DataMatchingBuilder({
                                     )}
 
                                     {datasets[dsId] && (
-                                        <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs font-medium">
+                                        <div className="mt-4 pt-3 border-t border-[var(--border-soft)] flex items-center justify-between text-xs font-medium">
                                             <span className="flex items-center gap-1.5 text-emerald-600"><CheckCircle size={13} /> Ready</span>
-                                            <span className="text-slate-500">{datasetColumns[dsId].length} columns</span>
+                                            <span className="text-[var(--text-secondary)]">{datasetColumns[dsId].length} columns</span>
                                         </div>
                                     )}
                                 </div>
                             ))}
                         </div>
 
-                        <div className="flex justify-end pt-4 border-t border-slate-100">
+                        <div className="flex justify-end pt-4 border-t border-[var(--border-soft)]">
                             <button onClick={() => { setWorkspaceTab('dataset1'); setStep(2); }} disabled={!datasets.dataset1 || !datasets.dataset2}
-                                className="flex items-center gap-2 px-6 py-3 bg-violet-600 hover:bg-violet-700 disabled:bg-slate-200 disabled:text-slate-400 text-white rounded-xl font-bold text-sm transition-all shadow-md shadow-violet-600/20 hover:-translate-y-0.5">
+                                className="flex items-center gap-2 px-6 py-3 bg-violet-600 hover:bg-violet-700 disabled:bg-[var(--panel-muted)] disabled:text-[var(--text-muted)] text-white rounded-xl font-bold text-sm transition-all shadow-md shadow-violet-600/20 hover:-translate-y-0.5">
                                 Configure Matching Rules →
                             </button>
                         </div>
@@ -382,11 +383,11 @@ export default function DataMatchingBuilder({
                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-5">
                         <div className="flex flex-wrap items-start justify-between gap-4">
                             <div>
-                                <h3 className="text-base font-bold text-slate-800">Matching Workspace</h3>
-                                <p className="text-sm text-slate-500 mt-1">Switch between both inserted datasets and your matching rules while you configure the job.</p>
+                                <h3 className="text-base font-bold text-[var(--text-primary)]">Matching Workspace</h3>
+                                <p className="text-sm text-[var(--text-secondary)] mt-1">Switch between both inserted datasets and your matching rules while you configure the job.</p>
                             </div>
                             <div className="flex flex-wrap items-center gap-2">
-                                <span className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 shadow-sm">
+                                <span className="rounded-full border border-[var(--border-soft)] bg-[var(--panel)] px-3 py-1.5 text-xs font-semibold text-[var(--text-secondary)] shadow-sm">
                                     {datasetColumns.dataset1.length} + {datasetColumns.dataset2.length} columns
                                 </span>
                                 <span className="rounded-full border border-violet-200 bg-violet-50 px-3 py-1.5 text-xs font-semibold text-violet-700 shadow-sm">
@@ -410,8 +411,8 @@ export default function DataMatchingBuilder({
                         <div className="space-y-5">
                         <div className="flex items-center justify-between mb-5">
                             <div>
-                                <h3 className="text-base font-bold text-slate-800">Matching Rules</h3>
-                                <p className="text-sm text-slate-500 mt-1">Define which columns to compare and how to compare them.</p>
+                                <h3 className="text-base font-bold text-[var(--text-primary)]">Matching Rules</h3>
+                                <p className="text-sm text-[var(--text-secondary)] mt-1">Define which columns to compare and how to compare them.</p>
                             </div>
                             <button onClick={addRule} className="flex items-center gap-2 px-4 py-2 bg-violet-600 hover:bg-violet-700 text-white rounded-xl font-semibold text-sm transition-colors shadow-sm shadow-violet-600/20">
                                 <Plus size={15} /> Add Rule
@@ -422,27 +423,27 @@ export default function DataMatchingBuilder({
                             <AnimatePresence>
                                 {matchRules.map((rule, idx) => (
                                     <motion.div key={rule.id} initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}
-                                        className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm relative">
-                                        <div className="absolute top-4 left-4 text-xs font-black text-slate-400 uppercase tracking-wider">Rule {idx + 1}</div>
+                                        className="bg-[var(--panel)] border border-[var(--border-soft)] rounded-2xl p-5 shadow-sm relative">
+                                        <div className="absolute top-4 left-4 text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">Rule {idx + 1}</div>
                                         {matchRules.length > 1 && (
-                                            <button onClick={() => removeRule(rule.id)} className="absolute top-3.5 right-4 p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all">
+                                            <button onClick={() => removeRule(rule.id)} className="absolute top-3.5 right-4 p-1.5 text-[var(--text-muted)] hover:text-red-600 hover:bg-red-50 rounded-lg transition-all">
                                                 <Trash2 size={15} />
                                             </button>
                                         )}
 
                                         <div className="grid grid-cols-2 gap-4 mt-6 mb-4">
                                             <div>
-                                                <label className="block text-xs font-bold text-slate-500 mb-1.5">Column (Dataset 1)</label>
+                                                <label className="block text-xs font-bold text-[var(--text-secondary)] mb-1.5">Column (Dataset 1)</label>
                                                 <select value={rule.column1} onChange={e => updateRule(rule.id, 'column1', e.target.value)}
-                                                    className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:border-violet-400 focus:ring-2 focus:ring-violet-400/10 outline-none">
+                                                    className="w-full px-3 py-2.5 bg-[var(--panel-muted)] border border-[var(--border-soft)] rounded-xl text-sm font-medium focus:border-violet-400 focus:ring-2 focus:ring-violet-400/10 outline-none">
                                                     <option value="">Select column…</option>
                                                     {datasetColumns.dataset1.map(c => <option key={c} value={c}>{c}</option>)}
                                                 </select>
                                             </div>
                                             <div>
-                                                <label className="block text-xs font-bold text-slate-500 mb-1.5">Column (Dataset 2)</label>
+                                                <label className="block text-xs font-bold text-[var(--text-secondary)] mb-1.5">Column (Dataset 2)</label>
                                                 <select value={rule.column2} onChange={e => updateRule(rule.id, 'column2', e.target.value)}
-                                                    className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:border-violet-400 focus:ring-2 focus:ring-violet-400/10 outline-none">
+                                                    className="w-full px-3 py-2.5 bg-[var(--panel-muted)] border border-[var(--border-soft)] rounded-xl text-sm font-medium focus:border-violet-400 focus:ring-2 focus:ring-violet-400/10 outline-none">
                                                     <option value="">Select column…</option>
                                                     {datasetColumns.dataset2.map(c => <option key={c} value={c}>{c}</option>)}
                                                 </select>
@@ -451,15 +452,15 @@ export default function DataMatchingBuilder({
 
                                         <div className="grid grid-cols-2 gap-4">
                                             <div>
-                                                <label className="block text-xs font-bold text-slate-500 mb-1.5">Algorithm</label>
+                                                <label className="block text-xs font-bold text-[var(--text-secondary)] mb-1.5">Algorithm</label>
                                                 <select value={rule.algorithm} onChange={e => updateRule(rule.id, 'algorithm', e.target.value)}
-                                                    className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:border-violet-400 outline-none">
+                                                    className="w-full px-3 py-2.5 bg-[var(--panel-muted)] border border-[var(--border-soft)] rounded-xl text-sm font-medium focus:border-violet-400 outline-none">
                                                     {algorithms.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
                                                 </select>
                                             </div>
                                             <div>
-                                                <label className="block text-xs font-bold text-slate-500 mb-1.5">
-                                                    Threshold — <span className="font-black text-slate-700">{(rule.threshold * 100).toFixed(0)}%</span>
+                                                <label className="block text-xs font-bold text-[var(--text-secondary)] mb-1.5">
+                                                    Threshold — <span className="font-semibold text-[var(--text-primary)]">{(rule.threshold * 100).toFixed(0)}%</span>
                                                 </label>
                                                 <input type="range" min="0" max="1" step="0.05"
                                                     value={rule.threshold} onChange={e => updateRule(rule.id, 'threshold', parseFloat(e.target.value))}
@@ -472,26 +473,26 @@ export default function DataMatchingBuilder({
                         </div>
 
                         {/* Output column selectors */}
-                        <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm mb-5">
-                            <h4 className="text-sm font-bold text-slate-800 mb-4">Output Columns to Include</h4>
+                        <div className="bg-[var(--panel)] border border-[var(--border-soft)] rounded-2xl p-5 shadow-sm mb-5">
+                            <h4 className="text-sm font-bold text-[var(--text-primary)] mb-4">Output Columns to Include</h4>
                             <div className="grid grid-cols-2 gap-6">
                                 {['dataset1', 'dataset2'].map((dsId, idx) => (
                                     <div key={dsId}>
                                         <div className="flex items-center justify-between mb-2">
-                                            <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Dataset {idx + 1}</p>
+                                            <p className="text-xs font-bold text-[var(--text-secondary)] uppercase tracking-wider">Dataset {idx + 1}</p>
                                             <button 
                                                 onClick={() => setOutputColumns(prev => ({ ...prev, [dsId]: prev[dsId].length === datasetColumns[dsId].length ? [] : [...datasetColumns[dsId]] }))}
-                                                className="text-[10px] uppercase font-black tracking-widest text-violet-600 hover:text-violet-700 bg-violet-50 hover:bg-violet-100 px-2 py-0.5 rounded-full transition-colors"
+                                                className="text-[10px] uppercase font-semibold tracking-widest text-violet-600 hover:text-violet-700 bg-violet-50 hover:bg-violet-100 px-2 py-0.5 rounded-full transition-colors"
                                             >
                                                 {outputColumns[dsId].length === datasetColumns[dsId].length ? 'Clear All' : 'Select All'}
                                             </button>
                                         </div>
                                         <div className="space-y-1.5 max-h-36 overflow-y-auto">
                                             {datasetColumns[dsId].map(col => (
-                                                <label key={col} className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 px-2 py-1 rounded-lg">
+                                                <label key={col} className="flex items-center gap-2 cursor-pointer hover:bg-[var(--panel-muted)] px-2 py-1 rounded-lg">
                                                     <input type="checkbox" checked={outputColumns[dsId].includes(col)} onChange={() => toggleOutputColumn(dsId, col)}
                                                         className="w-3.5 h-3.5 accent-violet-600 rounded" />
-                                                    <span className="text-sm text-slate-700">{col}</span>
+                                                    <span className="text-sm text-[var(--text-primary)]">{col}</span>
                                                 </label>
                                             ))}
                                         </div>
@@ -500,18 +501,18 @@ export default function DataMatchingBuilder({
                             </div>
                         </div>
 
-                        <div className="flex items-center justify-between pt-4 border-t border-slate-100">
-                            <button onClick={() => setStep(1)} className="flex items-center gap-2 px-4 py-2 border border-slate-200 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-colors">
+                        <div className="flex items-center justify-between pt-4 border-t border-[var(--border-soft)]">
+                            <button onClick={() => setStep(1)} className="flex items-center gap-2 px-4 py-2 border border-[var(--border-soft)] rounded-xl text-sm font-semibold text-[var(--text-secondary)] hover:bg-[var(--panel-muted)] transition-colors">
                                 ← Back
                             </button>
                             <div className="flex items-center gap-3">
                                 {embedded && (
-                                    <button onClick={handleSaveConfig} className="flex items-center gap-2 px-5 py-2.5 border border-slate-200 hover:border-slate-300 hover:bg-slate-50 text-slate-700 rounded-xl font-bold text-sm transition-all">
+                                    <button onClick={handleSaveConfig} className="flex items-center gap-2 px-5 py-2.5 border border-[var(--border-soft)] hover:border-[var(--border-strong)] hover:bg-[var(--panel-muted)] text-[var(--text-primary)] rounded-xl font-bold text-sm transition-all">
                                         Save to Pipeline
                                     </button>
                                 )}
                                 <button onClick={handleExecute} disabled={matchRules.some(r => !r.column1 || !r.column2) || loading}
-                                    className="flex items-center gap-2 px-6 py-3 bg-violet-600 hover:bg-violet-700 disabled:bg-slate-200 disabled:text-slate-400 text-white rounded-xl font-bold text-sm transition-all shadow-md shadow-violet-600/20 hover:-translate-y-0.5">
+                                    className="flex items-center gap-2 px-6 py-3 bg-violet-600 hover:bg-violet-700 disabled:bg-[var(--panel-muted)] disabled:text-[var(--text-muted)] text-white rounded-xl font-bold text-sm transition-all shadow-md shadow-violet-600/20 hover:-translate-y-0.5">
                                     <Play size={16} fill="currentColor" /> Run Matching Algorithms
                                 </button>
                             </div>
@@ -529,8 +530,8 @@ export default function DataMatchingBuilder({
                                     : 'Review the second dataset, then switch tabs to compare it against rules or the first dataset.'
                                 }
                             />
-                            <div className="flex items-center justify-between border-t border-slate-100 pt-4">
-                                <button onClick={() => setStep(1)} className="flex items-center gap-2 px-4 py-2 border border-slate-200 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-colors">
+                            <div className="flex items-center justify-between border-t border-[var(--border-soft)] pt-4">
+                                <button onClick={() => setStep(1)} className="flex items-center gap-2 px-4 py-2 border border-[var(--border-soft)] rounded-xl text-sm font-semibold text-[var(--text-secondary)] hover:bg-[var(--panel-muted)] transition-colors">
                                     Back
                                 </button>
                                 <button onClick={() => setWorkspaceTab('rules')} className="flex items-center gap-2 px-5 py-2.5 bg-violet-600 hover:bg-violet-700 text-white rounded-xl font-semibold text-sm transition-colors shadow-sm shadow-violet-600/20">
@@ -549,8 +550,8 @@ export default function DataMatchingBuilder({
                         {/* Header row */}
                         <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
                             <div>
-                                <h3 className="text-xl font-black text-slate-900 tracking-tight">Matching Complete</h3>
-                                <p className="text-sm text-slate-500 mt-1">
+                                <h3 className="text-xl font-semibold text-[var(--text-primary)] tracking-tight">Matching Complete</h3>
+                                <p className="text-sm text-[var(--text-secondary)] mt-1">
                                     Found <span className="font-bold text-violet-600">{totalMatches}</span> matching record{totalMatches !== 1 ? 's' : ''} across both datasets.
                                 </p>
                             </div>
@@ -618,7 +619,7 @@ export default function DataMatchingBuilder({
                                         setProgress({ percent: 0, message: '', status: 'idle' });
                                         setWorkspaceTab('dataset1');
                                     }}
-                                    className="flex items-center gap-2 px-4 py-2.5 border border-slate-200 hover:border-slate-300 hover:bg-slate-50 text-slate-700 rounded-xl font-bold text-sm transition-all"
+                                    className="flex items-center gap-2 px-4 py-2.5 border border-[var(--border-soft)] hover:border-[var(--border-strong)] hover:bg-[var(--panel-muted)] text-[var(--text-primary)] rounded-xl font-bold text-sm transition-all"
                                 >
                                     New Matching Job
                                 </button>
@@ -627,16 +628,16 @@ export default function DataMatchingBuilder({
 
                         {/* Sample data table */}
                         {finalResults && finalResults.length > 0 ? (
-                            <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
-                                <div className="px-5 py-3.5 border-b border-slate-100 flex items-center justify-between">
-                                    <span className="text-sm font-bold text-slate-700">Sample Results</span>
-                                    <span className="text-xs text-slate-500">
+                            <div className="bg-[var(--panel)] border border-[var(--border-soft)] rounded-2xl overflow-hidden shadow-sm">
+                                <div className="px-5 py-3.5 border-b border-[var(--border-soft)] flex items-center justify-between">
+                                    <span className="text-sm font-bold text-[var(--text-primary)]">Sample Results</span>
+                                    <span className="text-xs text-[var(--text-secondary)]">
                                         Showing top {Math.min(finalResults.length, 10)} of {totalMatches}
                                     </span>
                                 </div>
                                 <div className="overflow-x-auto max-h-[420px]">
                                     <table className="w-full text-sm text-left">
-                                        <thead className="bg-slate-50 text-xs text-slate-500 uppercase sticky top-0 border-b border-slate-200">
+                                        <thead className="bg-[var(--panel-muted)] text-xs text-[var(--text-secondary)] uppercase sticky top-0 border-b border-[var(--border-soft)]">
                                             <tr>
                                                 {Object.keys(finalResults[0])
                                                     .filter(k => k !== 'match_details')
@@ -647,13 +648,13 @@ export default function DataMatchingBuilder({
                                                     ))}
                                             </tr>
                                         </thead>
-                                        <tbody className="divide-y divide-slate-100">
+                                        <tbody className="divide-y divide-[var(--border-soft)]">
                                             {finalResults.slice(0, 10).map((row, idx) => (
-                                                <tr key={idx} className={`transition-colors ${idx % 2 === 0 ? 'bg-white hover:bg-slate-50/60' : 'bg-slate-50/40 hover:bg-slate-100/60'}`}>
+                                                <tr key={idx} className={`transition-colors ${idx % 2 === 0 ? 'bg-[var(--panel)] hover:bg-[var(--panel-muted)]/60' : 'bg-[var(--panel-muted)]/40 hover:bg-[var(--panel-muted)]/60'}`}>
                                                     {Object.entries(row)
                                                         .filter(([k]) => k !== 'match_details')
                                                         .map(([key, value], i) => (
-                                                            <td key={i} className="px-5 py-3 text-slate-700 font-medium whitespace-nowrap">
+                                                            <td key={i} className="px-5 py-3 text-[var(--text-primary)] font-medium whitespace-nowrap">
                                                                 {key === 'similarity_score'
                                                                     ? <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
                                                                         Number(value) >= 0.9 ? 'bg-emerald-100 text-emerald-700' :
@@ -677,12 +678,12 @@ export default function DataMatchingBuilder({
                                 </div>
                             </div>
                         ) : (
-                            <div className="flex flex-col items-center justify-center py-20 text-center bg-white border border-slate-200 rounded-2xl">
-                                <div className="w-14 h-14 rounded-2xl bg-slate-100 flex items-center justify-center mb-4">
-                                    <AlertCircle size={26} className="text-slate-300" />
+                            <div className="flex flex-col items-center justify-center py-20 text-center bg-[var(--panel)] border border-[var(--border-soft)] rounded-2xl">
+                                <div className="w-14 h-14 rounded-2xl bg-[var(--panel-muted)] flex items-center justify-center mb-4">
+                                    <AlertCircle size={26} className="text-[var(--text-muted)]" />
                                 </div>
-                                <p className="font-bold text-slate-700 mb-1">No matches found</p>
-                                <p className="text-sm text-slate-400 max-w-sm">
+                                <p className="font-bold text-[var(--text-primary)] mb-1">No matches found</p>
+                                <p className="text-sm text-[var(--text-muted)] max-w-sm">
                                     Try lowering the similarity threshold or check that the selected columns contain comparable values.
                                 </p>
                             </div>

@@ -6,12 +6,14 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "build:desktop": "vite build --mode desktop",
     "lint": "eslint .",
     "preview": "vite preview"
   },
   "dependencies": {
     "@xyflow/react": "^12.0.0",
     "axios": "^1.13.4",
+    "cleanflow-desktop": "file:..",
     "clsx": "^2.1.1",
     "framer-motion": "^12.29.2",
     "html2canvas": "^1.4.1",

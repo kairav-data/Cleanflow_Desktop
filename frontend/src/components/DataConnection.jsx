@@ -145,36 +145,36 @@ const DataConnection = ({ onUploadSuccess, compact = false }) => {
     };
 
     const wrapperClass = compact
-        ? 'w-full max-w-3xl mx-auto py-0 px-0'
-        : 'w-full max-w-4xl mx-auto py-10 px-5';
-    const headerWrapClass = compact ? 'text-left mb-6' : 'text-center mb-12';
+        ? 'w-full py-0 px-0'
+        : 'w-full px-2 py-10 md:px-4';
+    const headerWrapClass = compact ? 'text-left mb-4' : 'text-center mb-12';
     const badgeClass = compact
         ? 'inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-brand-blue/10 text-brand-blue text-[11px] font-bold uppercase tracking-wider mb-3'
         : 'inline-flex items-center gap-2 px-3 py-1 rounded-full bg-brand-blue/10 text-brand-blue text-xs font-bold uppercase tracking-wider mb-4';
     const titleClass = compact
-        ? 'text-2xl md:text-3xl font-black text-slate-900 mb-2 tracking-tight'
-        : 'text-4xl md:text-[2.75rem] font-black text-slate-900 mb-4 tracking-tight';
+        ? 'text-2xl md:text-3xl font-semibold text-[var(--text-primary)] mb-2 tracking-tight'
+        : 'text-4xl md:text-[2.75rem] font-semibold text-[var(--text-primary)] mb-4 tracking-tight';
     const bodyClass = compact
-        ? 'text-slate-500 text-sm md:text-base max-w-xl'
-        : 'text-slate-500 text-base max-w-2xl mx-auto';
+        ? 'text-[var(--text-secondary)] text-sm md:text-base max-w-2xl'
+        : 'text-[var(--text-secondary)] text-base max-w-3xl mx-auto';
     const modeClass = compact
-        ? 'flex p-1 bg-slate-200/50 backdrop-blur-md rounded-xl mb-6 w-fit border border-white/50 shadow-inner'
-        : 'flex p-1 bg-slate-200/50 backdrop-blur-md rounded-xl mb-8 w-fit mx-auto border border-white/50 shadow-inner';
+        ? 'inline-flex p-1.5 bg-[var(--panel-muted)] backdrop-blur-md rounded-2xl mb-4 border border-[var(--border-soft)] shadow-[var(--shadow-soft)]'
+        : 'inline-flex p-1.5 bg-[var(--panel-muted)] backdrop-blur-md rounded-2xl mb-8 mx-auto border border-[var(--border-soft)] shadow-[var(--shadow-soft)]';
     const modeButtonClass = compact
-        ? 'relative flex items-center gap-2 px-5 py-2.5 rounded-lg font-bold text-sm transition-all z-10'
-        : 'relative flex items-center gap-2 px-6 py-3 rounded-lg font-semibold transition-all z-10';
+        ? 'relative flex items-center gap-2 px-5 py-3 rounded-xl font-semibold text-sm transition-all z-10'
+        : 'relative flex items-center gap-2 px-6 py-3 rounded-xl font-semibold transition-all z-10';
     const delimiterWrapClass = compact
-        ? 'flex items-center justify-start gap-3 bg-white/70 py-2.5 px-4 rounded-xl w-fit border border-slate-100 shadow-sm'
-        : 'flex items-center justify-center gap-3 bg-white/50 py-2.5 px-5 rounded-xl w-fit mx-auto border border-slate-100 shadow-sm';
+        ? 'flex flex-wrap items-center justify-start gap-3 bg-[var(--panel)] py-2.5 px-4 rounded-2xl w-fit border border-[var(--border-soft)] shadow-[var(--shadow-soft)]'
+        : 'flex items-center justify-center gap-3 bg-[var(--panel)] py-3 px-5 rounded-2xl w-fit mx-auto border border-[var(--border-soft)] shadow-[var(--shadow-soft)]';
     const dropzoneClass = compact
-        ? `relative group cursor-pointer border-2 border-dashed rounded-[1.75rem] p-10 md:p-12 flex flex-col items-center justify-center transition-all overflow-hidden ${isDragging ? 'border-brand-blue bg-brand-blue/5' : 'border-slate-300 bg-white hover:border-brand-blue hover:shadow-glow'}`
-        : `relative group cursor-pointer border-2 border-dashed rounded-[1.75rem] p-14 md:p-16 flex flex-col items-center justify-center transition-all overflow-hidden ${isDragging ? 'border-brand-blue bg-brand-blue/5' : 'border-slate-300 bg-white hover:border-brand-blue hover:shadow-glow'}`;
-    const uploadShellClass = compact ? 'w-16 h-16 bg-brand-blue/10 text-brand-blue rounded-2xl flex items-center justify-center mb-5 group-hover:scale-105 transition-transform duration-300' : 'w-20 h-20 bg-brand-blue/10 text-brand-blue rounded-[1.5rem] flex items-center justify-center mb-6 group-hover:scale-105 transition-transform duration-300';
-    const uploadTitleClass = compact ? 'text-xl md:text-2xl font-black text-slate-800 mb-2' : 'text-2xl font-black text-slate-800 mb-2';
-    const uploadTextClass = compact ? 'text-slate-400 font-medium text-sm text-center' : 'text-slate-400 font-medium';
+        ? `relative group cursor-pointer border-2 border-dashed rounded-[2rem] p-8 md:p-10 flex min-h-[240px] flex-col items-center justify-center transition-all overflow-hidden ${isDragging ? 'border-brand-blue bg-brand-blue/5 shadow-[0_0_0_6px_rgba(59,130,246,0.08)]' : 'border-[var(--border-strong)] bg-[var(--panel)] hover:border-brand-blue hover:shadow-[var(--shadow-soft)]'}`
+        : `relative group cursor-pointer border-2 border-dashed rounded-[2rem] p-14 md:p-20 flex min-h-[420px] flex-col items-center justify-center transition-all overflow-hidden ${isDragging ? 'border-brand-blue bg-brand-blue/5 shadow-[0_0_0_6px_rgba(59,130,246,0.08)]' : 'border-[var(--border-strong)] bg-[var(--panel)] hover:border-brand-blue hover:shadow-[var(--shadow-soft)]'}`;
+    const uploadShellClass = compact ? 'w-14 h-14 bg-brand-blue/10 text-brand-blue rounded-2xl flex items-center justify-center mb-4 group-hover:scale-105 transition-transform duration-300' : 'w-20 h-20 bg-brand-blue/10 text-brand-blue rounded-[1.5rem] flex items-center justify-center mb-6 group-hover:scale-105 transition-transform duration-300';
+    const uploadTitleClass = compact ? 'text-lg md:text-xl font-semibold text-[var(--text-primary)] mb-1.5' : 'text-2xl font-semibold text-[var(--text-primary)] mb-2';
+    const uploadTextClass = compact ? 'text-[var(--text-muted)] font-medium text-sm text-center' : 'text-[var(--text-muted)] font-medium';
     const dbCardClass = compact
-        ? 'bg-white border border-slate-200 rounded-[1.75rem] p-6 shadow-lg shadow-slate-200/40'
-        : 'bg-white border border-slate-200 rounded-[1.75rem] p-8 shadow-lg shadow-slate-200/40';
+        ? 'bg-[var(--panel)] border border-[var(--border-soft)] rounded-[2rem] p-6 shadow-[var(--shadow-soft)]'
+        : 'bg-[var(--panel)] border border-[var(--border-soft)] rounded-[2rem] p-8 shadow-[var(--shadow-soft)]';
 
     return (
         <div className={wrapperClass}>
@@ -203,13 +203,13 @@ const DataConnection = ({ onUploadSuccess, compact = false }) => {
                     <button
                         key={m}
                         onClick={() => setMode(m)}
-                        className={`${modeButtonClass} ${mode === m ? 'text-brand-blue' : 'text-slate-500 hover:text-slate-700'
+                        className={`${modeButtonClass} ${mode === m ? 'text-brand-blue' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
                             }`}
                     >
                         {mode === m && (
                             <motion.div
                                 layoutId="activeTab"
-                                className="absolute inset-0 bg-white rounded-xl shadow-md -z-10"
+                                className="absolute inset-0 bg-[var(--panel)] rounded-xl shadow-md -z-10"
                                 transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
                             />
                         )}
@@ -230,13 +230,13 @@ const DataConnection = ({ onUploadSuccess, compact = false }) => {
                     >
                         {/* Delimiter Selection */}
                         <div className={delimiterWrapClass}>
-                            <span className="text-sm font-bold text-slate-600">Separator:</span>
+                            <span className="text-sm font-bold text-[var(--text-secondary)]">Separator:</span>
                             <div className="flex gap-2">
                                 {[',', ';', '|'].map(d => (
                                     <button
                                         key={d}
                                         onClick={() => setDelimiter(d)}
-                                        className={`w-10 h-10 rounded-lg flex items-center justify-center font-mono border transition-all ${delimiter === d ? 'bg-brand-blue text-white border-brand-blue shadow-glow' : 'bg-white text-slate-400 border-slate-200 hover:border-brand-blue/30'
+                                        className={`w-10 h-10 rounded-lg flex items-center justify-center font-mono border transition-all ${delimiter === d ? 'bg-brand-blue text-white border-brand-blue shadow-glow' : 'bg-[var(--panel)] text-[var(--text-muted)] border-[var(--border-soft)] hover:border-brand-blue/30'
                                             }`}
                                     >
                                         {d === ',' ? ',' : d}
@@ -246,7 +246,7 @@ const DataConnection = ({ onUploadSuccess, compact = false }) => {
                                     type="text"
                                     placeholder="Other"
                                     maxLength={1}
-                                    className={`w-16 h-10 rounded-lg text-center font-mono border transition-all outline-none focus:border-brand-blue ${![',', ';', '|'].includes(delimiter) ? 'border-brand-blue text-brand-blue font-bold shadow-glow' : 'border-slate-200 text-slate-500'
+                                    className={`w-16 h-10 rounded-lg text-center font-mono border transition-all outline-none focus:border-brand-blue ${![',', ';', '|'].includes(delimiter) ? 'border-brand-blue text-brand-blue font-bold shadow-glow' : 'border-[var(--border-soft)] text-[var(--text-secondary)]'
                                         }`}
                                     value={![',', ';', '|'].includes(delimiter) ? delimiter : ''}
                                     onChange={(e) => setDelimiter(e.target.value)}
@@ -272,11 +272,11 @@ const DataConnection = ({ onUploadSuccess, compact = false }) => {
                                 <div className="flex flex-col items-center gap-6 z-10">
                                     <div className="relative">
                                         <Loader2 className="w-16 h-16 text-brand-blue animate-spin" />
-                                        <div className="absolute inset-0 flex items-center justify-center text-[10px] font-black">{uploadProgress}%</div>
+                                        <div className="absolute inset-0 flex items-center justify-center text-[10px] font-semibold">{uploadProgress}%</div>
                                     </div>
                                     <div className="text-center">
-                                        <p className="text-xl font-black text-slate-800 tracking-tight">Uploading Assets...</p>
-                                        <div className="w-48 h-1.5 bg-slate-100 rounded-full mt-3 overflow-hidden">
+                                        <p className="text-xl font-semibold text-[var(--text-primary)] tracking-tight">Uploading Assets...</p>
+                                        <div className="w-48 h-1.5 bg-[var(--panel-muted)] rounded-full mt-3 overflow-hidden">
                                             <motion.div
                                                 className="h-full bg-brand-blue"
                                                 initial={{ width: 0 }}
@@ -315,18 +315,18 @@ const DataConnection = ({ onUploadSuccess, compact = false }) => {
                         {loadingConnections ? (
                             <div className="flex flex-col items-center justify-center py-16 gap-3">
                                 <Loader2 className="w-8 h-8 text-brand-blue animate-spin" />
-                                <p className="text-sm text-slate-500 font-medium">Loading saved connections…</p>
+                                <p className="text-sm text-[var(--text-secondary)] font-medium">Loading saved connections…</p>
                             </div>
                         ) : connections.length === 0 ? (
-                            <div className="flex flex-col items-center justify-center py-14 px-6 border-2 border-dashed border-slate-200 bg-slate-50/60 rounded-2xl text-center">
-                                <div className="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center mb-4">
-                                    <Database size={32} className="text-slate-400" />
+                            <div className="flex flex-col items-center justify-center py-14 px-6 border-2 border-dashed border-[var(--border-soft)] bg-[var(--panel-muted)]/60 rounded-2xl text-center">
+                                <div className="w-16 h-16 bg-[var(--panel-muted)] rounded-2xl flex items-center justify-center mb-4">
+                                    <Database size={32} className="text-[var(--text-muted)]" />
                                 </div>
-                                <h4 className="text-lg font-black text-slate-700 mb-1">No Connections Yet</h4>
-                                <p className="text-slate-500 text-sm max-w-xs mb-5 leading-relaxed">
+                                <h4 className="text-lg font-semibold text-[var(--text-primary)] mb-1">No Connections Yet</h4>
+                                <p className="text-[var(--text-secondary)] text-sm max-w-xs mb-5 leading-relaxed">
                                     You haven't saved any database connections. Add one from the sidebar to get started.
                                 </p>
-                                <div className="flex items-center gap-2 text-xs font-semibold text-slate-400">
+                                <div className="flex items-center gap-2 text-xs font-semibold text-[var(--text-muted)]">
                                     <ShieldCheck size={14} className="text-emerald-500" />
                                     All connections are encrypted at rest
                                 </div>
@@ -335,36 +335,36 @@ const DataConnection = ({ onUploadSuccess, compact = false }) => {
                             <div className="space-y-4">
 
                                 {/* Step 1: Select Connection */}
-                                <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
-                                    <div className="flex items-center gap-3 px-5 py-3.5 border-b border-slate-100 bg-slate-50/80">
-                                        <div className="w-6 h-6 rounded-full bg-brand-blue text-white flex items-center justify-center text-xs font-black shrink-0">1</div>
-                                        <span className="text-sm font-bold text-slate-700">Select Connection</span>
-                                        <button onClick={fetchConnections} className="ml-auto p-1.5 text-slate-400 hover:text-brand-blue hover:bg-brand-blue/5 rounded-lg transition-all" title="Refresh">
+                                <div className="bg-[var(--panel)] border border-[var(--border-soft)] rounded-2xl overflow-hidden shadow-sm">
+                                    <div className="flex items-center gap-3 px-5 py-3.5 border-b border-[var(--border-soft)] bg-[var(--panel-muted)]/80">
+                                        <div className="w-6 h-6 rounded-full bg-brand-blue text-white flex items-center justify-center text-xs font-semibold shrink-0">1</div>
+                                        <span className="text-sm font-bold text-[var(--text-primary)]">Select Connection</span>
+                                        <button onClick={fetchConnections} className="ml-auto p-1.5 text-[var(--text-muted)] hover:text-brand-blue hover:bg-brand-blue/5 rounded-lg transition-all" title="Refresh">
                                             <RefreshCw size={14} />
                                         </button>
                                     </div>
                                     <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-3">
                                         {connections.map(conn => {
                                             const isSelected = selectedConnection?.id === conn.id;
-                                            const dbColors = { postgresql: 'bg-blue-100 text-blue-700', mysql: 'bg-orange-100 text-orange-700', mssql: 'bg-red-100 text-red-700', sqlite: 'bg-slate-100 text-slate-600' };
-                                            const colorClass = dbColors[conn.db_type] || 'bg-slate-100 text-slate-600';
+                                            const dbColors = { postgresql: 'bg-blue-100 text-blue-700', mysql: 'bg-orange-100 text-orange-700', mssql: 'bg-red-100 text-red-700', sqlite: 'bg-[var(--panel-muted)] text-[var(--text-secondary)]' };
+                                            const colorClass = dbColors[conn.db_type] || 'bg-[var(--panel-muted)] text-[var(--text-secondary)]';
                                             return (
                                                 <button key={conn.id} onClick={() => setSelectedConnection(conn)}
                                                     className={`p-4 rounded-xl border-2 text-left flex items-center gap-3.5 transition-all ${
-                                                        isSelected ? 'border-brand-blue bg-brand-blue/5 shadow-md shadow-brand-blue/10' : 'border-slate-200 bg-white hover:border-brand-blue/40 hover:shadow-sm'
+                                                        isSelected ? 'border-brand-blue bg-brand-blue/5 shadow-md shadow-brand-blue/10' : 'border-[var(--border-soft)] bg-[var(--panel)] hover:border-brand-blue/40 hover:shadow-sm'
                                                     }`}
                                                 >
-                                                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-colors ${isSelected ? 'bg-brand-blue text-white' : 'bg-slate-100 text-slate-500'}`}>
+                                                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-colors ${isSelected ? 'bg-brand-blue text-white' : 'bg-[var(--panel-muted)] text-[var(--text-secondary)]'}`}>
                                                         <Server size={18} />
                                                     </div>
                                                     <div className="flex-1 min-w-0">
                                                         <div className="flex items-center gap-2">
-                                                            <span className="font-bold text-slate-800 text-sm truncate">{conn.name}</span>
-                                                            <span className={`text-[10px] px-1.5 py-0.5 rounded-md font-black uppercase shrink-0 ${colorClass}`}>{conn.db_type}</span>
+                                                            <span className="font-bold text-[var(--text-primary)] text-sm truncate">{conn.name}</span>
+                                                            <span className={`text-[10px] px-1.5 py-0.5 rounded-md font-semibold uppercase shrink-0 ${colorClass}`}>{conn.db_type}</span>
                                                         </div>
-                                                        <p className="text-xs text-slate-400 mt-0.5 truncate">{conn.host} &middot; {conn.database}</p>
+                                                        <p className="text-xs text-[var(--text-muted)] mt-0.5 truncate">{conn.host} &middot; {conn.database}</p>
                                                     </div>
-                                                    <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 transition-all ${isSelected ? 'border-brand-blue bg-brand-blue' : 'border-slate-300'}`}>
+                                                    <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 transition-all ${isSelected ? 'border-brand-blue bg-brand-blue' : 'border-[var(--border-strong)]'}`}>
                                                         {isSelected && <Check size={10} className="text-white" strokeWidth={3} />}
                                                     </div>
                                                 </button>
@@ -374,40 +374,40 @@ const DataConnection = ({ onUploadSuccess, compact = false }) => {
                                 </div>
 
                                 {/* Step 2: Select Table */}
-                                <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
-                                    <div className="flex items-center gap-3 px-5 py-3.5 border-b border-slate-100 bg-slate-50/80">
-                                        <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-black shrink-0 ${selectedConnection ? 'bg-brand-blue text-white' : 'bg-slate-200 text-slate-400'}`}>2</div>
-                                        <span className={`text-sm font-bold ${selectedConnection ? 'text-slate-700' : 'text-slate-400'}`}>Select Table</span>
+                                <div className="bg-[var(--panel)] border border-[var(--border-soft)] rounded-2xl overflow-hidden shadow-sm">
+                                    <div className="flex items-center gap-3 px-5 py-3.5 border-b border-[var(--border-soft)] bg-[var(--panel-muted)]/80">
+                                        <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-semibold shrink-0 ${selectedConnection ? 'bg-brand-blue text-white' : 'bg-[var(--panel-muted)] text-[var(--text-muted)]'}`}>2</div>
+                                        <span className={`text-sm font-bold ${selectedConnection ? 'text-[var(--text-primary)]' : 'text-[var(--text-muted)]'}`}>Select Table</span>
                                         {loadingTables && <Loader2 size={14} className="ml-auto text-brand-blue animate-spin" />}
                                     </div>
                                     <div className="p-4">
                                         {!selectedConnection ? (
-                                            <p className="text-sm text-slate-400 text-center py-2">Select a connection first</p>
+                                            <p className="text-sm text-[var(--text-muted)] text-center py-2">Select a connection first</p>
                                         ) : loadingTables ? (
-                                            <div className="flex items-center gap-2 text-slate-500 text-sm py-1">
+                                            <div className="flex items-center gap-2 text-[var(--text-secondary)] text-sm py-1">
                                                 <Loader2 className="w-4 h-4 animate-spin text-brand-blue" /> Fetching tables…
                                             </div>
                                         ) : tables.length === 0 ? (
-                                            <p className="text-sm text-slate-400 text-center py-2">No tables found</p>
+                                            <p className="text-sm text-[var(--text-muted)] text-center py-2">No tables found</p>
                                         ) : (
                                             <div className="relative">
                                                 <select value={selectedTable} onChange={handleTableChange}
-                                                    className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:border-brand-blue focus:ring-4 focus:ring-brand-blue/10 appearance-none bg-white pr-10 text-slate-700">
+                                                    className="w-full px-4 py-3 border border-[var(--border-soft)] rounded-xl text-sm font-medium focus:outline-none focus:border-brand-blue focus:ring-4 focus:ring-brand-blue/10 appearance-none bg-[var(--panel)] pr-10 text-[var(--text-primary)]">
                                                     <option value="">— Select a table —</option>
                                                     {tables.map(t => <option key={t} value={t}>{t}</option>)}
                                                 </select>
-                                                <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={16} />
+                                                <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-[var(--text-muted)] pointer-events-none" size={16} />
                                             </div>
                                         )}
                                     </div>
                                 </div>
 
                                 {/* Step 3: SQL Query */}
-                                <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
-                                    <div className="flex items-center gap-3 px-5 py-3.5 border-b border-slate-100 bg-slate-50/80">
-                                        <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-black shrink-0 ${query ? 'bg-brand-blue text-white' : 'bg-slate-200 text-slate-400'}`}>3</div>
-                                        <span className={`text-sm font-bold ${query ? 'text-slate-700' : 'text-slate-400'}`}>SQL Query</span>
-                                        <span className="ml-auto text-[11px] text-slate-400 font-semibold bg-slate-100 px-2 py-0.5 rounded-md">SELECT only</span>
+                                <div className="bg-[var(--panel)] border border-[var(--border-soft)] rounded-2xl overflow-hidden shadow-sm">
+                                    <div className="flex items-center gap-3 px-5 py-3.5 border-b border-[var(--border-soft)] bg-[var(--panel-muted)]/80">
+                                        <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-semibold shrink-0 ${query ? 'bg-brand-blue text-white' : 'bg-[var(--panel-muted)] text-[var(--text-muted)]'}`}>3</div>
+                                        <span className={`text-sm font-bold ${query ? 'text-[var(--text-primary)]' : 'text-[var(--text-muted)]'}`}>SQL Query</span>
+                                        <span className="ml-auto text-[11px] text-[var(--text-muted)] font-semibold bg-[var(--panel-muted)] px-2 py-0.5 rounded-md">SELECT only</span>
                                     </div>
                                     <div className="p-4">
                                         <div className="relative bg-slate-900 rounded-xl overflow-hidden">
@@ -420,7 +420,7 @@ const DataConnection = ({ onUploadSuccess, compact = false }) => {
                                                 spellCheck={false}
                                             />
                                         </div>
-                                        <p className="text-xs text-slate-400 mt-2.5 flex items-center gap-1.5">
+                                        <p className="text-xs text-[var(--text-muted)] mt-2.5 flex items-center gap-1.5">
                                             <ShieldCheck size={12} className="text-emerald-500" />
                                             Read-only. Data is never modified by your query.
                                         </p>
@@ -445,7 +445,7 @@ const DataConnection = ({ onUploadSuccess, compact = false }) => {
                                         }
                                     }}
                                     disabled={!selectedConnection || !query || isLoading}
-                                    className="w-full py-3.5 bg-brand-dark hover:bg-slate-700 disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed text-white rounded-2xl font-black text-base flex items-center justify-center gap-2.5 transition-all hover:-translate-y-0.5 hover:shadow-lg shadow-slate-900/20"
+                                    className="w-full py-3.5 bg-brand-dark hover:bg-slate-700 disabled:bg-[var(--panel-muted)] disabled:text-[var(--text-muted)] disabled:cursor-not-allowed text-white rounded-2xl font-semibold text-base flex items-center justify-center gap-2.5 transition-all hover:-translate-y-0.5 hover:shadow-lg shadow-slate-900/20"
                                 >
                                     {isLoading
                                         ? <><Loader2 size={20} className="animate-spin" /> Importing Data…</>
@@ -460,7 +460,7 @@ const DataConnection = ({ onUploadSuccess, compact = false }) => {
 
             {/* Trust Footer */}
             {!compact && (
-                <div className="mt-16 flex flex-wrap justify-center gap-12 text-slate-400 grayscale opacity-70">
+                <div className="mt-16 flex flex-wrap justify-center gap-12 text-[var(--text-muted)] grayscale opacity-70">
                     <div className="flex items-center gap-2 font-bold"><ShieldCheck size={20} /> SOC2 COMPLIANT</div>
                     <div className="flex items-center gap-2 font-bold"><HardDrive size={20} /> AES-256 ENCRYPTION</div>
                     <div className="flex items-center gap-2 font-bold"><RefreshCw size={20} /> REAL-TIME SYNC</div>

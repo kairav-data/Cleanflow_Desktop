@@ -231,7 +231,7 @@ const PIPELINE_NODE_DEFS = {
     icon: Files,
     accent: '#475569',
     bg: '#f8fafc',
-    libraryBadgeClass: 'border-slate-200 bg-slate-50 text-slate-700',
+    libraryBadgeClass: 'border-[var(--border-soft)] bg-[var(--panel-muted)] text-[var(--text-primary)]',
     supportsSequenceIn: true,
     supportsSequenceOut: true,
     supportsDataIn: true,
@@ -742,16 +742,16 @@ const PipelineNode = ({ id: nodeId, data, selected }) => {
               {configured ? 'Configured' : 'Needs Setup'}
             </span>
           </div>
-          <div className="truncate text-sm font-black text-slate-900">{data.label}</div>
-          <p className="mt-1 text-[11px] leading-5 text-slate-500">{definition.description}</p>
+          <div className="truncate text-sm font-black text-[var(--text-primary)]">{data.label}</div>
+          <p className="mt-1 text-[11px] leading-5 text-[var(--text-secondary)]">{definition.description}</p>
         </div>
       </div>
 
       {/* Status badge */}
-      <div className="mt-3 flex items-center justify-between border-t border-slate-200/70 pt-3">
-        <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">
+      <div className="mt-3 flex items-center justify-between border-t border-[var(--border-soft)]/70 pt-3">
+        <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.18em] text-[var(--text-muted)]">
           {(definition.supportsSequenceIn || definition.supportsSequenceOut) && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-1 text-slate-500">
+            <span className="inline-flex items-center gap-1 rounded-full bg-[var(--panel-muted)] px-2 py-1 text-[var(--text-secondary)]">
               <ArrowDownUp size={11} /> Seq
             </span>
           )}
@@ -761,7 +761,7 @@ const PipelineNode = ({ id: nodeId, data, selected }) => {
             </span>
           )}
         </div>
-        <span className="text-[11px] font-semibold text-slate-400">{definition.sectionLabel}</span>
+        <span className="text-[11px] font-semibold text-[var(--text-muted)]">{definition.sectionLabel}</span>
       </div>
     </div>
   );
@@ -1372,36 +1372,36 @@ export const PipelineBuilder = ({ onComplete }) => {
   };
 
   return (
-    <div className="flex flex-col h-full w-full relative overflow-hidden" style={{ background: '#f8fafc' }}>
+    <div className="flex flex-col h-full w-full relative overflow-hidden bg-[var(--app-bg)]" style={{ minHeight: 'calc(100vh - 196px)' }}>
 
       {/* ── Premium Header ── */}
-      <div className="h-[60px] shrink-0 flex items-center justify-between px-6 z-10 bg-white border-b border-slate-100 shadow-sm">
+      <div className="h-[68px] shrink-0 flex items-center justify-between px-6 z-10 bg-[var(--panel)] border-b border-[var(--border-soft)] shadow-[var(--shadow-soft)] backdrop-blur-xl">
           <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-md shadow-emerald-200">
+              <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-lg shadow-emerald-200/40">
                   <GitMerge size={15} className="text-white" />
               </div>
               <div>
-                  <h1 className="text-sm font-black text-slate-900 leading-tight">Pipeline Orchestrator</h1>
-                  <p className="text-xs text-slate-400 font-medium leading-none mt-0.5">Drag • Connect • Run</p>
+                  <h1 className="text-sm font-black text-[var(--text-primary)] leading-tight">Pipeline Orchestrator</h1>
+                  <p className="text-xs text-[var(--text-muted)] font-medium leading-none mt-0.5">Drag • Connect • Run</p>
               </div>
               {nodes.length > 0 && (
-                  <span className="ml-2 px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 text-xs font-bold border border-slate-200">
+                  <span className="ml-2 px-2 py-0.5 rounded-full bg-[var(--panel-muted)] text-[var(--text-secondary)] text-xs font-bold border border-[var(--border-soft)]">
                       {nodes.length} node{nodes.length !== 1 ? 's' : ''}
                   </span>
               )}
           </div>
           <div className="flex items-center gap-3">
-              <div className="flex items-center gap-1 bg-slate-50 border border-slate-200 rounded-lg p-1 mr-2 hidden md:flex">
+              <div className="flex items-center gap-1 bg-[var(--panel-muted)] border border-[var(--border-soft)] rounded-2xl p-1.5 mr-2 hidden md:flex shadow-[var(--shadow-soft)]">
                   <input
                       type="text"
-                      className="bg-transparent text-sm font-bold text-slate-700 px-3 py-1.5 w-48 outline-none"
+                      className="bg-transparent text-sm font-bold text-[var(--text-primary)] px-3 py-1.5 w-48 outline-none"
                       value={pipelineName}
                       onChange={e => setPipelineName(e.target.value)}
                       placeholder="Name your pipeline..."
                   />
-                  <button onClick={handleSavePipeline} disabled={isSaving} className="p-1.5 rounded-md bg-white border border-slate-200 text-slate-500 hover:text-emerald-600 hover:border-emerald-200 shadow-sm transition-colors" title="Save Pipeline"><Save size={16} /></button>
-                  <button onClick={() => setShowLoadDrawer(true)} className="p-1.5 rounded-md bg-white border border-slate-200 text-slate-500 hover:text-sky-600 hover:border-sky-200 shadow-sm transition-colors" title="Load Pipeline"><FolderOpen size={16} /></button>
-                  <button onClick={() => setShowScheduleModal(true)} disabled={!pipelineId} className="p-1.5 rounded-md bg-white border border-slate-200 text-slate-500 hover:text-indigo-600 hover:border-indigo-200 shadow-sm transition-colors disabled:opacity-50" title="Schedule Pipeline (Save first)"><Clock size={16} /></button>
+                  <button onClick={handleSavePipeline} disabled={isSaving} className="p-1.5 rounded-md bg-[var(--panel)] border border-[var(--border-soft)] text-[var(--text-secondary)] hover:text-emerald-600 hover:border-emerald-200 shadow-sm transition-colors" title="Save Pipeline"><Save size={16} /></button>
+                  <button onClick={() => setShowLoadDrawer(true)} className="p-1.5 rounded-md bg-[var(--panel)] border border-[var(--border-soft)] text-[var(--text-secondary)] hover:text-sky-600 hover:border-sky-200 shadow-sm transition-colors" title="Load Pipeline"><FolderOpen size={16} /></button>
+                  <button onClick={() => setShowScheduleModal(true)} disabled={!pipelineId} className="p-1.5 rounded-md bg-[var(--panel)] border border-[var(--border-soft)] text-[var(--text-secondary)] hover:text-indigo-600 hover:border-indigo-200 shadow-sm transition-colors disabled:opacity-50" title="Schedule Pipeline (Save first)"><Clock size={16} /></button>
               </div>
 
               {isExecuting && (
@@ -1414,7 +1414,7 @@ export const PipelineBuilder = ({ onComplete }) => {
                   disabled={isExecuting || nodes.length === 0}
                   className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-black text-sm transition-all ${
                       isExecuting || nodes.length === 0
-                          ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                          ? 'bg-[var(--panel-muted)] text-[var(--text-muted)] cursor-not-allowed'
                           : 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white hover:from-emerald-400 hover:to-teal-500 shadow-lg shadow-emerald-200 hover:scale-[1.02]'
                   }`}
               >
@@ -1426,21 +1426,21 @@ export const PipelineBuilder = ({ onComplete }) => {
 
       <div className="flex flex-1 overflow-hidden">
         {/* ── Node Palette (white) ── */}
-        <aside className="w-[290px] shrink-0 z-10 flex flex-col overflow-hidden bg-white border-r border-slate-100">
+        <aside className="w-[310px] shrink-0 z-10 flex flex-col overflow-hidden bg-[var(--panel)] border-r border-[var(--border-soft)] shadow-[var(--shadow-soft)]">
 
           {/* Palette header */}
-          <div className="px-4 py-3.5 border-b border-slate-100">
+          <div className="px-4 py-4 border-b border-[var(--border-soft)] bg-[var(--panel-muted)]">
               <div className="flex items-center justify-between gap-3">
                   <div>
-                      <p className="text-xs font-black uppercase tracking-widest text-slate-400">Node Library</p>
-                      <p className="text-xs mt-0.5 text-slate-400">Drag nodes to canvas</p>
+                      <p className="text-xs font-black uppercase tracking-widest text-[var(--text-muted)]">Node Library</p>
+                      <p className="text-xs mt-0.5 text-[var(--text-muted)]">Drag nodes to canvas</p>
                   </div>
-                  <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-slate-500">
+                  <span className="rounded-full border border-[var(--border-soft)] bg-[var(--panel-muted)] px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--text-secondary)]">
                       {dataEdgeCount}D • {executionFlowCount}S
                   </span>
               </div>
 
-              <div className="mt-4 grid grid-cols-2 gap-2 rounded-2xl bg-slate-100 p-1">
+              <div className="mt-4 grid grid-cols-2 gap-2 rounded-2xl bg-[var(--panel)]/70 p-1 shadow-[var(--shadow-soft)]">
                   {FLOW_LIBRARY_TABS.map((tab) => (
                       <button
                           key={tab.id}
@@ -1448,22 +1448,22 @@ export const PipelineBuilder = ({ onComplete }) => {
                           onClick={() => setLibraryMode(tab.id)}
                           className={`rounded-[14px] px-3 py-2.5 text-left transition-all ${
                               libraryMode === tab.id
-                                  ? 'bg-white shadow-sm ring-1 ring-slate-200'
-                                  : 'text-slate-500 hover:bg-white/70'
+                                  ? 'bg-[var(--panel)] shadow-sm ring-1 ring-slate-200'
+                                  : 'text-[var(--text-secondary)] hover:bg-[var(--panel)]/70'
                           }`}
                       >
-                          <p className="text-sm font-black text-slate-800">{tab.label}</p>
-                          <p className="mt-0.5 text-[11px] text-slate-400">{tab.subtitle}</p>
+                          <p className="text-sm font-black text-[var(--text-primary)]">{tab.label}</p>
+                          <p className="mt-0.5 text-[11px] text-[var(--text-muted)]">{tab.subtitle}</p>
                       </button>
                   ))}
               </div>
           </div>
 
-          <div className="flex-1 overflow-y-auto px-3 py-4 space-y-5">
+          <div className="flex-1 overflow-y-auto px-3 py-4 space-y-5 bg-[linear-gradient(180deg,rgba(255,255,255,0.1),transparent)]">
 
             {libraryMode === 'data' && (
               <div>
-                <p className="text-xs font-black uppercase tracking-widest mb-2 px-1 text-slate-400">Sources</p>
+                <p className="text-xs font-black uppercase tracking-widest mb-2 px-1 text-[var(--text-muted)]">Sources</p>
                 <div className="space-y-1.5">
                   {[{ type: 'dataset', label: 'Dataset Input', icon: Database, color: '#10b981', bg: '#10b98115' },
                     { type: 'scraper', label: 'Web Scraping', icon: Globe, color: '#f97316', bg: '#f9731615' }]
@@ -1471,12 +1471,12 @@ export const PipelineBuilder = ({ onComplete }) => {
                       <div key={n.type}
                           draggable
                           onDragStart={(e) => onDragStart(e, n.type)}
-                          className="flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-grab select-none transition-all border border-slate-100 hover:border-slate-200 hover:bg-slate-50"
+                          className="flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-grab select-none transition-all border border-[var(--border-soft)] hover:border-[var(--border-soft)] hover:bg-[var(--panel-muted)]"
                       >
                           <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style={{ background: n.bg }}>
                               <n.icon size={14} style={{ color: n.color }} />
                           </div>
-                          <span className="text-xs font-bold text-slate-600">{n.label}</span>
+                          <span className="text-xs font-bold text-[var(--text-secondary)]">{n.label}</span>
                       </div>
                   ))}
                 </div>
@@ -1485,7 +1485,7 @@ export const PipelineBuilder = ({ onComplete }) => {
 
             {libraryMode === 'data' && (
               <div>
-                <p className="text-xs font-black uppercase tracking-widest mb-2 px-1 text-slate-400">Data Services</p>
+                <p className="text-xs font-black uppercase tracking-widest mb-2 px-1 text-[var(--text-muted)]">Data Services</p>
                 <div className="space-y-1.5">
                   {[{ type: 'cleaner', label: 'Data Cleaning', icon: Sparkles, color: '#10b981', bg: '#10b98115' },
                     { type: 'validation', label: 'Quality Validation', icon: ShieldCheck, color: '#3b82f6', bg: '#3b82f615' },
@@ -1500,12 +1500,12 @@ export const PipelineBuilder = ({ onComplete }) => {
                       <div key={n.type}
                           draggable
                           onDragStart={(e) => onDragStart(e, n.type)}
-                          className="flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-grab select-none transition-all border border-slate-100 hover:border-slate-200 hover:bg-slate-50"
+                          className="flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-grab select-none transition-all border border-[var(--border-soft)] hover:border-[var(--border-soft)] hover:bg-[var(--panel-muted)]"
                       >
                           <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style={{ background: n.bg }}>
                               <n.icon size={14} style={{ color: n.color }} />
                           </div>
-                          <span className="text-xs font-bold text-slate-600">{n.label}</span>
+                          <span className="text-xs font-bold text-[var(--text-secondary)]">{n.label}</span>
                       </div>
                   ))}
                 </div>
@@ -1517,7 +1517,7 @@ export const PipelineBuilder = ({ onComplete }) => {
                 <button
                   type="button"
                   onClick={() => setSequenceDataFlowOpen((open) => !open)}
-                  className="w-full rounded-2xl border border-slate-200 bg-white text-left shadow-sm transition-all hover:border-emerald-200 hover:shadow-md"
+                  className="w-full rounded-2xl border border-[var(--border-soft)] bg-[var(--panel)] text-left shadow-sm transition-all hover:border-emerald-200 hover:shadow-md"
                 >
                   <div className="flex items-start gap-3 px-4 py-4">
                     <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-emerald-200 bg-emerald-50 text-emerald-700">
@@ -1527,19 +1527,19 @@ export const PipelineBuilder = ({ onComplete }) => {
                       <div className="flex items-center justify-between gap-3">
                         <div>
                           <div className="flex items-center gap-2">
-                            <span className="rounded-full border border-slate-200 bg-slate-50 px-2 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">
+                            <span className="rounded-full border border-[var(--border-soft)] bg-[var(--panel-muted)] px-2 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-[var(--text-secondary)]">
                               Sequence
                             </span>
                             <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-emerald-700">
                               Data Flow Task
                             </span>
                           </div>
-                          <p className="mt-2 text-sm font-black text-slate-800">Data Flow</p>
-                          <p className="mt-1 text-[11px] leading-5 text-slate-500">
+                          <p className="mt-2 text-sm font-black text-[var(--text-primary)]">Data Flow</p>
+                          <p className="mt-1 text-[11px] leading-5 text-[var(--text-secondary)]">
                             Click to open all data sources and data service tasks, similar to SSIS Data Flow Task.
                           </p>
                         </div>
-                        <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-slate-100 text-slate-500">
+                        <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[var(--panel-muted)] text-[var(--text-secondary)]">
                           {sequenceDataFlowOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                         </div>
                       </div>
@@ -1551,8 +1551,8 @@ export const PipelineBuilder = ({ onComplete }) => {
                   <div className="mt-3 space-y-4 rounded-2xl border border-emerald-100 bg-emerald-50/40 p-3">
                     <div>
                       <div className="mb-2 flex items-center justify-between px-1">
-                        <p className="text-xs font-black uppercase tracking-widest text-slate-400">Sources</p>
-                        <span className="rounded-full bg-white px-2 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-emerald-700 shadow-sm">
+                        <p className="text-xs font-black uppercase tracking-widest text-[var(--text-muted)]">Sources</p>
+                        <span className="rounded-full bg-[var(--panel)] px-2 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-emerald-700 shadow-sm">
                           Input
                         </span>
                       </div>
@@ -1563,12 +1563,12 @@ export const PipelineBuilder = ({ onComplete }) => {
                             <div key={n.type}
                                 draggable
                                 onDragStart={(e) => onDragStart(e, n.type)}
-                                className="flex items-center gap-3 rounded-xl border border-white bg-white px-3 py-2.5 shadow-sm transition-all hover:border-emerald-200 hover:bg-emerald-50/50"
+                                className="flex items-center gap-3 rounded-xl border border-white bg-[var(--panel)] px-3 py-2.5 shadow-sm transition-all hover:border-emerald-200 hover:bg-emerald-50/50"
                             >
                                 <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style={{ background: n.bg }}>
                                     <n.icon size={14} style={{ color: n.color }} />
                                 </div>
-                                <span className="text-xs font-bold text-slate-600">{n.label}</span>
+                                <span className="text-xs font-bold text-[var(--text-secondary)]">{n.label}</span>
                             </div>
                         ))}
                       </div>
@@ -1576,8 +1576,8 @@ export const PipelineBuilder = ({ onComplete }) => {
 
                     <div>
                       <div className="mb-2 flex items-center justify-between px-1">
-                        <p className="text-xs font-black uppercase tracking-widest text-slate-400">Data Services</p>
-                        <span className="rounded-full bg-white px-2 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-emerald-700 shadow-sm">
+                        <p className="text-xs font-black uppercase tracking-widest text-[var(--text-muted)]">Data Services</p>
+                        <span className="rounded-full bg-[var(--panel)] px-2 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-emerald-700 shadow-sm">
                           Transform
                         </span>
                       </div>
@@ -1595,14 +1595,14 @@ export const PipelineBuilder = ({ onComplete }) => {
                             <div key={n.type}
                                 draggable
                                 onDragStart={(e) => onDragStart(e, n.type)}
-                                className="flex items-center gap-3 rounded-xl border border-white bg-white px-3 py-2.5 shadow-sm transition-all hover:border-emerald-200 hover:bg-emerald-50/50"
+                                className="flex items-center gap-3 rounded-xl border border-white bg-[var(--panel)] px-3 py-2.5 shadow-sm transition-all hover:border-emerald-200 hover:bg-emerald-50/50"
                             >
                                 <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style={{ background: n.bg }}>
                                     <n.icon size={14} style={{ color: n.color }} />
                                 </div>
                                 <div className="min-w-0">
-                                  <div className="text-xs font-bold text-slate-600">{n.label}</div>
-                                  <div className="text-[10px] font-medium text-slate-400">Drag into canvas</div>
+                                  <div className="text-xs font-bold text-[var(--text-secondary)]">{n.label}</div>
+                                  <div className="text-[10px] font-medium text-[var(--text-muted)]">Drag into canvas</div>
                                 </div>
                             </div>
                         ))}
@@ -1615,7 +1615,7 @@ export const PipelineBuilder = ({ onComplete }) => {
 
             {libraryMode === 'sequence' && (
               <div>
-                <p className="text-xs font-black uppercase tracking-widest mb-2 px-1 text-slate-400">Logic</p>
+                <p className="text-xs font-black uppercase tracking-widest mb-2 px-1 text-[var(--text-muted)]">Logic</p>
                 <div className="space-y-1.5">
                   {[{ type: 'conditional', label: 'Conditional Branch', icon: GitBranch, color: '#06b6d4', bg: '#06b6d415' },
                     { type: 'loop', label: 'For Each Loop', icon: Repeat, color: '#8b5cf6', bg: '#8b5cf615' },
@@ -1624,12 +1624,12 @@ export const PipelineBuilder = ({ onComplete }) => {
                       <div key={n.type}
                           draggable
                           onDragStart={(e) => onDragStart(e, n.type)}
-                          className="flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-grab select-none transition-all border border-slate-100 hover:border-slate-200 hover:bg-slate-50"
+                          className="flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-grab select-none transition-all border border-[var(--border-soft)] hover:border-[var(--border-soft)] hover:bg-[var(--panel-muted)]"
                       >
                           <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style={{ background: n.bg }}>
                               <n.icon size={14} style={{ color: n.color }} />
                           </div>
-                          <span className="text-xs font-bold text-slate-600">{n.label}</span>
+                          <span className="text-xs font-bold text-[var(--text-secondary)]">{n.label}</span>
                       </div>
                   ))}
                 </div>
@@ -1638,7 +1638,7 @@ export const PipelineBuilder = ({ onComplete }) => {
 
             {libraryMode === 'sequence' && (
               <div>
-                <p className="text-xs font-black uppercase tracking-widest mb-2 px-1 text-slate-400">Actions</p>
+                <p className="text-xs font-black uppercase tracking-widest mb-2 px-1 text-[var(--text-muted)]">Actions</p>
                 <div className="space-y-1.5">
                   {[{ type: 'email', label: 'Email Notification', icon: Mail, color: '#f43f5e', bg: '#f43f5e15' },
                     { type: 'webhook', label: 'Webhook / HTTP Call', icon: Webhook, color: '#3b82f6', bg: '#3b82f615' },
@@ -1650,13 +1650,13 @@ export const PipelineBuilder = ({ onComplete }) => {
                           className={`flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-grab select-none transition-all border ${
                               n.type === 'export'
                                   ? 'border-emerald-100 bg-emerald-50 hover:bg-emerald-100'
-                                  : 'border-slate-100 hover:border-slate-200 hover:bg-slate-50'
+                                  : 'border-[var(--border-soft)] hover:border-[var(--border-soft)] hover:bg-[var(--panel-muted)]'
                           }`}
                       >
                           <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style={{ background: n.bg }}>
                               <n.icon size={14} style={{ color: n.color }} />
                           </div>
-                          <span className={`text-xs font-bold ${n.type === 'export' ? 'text-emerald-700' : 'text-slate-600'}`}>{n.label}</span>
+                          <span className={`text-xs font-bold ${n.type === 'export' ? 'text-emerald-700' : 'text-[var(--text-secondary)]'}`}>{n.label}</span>
                       </div>
                   ))}
                 </div>
@@ -1666,8 +1666,8 @@ export const PipelineBuilder = ({ onComplete }) => {
           </div>
 
           {/* Keyboard hint */}
-          <div className="px-4 py-3 border-t border-slate-100">
-              <p className="text-xs text-slate-400">Data Flow handles share datasets and define the default runtime path. Use Sequence Flow handles for branches, notifications, and orchestration-only steps. Double-click to configure a node.</p>
+          <div className="px-4 py-3 border-t border-[var(--border-soft)]">
+              <p className="text-xs text-[var(--text-muted)]">Data Flow handles share datasets and define the default runtime path. Use Sequence Flow handles for branches, notifications, and orchestration-only steps. Double-click to configure a node.</p>
           </div>
         </aside>
 
@@ -1723,16 +1723,16 @@ export const PipelineBuilder = ({ onComplete }) => {
                     onClick={closeNodeConfigurator}
                 >
                     <div className="mx-auto mb-3 flex max-w-[1600px] items-center justify-between gap-3 px-1" onClick={(event) => event.stopPropagation()}>
-                        <div className={`inline-flex items-center gap-3 rounded-full border bg-white/95 px-4 py-2 shadow-lg shadow-slate-900/10 backdrop-blur ${activeFeatureOverlay.pillClass}`}>
+                        <div className={`inline-flex items-center gap-3 rounded-full border bg-[var(--panel)]/95 px-4 py-2 shadow-lg shadow-slate-900/10 backdrop-blur ${activeFeatureOverlay.pillClass}`}>
                             <div className={`flex h-10 w-10 items-center justify-center rounded-full border ${activeFeatureOverlay.iconClass}`}>
                                 <activeFeatureOverlay.icon size={18} />
                             </div>
                             <div className="min-w-0">
                                 <p className="text-[11px] font-black uppercase tracking-[0.18em] opacity-70">{activeFeatureOverlay.badge}</p>
-                                <p className="truncate text-sm font-bold text-slate-800">{activeNode.data.label}</p>
+                                <p className="truncate text-sm font-bold text-[var(--text-primary)]">{activeNode.data.label}</p>
                             </div>
                         </div>
-                        <button onClick={closeNodeConfigurator} className="inline-flex items-center gap-2 rounded-full border border-white/70 bg-white/95 px-4 py-2 text-sm font-semibold text-slate-600 shadow-lg shadow-slate-900/10 transition-all hover:bg-slate-50">
+                        <button onClick={closeNodeConfigurator} className="inline-flex items-center gap-2 rounded-full border border-white/70 bg-[var(--panel)]/95 px-4 py-2 text-sm font-semibold text-[var(--text-secondary)] shadow-lg shadow-slate-900/10 transition-all hover:bg-[var(--panel-muted)]">
                             <X size={16} /> Close
                         </button>
                     </div>
@@ -1741,7 +1741,7 @@ export const PipelineBuilder = ({ onComplete }) => {
                         initial={{ opacity: 0, scale: 0.97, y: 18 }}
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         transition={{ type: 'spring', damping: 28, stiffness: 280 }}
-                        className="mx-auto h-[calc(100%-60px)] w-full max-w-[1600px] overflow-hidden rounded-[28px] border border-white/60 bg-white shadow-2xl shadow-slate-900/25"
+                        className="mx-auto h-[calc(100%-60px)] w-full max-w-[1600px] overflow-hidden rounded-[28px] border border-white/60 bg-[var(--panel)] shadow-2xl shadow-slate-900/25"
                         onClick={(event) => event.stopPropagation()}
                     >
                         {renderFeatureOverlayContent()}
@@ -1763,27 +1763,27 @@ export const PipelineBuilder = ({ onComplete }) => {
                             animate={{ scale: 1, opacity: 1, y: 0 }}
                             exit={{ scale: 0.95, opacity: 0, y: 20 }}
                             transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-                            className="bg-white rounded-[24px] shadow-2xl flex flex-col overflow-hidden h-full max-h-[800px] w-full max-w-3xl border border-slate-100"
+                            className="bg-[var(--panel)] rounded-[24px] shadow-2xl flex flex-col overflow-hidden h-full max-h-[800px] w-full max-w-3xl border border-[var(--border-soft)]"
                         >
                             {/* Header */}
                             <div className="h-1.5 w-full shrink-0" style={{ background: 'linear-gradient(90deg,#10b981,#6366f1,#8b5cf6)' }} />
-                            <div className="flex items-center justify-between p-5 border-b border-slate-100 bg-white shrink-0">
+                            <div className="flex items-center justify-between p-5 border-b border-[var(--border-soft)] bg-[var(--panel)] shrink-0">
                                 <div className="flex items-center gap-4">
-                                    <div className="w-12 h-12 rounded-xl bg-slate-50 shadow-sm flex items-center justify-center border border-slate-100">
-                                        <Settings size={22} className="text-slate-700" />
+                                    <div className="w-12 h-12 rounded-xl bg-[var(--panel-muted)] shadow-sm flex items-center justify-center border border-[var(--border-soft)]">
+                                        <Settings size={22} className="text-[var(--text-primary)]" />
                                     </div>
                                     <div>
-                                        <h2 className="text-lg font-black text-slate-800">{activeNode.data.label}</h2>
-                                        <p className="text-xs text-slate-400 font-medium tracking-wide uppercase mt-0.5">Node Configuration</p>
+                                        <h2 className="text-lg font-black text-[var(--text-primary)]">{activeNode.data.label}</h2>
+                                        <p className="text-xs text-[var(--text-muted)] font-medium tracking-wide uppercase mt-0.5">Node Configuration</p>
                                     </div>
                                 </div>
-                                <button onClick={() => setActiveNode(null)} className="p-2.5 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors">
+                                <button onClick={() => setActiveNode(null)} className="p-2.5 rounded-xl text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--panel-muted)] transition-colors">
                                     <X size={20} />
                                 </button>
                             </div>
                             
                             {/* Body */}
-                            <div className="flex-1 overflow-y-auto p-6 bg-slate-50">
+                            <div className="flex-1 overflow-y-auto p-6 bg-[var(--panel-muted)]">
                                 {/* Validation Configuration */}
                                 {activeNodeKind === 'validation' && (
                                     <RuleBuilder 
@@ -1842,8 +1842,8 @@ export const PipelineBuilder = ({ onComplete }) => {
                                 )}
 
                                 {activeNodeKind === 'dataset' && (
-                                    <div className="flex flex-col h-full bg-white rounded-2xl shadow-sm border border-slate-100 py-6 px-4">
-                                         <h3 className="font-bold text-lg text-slate-800 mb-6">Import Dataset</h3>
+                                    <div className="flex flex-col h-full bg-[var(--panel)] rounded-2xl shadow-sm border border-[var(--border-soft)] py-6 px-4">
+                                         <h3 className="font-bold text-lg text-[var(--text-primary)] mb-6">Import Dataset</h3>
                                          <div className="mt-4">
                                             <DataConnection onUploadSuccess={(uploadData) => {
                                                  setActiveSessionId(uploadData.session_id);
@@ -1924,7 +1924,7 @@ export const PipelineBuilder = ({ onComplete }) => {
                         <h3 className="text-sm font-bold flex items-center gap-2">
                             <CheckCircle size={14} className="text-emerald-400" /> Execution Complete
                         </h3>
-                        <button onClick={() => setLogsExpanded(v => !v)} className="text-slate-400 hover:text-white p-1 rounded">
+                        <button onClick={() => setLogsExpanded(v => !v)} className="text-[var(--text-muted)] hover:text-white p-1 rounded">
                             {logsExpanded ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
                         </button>
                     </div>
@@ -1936,7 +1936,7 @@ export const PipelineBuilder = ({ onComplete }) => {
                                     <span className={log.status === 'success' ? 'text-emerald-400' : 'text-red-400'}>
                                         [{log.type.toUpperCase()}] {log.status}
                                     </span>
-                                    <span className="text-slate-400">{log.message || log.error}</span>
+                                    <span className="text-[var(--text-muted)]">{log.message || log.error}</span>
                                 </div>
                             ))}
                         </div>
@@ -1946,7 +1946,7 @@ export const PipelineBuilder = ({ onComplete }) => {
                     <div className="px-5 py-3 border-t border-slate-800 flex flex-col gap-2 shrink-0">
                         {downloadUrl && (
                             <a href={downloadUrl} target="_blank" rel="noreferrer"
-                               className="w-full flex items-center justify-center gap-2 bg-emerald-500 hover:bg-emerald-400 text-slate-900 font-bold py-2 rounded-xl transition-colors text-sm">
+                               className="w-full flex items-center justify-center gap-2 bg-emerald-500 hover:bg-emerald-400 text-[var(--text-primary)] font-bold py-2 rounded-xl transition-colors text-sm">
                                 <Download size={15} /> Download Result
                             </a>
                         )}
@@ -1972,23 +1972,23 @@ export const PipelineBuilder = ({ onComplete }) => {
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
             transition={{ duration: 0.35, ease: 'easeInOut' }}
-            className="shrink-0 max-h-[72vh] border-t border-slate-200 bg-slate-50 overflow-hidden"
+            className="shrink-0 max-h-[72vh] border-t border-[var(--border-soft)] bg-[var(--panel-muted)] overflow-hidden"
           >
             <div className="max-h-[72vh] overflow-y-auto overscroll-contain p-6">
               {/* Panel header */}
-              <div className="sticky top-0 z-10 -mx-6 mb-5 flex items-center justify-between border-b border-slate-200 bg-slate-50 px-6 pb-4 pt-1">
+              <div className="sticky top-0 z-10 -mx-6 mb-5 flex items-center justify-between border-b border-[var(--border-soft)] bg-[var(--panel-muted)] px-6 pb-4 pt-1">
                 <div className="flex items-center gap-3">
                   <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-violet-200">
                     <BarChart3 size={18} className="text-white" />
                   </div>
                   <div>
-                    <h2 className="text-base font-black text-slate-800 leading-tight">AI Visualizer — Pipeline Output</h2>
-                    <p className="text-xs text-slate-400 font-medium">Auto-generated charts from pipeline result dataset</p>
+                    <h2 className="text-base font-black text-[var(--text-primary)] leading-tight">AI Visualizer — Pipeline Output</h2>
+                    <p className="text-xs text-[var(--text-muted)] font-medium">Auto-generated charts from pipeline result dataset</p>
                   </div>
                 </div>
                 <button
                   onClick={() => { setShowViz(false); setVizAnalysis(null); }}
-                  className="p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-200 transition-colors"
+                  className="p-2 rounded-xl text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--panel-muted)] transition-colors"
                 >
                   <X size={16} />
                 </button>
@@ -2015,13 +2015,13 @@ export const PipelineBuilder = ({ onComplete }) => {
                   {/* KPI tiles */}
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
                     {vizAnalysis.kpis?.map((kpi, i) => (
-                      <div key={i} className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 flex items-center gap-3">
+                      <div key={i} className="bg-[var(--panel)] rounded-2xl border border-[var(--border-soft)] shadow-sm p-4 flex items-center gap-3">
                         <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: kpi.color + '18' }}>
                           <BarChart3 size={18} style={{ color: kpi.color }} />
                         </div>
                         <div className="min-w-0">
-                          <p className="text-xl font-black text-slate-900 leading-none truncate">{kpi.value}</p>
-                          <p className="text-xs text-slate-400 font-semibold mt-0.5">{kpi.label}</p>
+                          <p className="text-xl font-black text-[var(--text-primary)] leading-none truncate">{kpi.value}</p>
+                          <p className="text-xs text-[var(--text-muted)] font-semibold mt-0.5">{kpi.label}</p>
                         </div>
                       </div>
                     ))}
@@ -2036,12 +2036,12 @@ export const PipelineBuilder = ({ onComplete }) => {
                           initial={{ opacity: 0, y: 16 }}
                           animate={{ opacity: 1, y: 0 }}
                           transition={{ delay: i * 0.06 }}
-                          className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden"
+                          className="bg-[var(--panel)] rounded-2xl border border-[var(--border-soft)] shadow-sm overflow-hidden"
                         >
                           <div className="h-0.5 w-full" style={{ background: `linear-gradient(90deg, ${(GRADIENT_PAIRS[i % GRADIENT_PAIRS.length])[0]}, ${(GRADIENT_PAIRS[i % GRADIENT_PAIRS.length])[1]})` }} />
                           <div className="p-4 pb-1">
-                            <p className="text-sm font-black text-slate-800 truncate">{chart.title}</p>
-                            <p className="text-xs text-slate-400 truncate">{chart.description}</p>
+                            <p className="text-sm font-black text-[var(--text-primary)] truncate">{chart.title}</p>
+                            <p className="text-xs text-[var(--text-muted)] truncate">{chart.description}</p>
                           </div>
                           <div className="px-2 pb-4">
                             {renderVizChart(chart, i)}
@@ -2051,9 +2051,9 @@ export const PipelineBuilder = ({ onComplete }) => {
                     </div>
                   ) : (
                     <div className="flex flex-col items-center justify-center py-10 text-center">
-                      <BarChart3 size={28} className="text-slate-300 mb-2" />
-                      <p className="text-slate-500 font-bold text-sm">No charts could be generated from this dataset.</p>
-                      <p className="text-slate-400 text-xs mt-1">Try a dataset with mixed numeric and categorical columns.</p>
+                      <BarChart3 size={28} className="text-[var(--text-muted)] mb-2" />
+                      <p className="text-[var(--text-secondary)] font-bold text-sm">No charts could be generated from this dataset.</p>
+                      <p className="text-[var(--text-muted)] text-xs mt-1">Try a dataset with mixed numeric and categorical columns.</p>
                     </div>
                   )}
                 </>
@@ -2074,7 +2074,7 @@ export const PipelineBuilder = ({ onComplete }) => {
               initial={{ opacity: 0, scale: 0.97, y: 18 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               transition={{ type: 'spring', damping: 28, stiffness: 280 }}
-              className="mx-auto h-full w-full max-w-[1600px] overflow-hidden rounded-[28px] border border-white/60 bg-white shadow-2xl shadow-slate-900/25"
+              className="mx-auto h-full w-full max-w-[1600px] overflow-hidden rounded-[28px] border border-white/60 bg-[var(--panel)] shadow-2xl shadow-slate-900/25"
               onClick={(event) => event.stopPropagation()}
             >
               {outputSessionId ? (
@@ -2085,22 +2085,22 @@ export const PipelineBuilder = ({ onComplete }) => {
                   onClose={() => { setShowVisualizerOverlay(false); setShowViz(false); }}
                 />
               ) : (
-                <div className="flex h-full w-full items-center justify-center bg-slate-50 p-6">
-                  <div className="w-full max-w-2xl rounded-[28px] border border-slate-100 bg-white p-8 text-center shadow-xl shadow-slate-200/60">
+                <div className="flex h-full w-full items-center justify-center bg-[var(--panel-muted)] p-6">
+                  <div className="w-full max-w-2xl rounded-[28px] border border-[var(--border-soft)] bg-[var(--panel)] p-8 text-center shadow-xl shadow-slate-200/60">
                     <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-500 to-indigo-600 shadow-lg shadow-violet-200">
                       <AlertCircle size={26} className="text-white" />
                     </div>
-                    <h2 className="text-2xl font-black text-slate-900">Pipeline output is not ready</h2>
-                    <p className="mt-2 text-sm font-medium text-slate-400">
+                    <h2 className="text-2xl font-black text-[var(--text-primary)]">Pipeline output is not ready</h2>
+                    <p className="mt-2 text-sm font-medium text-[var(--text-muted)]">
                       We could not find a generated output session for this run, so the full visualizer cannot open yet.
                     </p>
-                    <p className="mt-2 text-sm font-medium text-slate-400">
+                    <p className="mt-2 text-sm font-medium text-[var(--text-muted)]">
                       Run the pipeline again. If this still happens, restart the backend so the latest pipeline output session changes are active.
                     </p>
                     <div className="mt-6 flex items-center justify-center gap-3">
                       <button
                         onClick={() => { setShowVisualizerOverlay(false); setShowViz(false); }}
-                        className="rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-500 transition-all hover:bg-slate-50"
+                        className="rounded-2xl border border-[var(--border-soft)] bg-[var(--panel)] px-5 py-3 text-sm font-semibold text-[var(--text-secondary)] transition-all hover:bg-[var(--panel-muted)]"
                       >
                         Close
                       </button>
@@ -2117,20 +2117,20 @@ export const PipelineBuilder = ({ onComplete }) => {
       <AnimatePresence>
         {showLoadDrawer && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 flex" style={{ background: 'rgba(15, 23, 42, 0.4)', backdropFilter: 'blur(4px)' }}>
-            <motion.div initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }} transition={{ type: 'spring', damping: 25, stiffness: 300 }} className="ml-auto w-96 bg-white h-full shadow-2xl flex flex-col border-l border-slate-100">
-                <div className="p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+            <motion.div initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }} transition={{ type: 'spring', damping: 25, stiffness: 300 }} className="ml-auto w-96 bg-[var(--panel)] h-full shadow-2xl flex flex-col border-l border-[var(--border-soft)]">
+                <div className="p-5 border-b border-[var(--border-soft)] flex items-center justify-between bg-[var(--panel-muted)]">
                     <div className="flex items-center gap-3">
                         <FolderOpen className="text-sky-500" size={20} />
                         <div>
-                            <h3 className="font-black text-slate-800">Saved Pipelines</h3>
-                            <p className="text-xs text-slate-400">Load or restore your work</p>
+                            <h3 className="font-black text-[var(--text-primary)]">Saved Pipelines</h3>
+                            <p className="text-xs text-[var(--text-muted)]">Load or restore your work</p>
                         </div>
                     </div>
-                    <button onClick={() => setShowLoadDrawer(false)} className="p-2 rounded-xl hover:bg-slate-200 text-slate-400"><X size={18} /></button>
+                    <button onClick={() => setShowLoadDrawer(false)} className="p-2 rounded-xl hover:bg-[var(--panel-muted)] text-[var(--text-muted)]"><X size={18} /></button>
                 </div>
                 <div className="flex-1 overflow-y-auto p-4 space-y-3">
                     {savedPipelines.map(p => (
-                        <div key={p.id} className="p-4 border border-slate-200 rounded-xl hover:border-sky-300 hover:shadow-md transition-all cursor-pointer bg-white group" onClick={() => {
+                        <div key={p.id} className="p-4 border border-[var(--border-soft)] rounded-xl hover:border-sky-300 hover:shadow-md transition-all cursor-pointer bg-[var(--panel)] group" onClick={() => {
                             const loadedNodes = p.nodes || (p.pipeline_data?.nodes || []);
                             const loadedEdges = p.edges || (p.pipeline_data?.edges || []);
                             const { normalizedNodes, normalizedEdges } = hydratePipelineState(loadedNodes, loadedEdges);
@@ -2142,16 +2142,16 @@ export const PipelineBuilder = ({ onComplete }) => {
                             setShowLoadDrawer(false);
                         }}>
                             <div className="flex justify-between items-start mb-2">
-                                <h4 className="font-bold text-sm text-slate-800 group-hover:text-sky-600 transition-colors">{p.name || 'Untitled'}</h4>
+                                <h4 className="font-bold text-sm text-[var(--text-primary)] group-hover:text-sky-600 transition-colors">{p.name || 'Untitled'}</h4>
                             </div>
-                            <div className="text-xs text-slate-400 space-y-1">
+                            <div className="text-xs text-[var(--text-muted)] space-y-1">
                                 <p>ID: <span className="font-mono">{String(p.id).slice(0,8)}...</span></p>
                                 <p>Last Updated: {new Date(p.updated_at || p.savedAt).toLocaleString()}</p>
                             </div>
                         </div>
                     ))}
                     {savedPipelines.length === 0 && (
-                        <div className="text-center py-10 text-slate-400">
+                        <div className="text-center py-10 text-[var(--text-muted)]">
                             <FolderOpen size={32} className="mx-auto mb-3 opacity-50" />
                             <p className="text-sm font-semibold">No saved pipelines found.</p>
                         </div>
@@ -2166,13 +2166,13 @@ export const PipelineBuilder = ({ onComplete }) => {
       <AnimatePresence>
           {showScheduleModal && (
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(15, 23, 42, 0.4)', backdropFilter: 'blur(4px)' }}>
-                  <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }} exit={{ scale: 0.95 }} className="bg-white rounded-2xl shadow-xl max-w-md w-full overflow-hidden">
-                      <div className="p-5 border-b border-slate-100 flex items-center justify-between">
+                  <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }} exit={{ scale: 0.95 }} className="bg-[var(--panel)] rounded-2xl shadow-xl max-w-md w-full overflow-hidden">
+                      <div className="p-5 border-b border-[var(--border-soft)] flex items-center justify-between">
                           <div className="flex items-center gap-3">
                               <CalendarDays className="text-indigo-500" size={20} />
-                              <h3 className="font-black text-slate-800">Schedule Pipeline</h3>
+                              <h3 className="font-black text-[var(--text-primary)]">Schedule Pipeline</h3>
                           </div>
-                          <button onClick={() => setShowScheduleModal(false)} className="p-2 rounded-xl hover:bg-slate-100 text-slate-400"><X size={18} /></button>
+                          <button onClick={() => setShowScheduleModal(false)} className="p-2 rounded-xl hover:bg-[var(--panel-muted)] text-[var(--text-muted)]"><X size={18} /></button>
                       </div>
                       <form className="p-6 space-y-5" onSubmit={async (e) => {
                           e.preventDefault();
@@ -2197,8 +2197,8 @@ export const PipelineBuilder = ({ onComplete }) => {
                               <strong>Note:</strong> Scheduling relies on an active cron execution backend connected to this target API.
                           </div>
                           <div>
-                              <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Frequency</label>
-                              <select name="frequency" className="w-full p-2 border border-slate-200 rounded-lg text-sm bg-white" required defaultValue="daily">
+                              <label className="block text-xs font-bold text-[var(--text-secondary)] uppercase mb-2">Frequency</label>
+                              <select name="frequency" className="w-full p-2 border border-[var(--border-soft)] rounded-lg text-sm bg-[var(--panel)]" required defaultValue="daily">
                                   <option value="hourly">Hourly</option>
                                   <option value="daily">Daily</option>
                                   <option value="weekly">Weekly</option>
@@ -2207,12 +2207,12 @@ export const PipelineBuilder = ({ onComplete }) => {
                           </div>
                           <div className="grid grid-cols-2 gap-4">
                               <div>
-                                  <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Run Time</label>
-                                  <input type="time" name="run_time" className="w-full p-2 border border-slate-200 rounded-lg text-sm" required defaultValue="00:00" />
+                                  <label className="block text-xs font-bold text-[var(--text-secondary)] uppercase mb-2">Run Time</label>
+                                  <input type="time" name="run_time" className="w-full p-2 border border-[var(--border-soft)] rounded-lg text-sm" required defaultValue="00:00" />
                               </div>
                               <div>
-                                  <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Timezone</label>
-                                  <select name="timezone" className="w-full p-2 border border-slate-200 rounded-lg text-sm bg-white" defaultValue="UTC">
+                                  <label className="block text-xs font-bold text-[var(--text-secondary)] uppercase mb-2">Timezone</label>
+                                  <select name="timezone" className="w-full p-2 border border-[var(--border-soft)] rounded-lg text-sm bg-[var(--panel)]" defaultValue="UTC">
                                       <option value="UTC">UTC</option>
                                       <option value="America/New_York">EST</option>
                                       <option value="America/Los_Angeles">PST</option>
@@ -2222,8 +2222,8 @@ export const PipelineBuilder = ({ onComplete }) => {
                                   </select>
                               </div>
                           </div>
-                          <div className="pt-4 border-t border-slate-100 flex justify-end gap-3 mt-4">
-                              <button type="button" onClick={() => setShowScheduleModal(false)} className="px-4 py-2 rounded-xl text-slate-500 hover:bg-slate-100 font-semibold text-sm transition-colors">Cancel</button>
+                          <div className="pt-4 border-t border-[var(--border-soft)] flex justify-end gap-3 mt-4">
+                              <button type="button" onClick={() => setShowScheduleModal(false)} className="px-4 py-2 rounded-xl text-[var(--text-secondary)] hover:bg-[var(--panel-muted)] font-semibold text-sm transition-colors">Cancel</button>
                               <button type="submit" className="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-sm shadow-md transition-colors">Save Schedule</button>
                           </div>
                       </form>
@@ -2251,21 +2251,21 @@ const PipelineDatasetWorkspace = ({ sessionId: initialSessionId = null, columns:
 
   return (
     <div className="flex h-full w-full flex-col">
-      <div className="flex shrink-0 items-center justify-between border-b border-slate-200 bg-white px-8 py-5">
+      <div className="flex shrink-0 items-center justify-between border-b border-[var(--border-soft)] bg-[var(--panel)] px-8 py-5">
         <div className="flex items-center gap-4">
           <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-blue-100 bg-blue-50">
             <Database size={20} className="text-blue-600" />
           </div>
           <div>
-            <h2 className="text-2xl font-black tracking-tight text-slate-900">Dataset Source</h2>
-            <p className="mt-0.5 text-sm text-slate-500">Upload or replace the source dataset that powers this pipeline.</p>
+            <h2 className="text-2xl font-black tracking-tight text-[var(--text-primary)]">Dataset Source</h2>
+            <p className="mt-0.5 text-sm text-[var(--text-secondary)]">Upload or replace the source dataset that powers this pipeline.</p>
           </div>
         </div>
         <button
           type="button"
           onClick={() => onSave({ sessionId, columns, sourceConfig })}
           disabled={!sessionId}
-          className="flex items-center gap-2 rounded-xl bg-slate-900 px-5 py-2.5 text-sm font-bold text-white shadow-md transition-all hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400"
+          className="flex items-center gap-2 rounded-xl bg-slate-900 px-5 py-2.5 text-sm font-bold text-white shadow-md transition-all hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-[var(--panel-muted)] disabled:text-[var(--text-muted)]"
         >
           <Save size={16} /> Save Source
         </button>
@@ -2274,11 +2274,11 @@ const PipelineDatasetWorkspace = ({ sessionId: initialSessionId = null, columns:
       <div className="flex-1 overflow-y-auto px-8 py-6">
         <div className="mb-5 flex flex-wrap items-start justify-between gap-4">
           <div>
-            <h3 className="text-lg font-bold text-slate-800">Source Workspace</h3>
-            <p className="mt-1 text-sm text-slate-500">Keep the pipeline source visible while replacing or reviewing the active dataset.</p>
+            <h3 className="text-lg font-bold text-[var(--text-primary)]">Source Workspace</h3>
+            <p className="mt-1 text-sm text-[var(--text-secondary)]">Keep the pipeline source visible while replacing or reviewing the active dataset.</p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <span className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 shadow-sm">
+            <span className="rounded-full border border-[var(--border-soft)] bg-[var(--panel)] px-3 py-1.5 text-xs font-semibold text-[var(--text-secondary)] shadow-sm">
               {sessionId ? 'Source attached' : 'No source attached'}
             </span>
             <span className="rounded-full border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700 shadow-sm">
@@ -2339,18 +2339,18 @@ const PipelineValidationWorkspace = ({ sessionId: initialSessionId = null, colum
 
   return (
     <div className="flex h-full w-full flex-col">
-      <div className="flex shrink-0 items-center justify-between border-b border-slate-200 bg-white px-8 py-5">
+      <div className="flex shrink-0 items-center justify-between border-b border-[var(--border-soft)] bg-[var(--panel)] px-8 py-5">
         <div className="flex items-center gap-4">
           <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-blue-100 bg-blue-50">
             <ShieldCheck size={20} className="text-blue-600" />
           </div>
           <div>
-            <h2 className="text-2xl font-black tracking-tight text-slate-900">Quality Validation</h2>
-            <p className="mt-0.5 text-sm text-slate-500">Use the same validation workspace from Data Service and save the rule set into this node.</p>
+            <h2 className="text-2xl font-black tracking-tight text-[var(--text-primary)]">Quality Validation</h2>
+            <p className="mt-0.5 text-sm text-[var(--text-secondary)]">Use the same validation workspace from Data Service and save the rule set into this node.</p>
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <span className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 shadow-sm">
+          <span className="rounded-full border border-[var(--border-soft)] bg-[var(--panel)] px-3 py-1.5 text-xs font-semibold text-[var(--text-secondary)] shadow-sm">
             {columns.length} columns
           </span>
           <span className="rounded-full border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700 shadow-sm">
@@ -2361,8 +2361,8 @@ const PipelineValidationWorkspace = ({ sessionId: initialSessionId = null, colum
 
       <div className="flex-1 overflow-y-auto px-8 py-6">
         <div className="mb-5">
-          <h3 className="text-lg font-bold text-slate-800">Validation Workspace</h3>
-          <p className="mt-1 text-sm text-slate-500">Switch between source upload, dataset preview, and rule design without leaving the pipeline canvas.</p>
+          <h3 className="text-lg font-bold text-[var(--text-primary)]">Validation Workspace</h3>
+          <p className="mt-1 text-sm text-[var(--text-secondary)]">Switch between source upload, dataset preview, and rule design without leaving the pipeline canvas.</p>
         </div>
 
         <WorkspaceTabs
@@ -2438,27 +2438,27 @@ const CleanerConfigPanel = ({ node, columns = [], onSave }) => {
     const removeRule = (id) => setRules(rules.filter(r => r.id !== id));
 
     return (
-        <div className="flex flex-col h-full bg-white rounded-3xl shadow-xl border border-slate-100 py-6 px-4">
+        <div className="flex flex-col h-full bg-[var(--panel)] rounded-3xl shadow-xl border border-[var(--border-soft)] py-6 px-4">
             <div className="flex justify-between items-center mb-6">
-                <h3 className="font-bold text-lg text-slate-800">Cleaning Operations</h3>
-                <button onClick={addRule} className="flex items-center gap-1 text-xs font-bold bg-slate-100 text-slate-700 hover:bg-slate-200 px-3 py-1.5 rounded-lg transition-colors">
+                <h3 className="font-bold text-lg text-[var(--text-primary)]">Cleaning Operations</h3>
+                <button onClick={addRule} className="flex items-center gap-1 text-xs font-bold bg-[var(--panel-muted)] text-[var(--text-primary)] hover:bg-[var(--panel-muted)] px-3 py-1.5 rounded-lg transition-colors">
                     <Plus size={14} /> Add Op
                 </button>
             </div>
             <div className="space-y-4 mb-8">
-                {rules.length === 0 && <p className="text-center text-sm text-slate-400 italic">No cleaning rules. Add one!</p>}
+                {rules.length === 0 && <p className="text-center text-sm text-[var(--text-muted)] italic">No cleaning rules. Add one!</p>}
                 {rules.map(r => (
-                    <div key={r.id} className="p-4 bg-slate-50 border border-slate-200 rounded-xl relative">
+                    <div key={r.id} className="p-4 bg-[var(--panel-muted)] border border-[var(--border-soft)] rounded-xl relative">
                         <button onClick={() => removeRule(r.id)} className="absolute top-2 right-2 text-red-500 hover:bg-red-100 p-1.5 rounded-md">
                             <Trash2 size={16} />
                         </button>
                         
                         <div className="space-y-3 mt-4">
                             <div>
-                                <label className="text-xs font-bold text-slate-500 uppercase">Column Name</label>
+                                <label className="text-xs font-bold text-[var(--text-secondary)] uppercase">Column Name</label>
                                 {columns.length > 0 ? (
                                     <select
-                                        className="w-full text-sm p-2 border border-slate-200 rounded-lg outline-none focus:border-emerald-500"
+                                        className="w-full text-sm p-2 border border-[var(--border-soft)] rounded-lg outline-none focus:border-emerald-500"
                                         value={r.column}
                                         onChange={e => updateRule(r.id, 'column', e.target.value)}
                                     >
@@ -2468,12 +2468,12 @@ const CleanerConfigPanel = ({ node, columns = [], onSave }) => {
                                         ))}
                                     </select>
                                 ) : (
-                                    <input type="text" className="w-full text-sm p-2 border border-slate-200 rounded-lg outline-none focus:border-emerald-500" placeholder="e.g. email" value={r.column} onChange={e => updateRule(r.id, 'column', e.target.value)} />
+                                    <input type="text" className="w-full text-sm p-2 border border-[var(--border-soft)] rounded-lg outline-none focus:border-emerald-500" placeholder="e.g. email" value={r.column} onChange={e => updateRule(r.id, 'column', e.target.value)} />
                                 )}
                             </div>
                             <div>
-                                <label className="text-xs font-bold text-slate-500 uppercase">Operation</label>
-                                <select className="w-full text-sm p-2 border border-slate-200 rounded-lg outline-none focus:border-emerald-500" value={r.operation} onChange={e => { const val = e.target.value; setRules(prev => prev.map(rule => rule.id === r.id ? { ...rule, operation: val, params: {} } : rule)); }}>
+                                <label className="text-xs font-bold text-[var(--text-secondary)] uppercase">Operation</label>
+                                <select className="w-full text-sm p-2 border border-[var(--border-soft)] rounded-lg outline-none focus:border-emerald-500" value={r.operation} onChange={e => { const val = e.target.value; setRules(prev => prev.map(rule => rule.id === r.id ? { ...rule, operation: val, params: {} } : rule)); }}>
                                     <option value="trim_whitespace">Trim Whitespace</option>
                                     <option value="uppercase">Uppercase</option>
                                     <option value="lowercase">Lowercase</option>
@@ -2484,14 +2484,14 @@ const CleanerConfigPanel = ({ node, columns = [], onSave }) => {
                             
                             {/* Parameters dependent on operation */}
                             {r.operation === 'fill_nulls' && (
-                                <input type="text" className="w-full text-sm p-2 border border-slate-200 rounded-lg" placeholder="Replace nulls with..." value={r.params.custom_value || ''} onChange={e => updateParam(r.id, 'custom_value', e.target.value)} />
+                                <input type="text" className="w-full text-sm p-2 border border-[var(--border-soft)] rounded-lg" placeholder="Replace nulls with..." value={r.params.custom_value || ''} onChange={e => updateParam(r.id, 'custom_value', e.target.value)} />
                             )}
                             
                             {r.operation === 'replace_value' && (
                                 <div className="space-y-2">
-                                    <input type="text" className="w-full text-sm p-2 border border-slate-200 rounded-lg" placeholder="Target text to replace" value={r.params.target_value || ''} onChange={e => updateParam(r.id, 'target_value', e.target.value)} />
-                                    <input type="text" className="w-full text-sm p-2 border border-slate-200 rounded-lg" placeholder="Replace with..." value={r.params.replacement_value || ''} onChange={e => updateParam(r.id, 'replacement_value', e.target.value)} />
-                                    <select className="w-full text-sm p-2 border border-slate-200 rounded-lg" value={r.params.match_type || 'whole'} onChange={e => updateParam(r.id, 'match_type', e.target.value)}>
+                                    <input type="text" className="w-full text-sm p-2 border border-[var(--border-soft)] rounded-lg" placeholder="Target text to replace" value={r.params.target_value || ''} onChange={e => updateParam(r.id, 'target_value', e.target.value)} />
+                                    <input type="text" className="w-full text-sm p-2 border border-[var(--border-soft)] rounded-lg" placeholder="Replace with..." value={r.params.replacement_value || ''} onChange={e => updateParam(r.id, 'replacement_value', e.target.value)} />
+                                    <select className="w-full text-sm p-2 border border-[var(--border-soft)] rounded-lg" value={r.params.match_type || 'whole'} onChange={e => updateParam(r.id, 'match_type', e.target.value)}>
                                         <option value="whole">Exact Match Only (Cell)</option>
                                         <option value="partial">Partial Match (Contains)</option>
                                     </select>
@@ -2502,7 +2502,7 @@ const CleanerConfigPanel = ({ node, columns = [], onSave }) => {
                 ))}
             </div>
             
-            <div className="mt-auto pt-4 border-t border-slate-200 flex justify-end">
+            <div className="mt-auto pt-4 border-t border-[var(--border-soft)] flex justify-end">
                 <button onClick={() => onSave(rules)} className="px-5 py-2.5 bg-slate-900 border border-slate-800 hover:bg-slate-800 text-white font-bold rounded-xl shadow-lg transition-transform hover:-translate-y-0.5">
                     Save Operations
                 </button>
@@ -2535,25 +2535,25 @@ const MapperConfigPanel = ({ node, columns = [], onSave }) => {
     };
 
     return (
-        <div className="flex flex-col h-full bg-white rounded-3xl shadow-xl border border-slate-100 py-6 px-4">
+        <div className="flex flex-col h-full bg-[var(--panel)] rounded-3xl shadow-xl border border-[var(--border-soft)] py-6 px-4">
             <div className="flex items-center justify-between mb-6">
-                <h3 className="font-bold text-lg text-slate-800">Schema Mapping</h3>
+                <h3 className="font-bold text-lg text-[var(--text-primary)]">Schema Mapping</h3>
                 <button onClick={autoMap} className="text-xs font-bold bg-indigo-50 text-indigo-700 hover:bg-indigo-100 px-3 py-1.5 rounded-lg transition-colors">
                     Auto-Map
                 </button>
             </div>
 
-            <label className="text-xs font-bold text-slate-500 uppercase mb-2">Target Schema</label>
+            <label className="text-xs font-bold text-[var(--text-secondary)] uppercase mb-2">Target Schema</label>
             <textarea
                 rows={5}
-                className="w-full text-sm p-3 border border-slate-200 rounded-xl outline-none focus:border-indigo-500"
+                className="w-full text-sm p-3 border border-[var(--border-soft)] rounded-xl outline-none focus:border-indigo-500"
                 placeholder="customer_name&#10;customer_email&#10;signup_date"
                 value={targetSchema}
                 onChange={(e) => setTargetSchema(e.target.value)}
             />
 
             <div className="mt-6 space-y-3">
-                <h4 className="text-sm font-bold text-slate-700">Source to Target Mapping</h4>
+                <h4 className="text-sm font-bold text-[var(--text-primary)]">Source to Target Mapping</h4>
                 {columns.length === 0 && (
                     <p className="text-sm text-amber-600 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
                         Upload a dataset first to map detected source columns.
@@ -2561,11 +2561,11 @@ const MapperConfigPanel = ({ node, columns = [], onSave }) => {
                 )}
                 {columns.map((sourceCol) => (
                     <div key={sourceCol} className="grid grid-cols-[1fr_1fr] gap-3 items-center">
-                        <div className="p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm font-medium text-slate-700">
+                        <div className="p-2.5 bg-[var(--panel-muted)] border border-[var(--border-soft)] rounded-lg text-sm font-medium text-[var(--text-primary)]">
                             {sourceCol}
                         </div>
                         <select
-                            className="w-full text-sm p-2.5 border border-slate-200 rounded-lg outline-none focus:border-indigo-500"
+                            className="w-full text-sm p-2.5 border border-[var(--border-soft)] rounded-lg outline-none focus:border-indigo-500"
                             value={mappings[sourceCol] || ''}
                             onChange={(e) => setMappings((prev) => ({ ...prev, [sourceCol]: e.target.value }))}
                         >
@@ -2578,7 +2578,7 @@ const MapperConfigPanel = ({ node, columns = [], onSave }) => {
                 ))}
             </div>
 
-            <div className="mt-auto pt-4 border-t border-slate-200 flex justify-end">
+            <div className="mt-auto pt-4 border-t border-[var(--border-soft)] flex justify-end">
                 <button onClick={() => onSave({ targetSchema, mappings })} className="px-5 py-2.5 bg-slate-900 border border-slate-800 hover:bg-slate-800 text-white font-bold rounded-xl shadow-lg transition-transform hover:-translate-y-0.5">
                     Save Mapping
                 </button>
@@ -2611,11 +2611,11 @@ const MatchingConfigPanel = ({ node, columns = [], onSave }) => {
     };
 
     return (
-        <div className="flex flex-col h-full bg-white rounded-3xl shadow-xl border border-slate-100 py-6 px-4">
+        <div className="flex flex-col h-full bg-[var(--panel)] rounded-3xl shadow-xl border border-[var(--border-soft)] py-6 px-4">
             <div className="flex items-center justify-between mb-6">
                 <div>
-                    <h3 className="font-bold text-lg text-slate-800">Data Matching</h3>
-                    <p className="text-sm text-slate-500">Configure duplicate or similarity rules on pipeline columns.</p>
+                    <h3 className="font-bold text-lg text-[var(--text-primary)]">Data Matching</h3>
+                    <p className="text-sm text-[var(--text-secondary)]">Configure duplicate or similarity rules on pipeline columns.</p>
                 </div>
                 <button onClick={addRule} className="text-xs font-bold bg-purple-50 text-purple-700 hover:bg-purple-100 px-3 py-1.5 rounded-lg transition-colors">
                     <Plus size={14} className="inline mr-1" /> Rule
@@ -2624,7 +2624,7 @@ const MatchingConfigPanel = ({ node, columns = [], onSave }) => {
 
             <div className="space-y-4 mb-8">
                 {matchRules.map((rule) => (
-                    <div key={rule.id} className="p-4 bg-slate-50 border border-slate-200 rounded-xl relative">
+                    <div key={rule.id} className="p-4 bg-[var(--panel-muted)] border border-[var(--border-soft)] rounded-xl relative">
                         {matchRules.length > 1 && (
                             <button onClick={() => removeRule(rule.id)} className="absolute top-2 right-2 text-red-500 hover:bg-red-100 p-1.5 rounded-md">
                                 <Trash2 size={16} />
@@ -2633,7 +2633,7 @@ const MatchingConfigPanel = ({ node, columns = [], onSave }) => {
                         <div className="space-y-3 mt-4">
                             <div className="grid grid-cols-2 gap-3">
                                 <select
-                                    className="w-full text-sm p-2 border border-slate-200 rounded-lg outline-none focus:border-purple-500"
+                                    className="w-full text-sm p-2 border border-[var(--border-soft)] rounded-lg outline-none focus:border-purple-500"
                                     value={rule.column1}
                                     onChange={(e) => updateRule(rule.id, 'column1', e.target.value)}
                                 >
@@ -2641,7 +2641,7 @@ const MatchingConfigPanel = ({ node, columns = [], onSave }) => {
                                     {columns.map((column) => <option key={column} value={column}>{column}</option>)}
                                 </select>
                                 <select
-                                    className="w-full text-sm p-2 border border-slate-200 rounded-lg outline-none focus:border-purple-500"
+                                    className="w-full text-sm p-2 border border-[var(--border-soft)] rounded-lg outline-none focus:border-purple-500"
                                     value={rule.column2}
                                     onChange={(e) => updateRule(rule.id, 'column2', e.target.value)}
                                 >
@@ -2651,7 +2651,7 @@ const MatchingConfigPanel = ({ node, columns = [], onSave }) => {
                             </div>
                             <div className="grid grid-cols-[1fr_auto] gap-3 items-center">
                                 <select
-                                    className="w-full text-sm p-2 border border-slate-200 rounded-lg outline-none focus:border-purple-500"
+                                    className="w-full text-sm p-2 border border-[var(--border-soft)] rounded-lg outline-none focus:border-purple-500"
                                     value={rule.algorithm}
                                     onChange={(e) => updateRule(rule.id, 'algorithm', e.target.value)}
                                 >
@@ -2659,7 +2659,7 @@ const MatchingConfigPanel = ({ node, columns = [], onSave }) => {
                                         <option key={algorithm.id} value={algorithm.id}>{algorithm.name}</option>
                                     ))}
                                 </select>
-                                <div className="text-xs font-bold text-slate-500">
+                                <div className="text-xs font-bold text-[var(--text-secondary)]">
                                     {(Number(rule.threshold || 0) * 100).toFixed(0)}%
                                 </div>
                             </div>
@@ -2677,7 +2677,7 @@ const MatchingConfigPanel = ({ node, columns = [], onSave }) => {
                 ))}
             </div>
 
-            <div className="mt-auto pt-4 border-t border-slate-200 flex justify-end">
+            <div className="mt-auto pt-4 border-t border-[var(--border-soft)] flex justify-end">
                 <button onClick={() => onSave({ matchRules })} className="px-5 py-2.5 bg-slate-900 border border-slate-800 hover:bg-slate-800 text-white font-bold rounded-xl shadow-lg transition-transform hover:-translate-y-0.5">
                     Save Matching Rules
                 </button>
@@ -2698,12 +2698,12 @@ const ScraperConfigPanel = ({ node, onSave }) => {
     }, [node]);
 
     return (
-        <div className="flex flex-col h-full bg-white rounded-3xl shadow-xl border border-slate-100 py-6 px-4">
-            <h3 className="font-bold text-lg text-slate-800 mb-6">Web Scraping Source</h3>
+        <div className="flex flex-col h-full bg-[var(--panel)] rounded-3xl shadow-xl border border-[var(--border-soft)] py-6 px-4">
+            <h3 className="font-bold text-lg text-[var(--text-primary)] mb-6">Web Scraping Source</h3>
 
-            <label className="text-xs font-bold text-slate-500 uppercase mb-2">Template</label>
+            <label className="text-xs font-bold text-[var(--text-secondary)] uppercase mb-2">Template</label>
             <select
-                className="w-full text-sm p-2.5 border border-slate-200 rounded-lg outline-none focus:border-orange-500"
+                className="w-full text-sm p-2.5 border border-[var(--border-soft)] rounded-lg outline-none focus:border-orange-500"
                 value={template}
                 onChange={(e) => setTemplate(e.target.value)}
             >
@@ -2713,25 +2713,25 @@ const ScraperConfigPanel = ({ node, onSave }) => {
                 ))}
             </select>
 
-            <label className="text-xs font-bold text-slate-500 uppercase mt-5 mb-2">Preview URL</label>
+            <label className="text-xs font-bold text-[var(--text-secondary)] uppercase mt-5 mb-2">Preview URL</label>
             <input
                 type="url"
-                className="w-full text-sm p-2.5 border border-slate-200 rounded-lg outline-none focus:border-orange-500"
+                className="w-full text-sm p-2.5 border border-[var(--border-soft)] rounded-lg outline-none focus:border-orange-500"
                 placeholder="https://example.com/page"
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
             />
 
-            <label className="text-xs font-bold text-slate-500 uppercase mt-5 mb-2">URLs To Scrape</label>
+            <label className="text-xs font-bold text-[var(--text-secondary)] uppercase mt-5 mb-2">URLs To Scrape</label>
             <textarea
                 rows={6}
-                className="w-full text-sm p-3 border border-slate-200 rounded-xl outline-none focus:border-orange-500"
+                className="w-full text-sm p-3 border border-[var(--border-soft)] rounded-xl outline-none focus:border-orange-500"
                 placeholder="https://example.com/page-1&#10;https://example.com/page-2"
                 value={urlsText}
                 onChange={(e) => setUrlsText(e.target.value)}
             />
 
-            <div className="mt-auto pt-4 border-t border-slate-200 flex justify-end">
+            <div className="mt-auto pt-4 border-t border-[var(--border-soft)] flex justify-end">
                 <button
                     onClick={() => onSave({
                         template,
@@ -2759,9 +2759,9 @@ const FilterConfigPanel = ({ node, columns = [], onSave }) => {
     };
 
     return (
-        <div className="flex flex-col h-full bg-white rounded-3xl shadow-xl border border-slate-100 py-6 px-4">
+        <div className="flex flex-col h-full bg-[var(--panel)] rounded-3xl shadow-xl border border-[var(--border-soft)] py-6 px-4">
             <div className="flex items-center justify-between mb-6">
-                <h3 className="font-bold text-lg text-slate-800">Filter Rows</h3>
+                <h3 className="font-bold text-lg text-[var(--text-primary)]">Filter Rows</h3>
                 <button onClick={() => setFilterRules([...filterRules, { column: '', condition: 'equals', value: '' }])} className="text-xs font-bold bg-amber-50 text-amber-700 px-3 py-1.5 rounded-lg hover:bg-amber-100">
                     + Add Condition
                 </button>
@@ -2769,11 +2769,11 @@ const FilterConfigPanel = ({ node, columns = [], onSave }) => {
             <div className="space-y-4 mb-6">
                 {filterRules.map((r, i) => (
                     <div key={i} className="flex gap-2 relative">
-                        <select className="flex-1 text-sm p-2 bg-slate-50 border border-slate-200 rounded-lg outline-none" value={r.column} onChange={e => updateFilterParams(i, 'column', e.target.value)}>
+                        <select className="flex-1 text-sm p-2 bg-[var(--panel-muted)] border border-[var(--border-soft)] rounded-lg outline-none" value={r.column} onChange={e => updateFilterParams(i, 'column', e.target.value)}>
                             <option value="">Column...</option>
                             {columns.map(c => <option key={c} value={c}>{c}</option>)}
                         </select>
-                        <select className="flex-1 text-sm p-2 bg-slate-50 border border-slate-200 rounded-lg outline-none" value={r.condition} onChange={e => updateFilterParams(i, 'condition', e.target.value)}>
+                        <select className="flex-1 text-sm p-2 bg-[var(--panel-muted)] border border-[var(--border-soft)] rounded-lg outline-none" value={r.condition} onChange={e => updateFilterParams(i, 'condition', e.target.value)}>
                             <option value="equals">Equals</option>
                             <option value="not_equals">Does Not Equal</option>
                             <option value="contains">Contains</option>
@@ -2781,16 +2781,16 @@ const FilterConfigPanel = ({ node, columns = [], onSave }) => {
                             <option value="less_than">Less Than</option>
                             <option value="is_null">Is Null</option>
                         </select>
-                        {r.condition !== 'is_null' && <input type="text" className="flex-1 text-sm p-2 border border-slate-200 rounded-lg outline-none" placeholder="Value" value={r.value} onChange={e => updateFilterParams(i, 'value', e.target.value)} />}
+                        {r.condition !== 'is_null' && <input type="text" className="flex-1 text-sm p-2 border border-[var(--border-soft)] rounded-lg outline-none" placeholder="Value" value={r.value} onChange={e => updateFilterParams(i, 'value', e.target.value)} />}
                         {filterRules.length > 1 && (
-                            <button onClick={() => setFilterRules(filterRules.filter((_, idx) => idx !== i))} className="absolute -left-6 top-2 text-slate-300 hover:text-red-500">
+                            <button onClick={() => setFilterRules(filterRules.filter((_, idx) => idx !== i))} className="absolute -left-6 top-2 text-[var(--text-muted)] hover:text-red-500">
                                 <X size={16} />
                             </button>
                         )}
                     </div>
                 ))}
             </div>
-            <div className="mt-auto pt-4 border-t border-slate-200 flex justify-end">
+            <div className="mt-auto pt-4 border-t border-[var(--border-soft)] flex justify-end">
                 <button onClick={() => onSave({ filterRules })} className="px-5 py-2.5 bg-slate-900 border border-slate-800 hover:bg-slate-800 text-white font-bold rounded-xl shadow-lg transition-transform hover:-translate-y-0.5">Save Filter Rules</button>
             </div>
         </div>
@@ -2803,20 +2803,20 @@ const AggregateConfigPanel = ({ node, columns = [], onSave }) => {
     const [targetColumn, setTargetColumn] = useState(node.data.targetColumn || '');
 
     return (
-        <div className="flex flex-col h-full bg-white rounded-3xl shadow-xl border border-slate-100 py-6 px-4">
-            <h3 className="font-bold text-lg text-slate-800 mb-6">Aggregate / Group-By</h3>
+        <div className="flex flex-col h-full bg-[var(--panel)] rounded-3xl shadow-xl border border-[var(--border-soft)] py-6 px-4">
+            <h3 className="font-bold text-lg text-[var(--text-primary)] mb-6">Aggregate / Group-By</h3>
             <div className="space-y-4 mb-6">
                 <div>
-                    <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Group By Column</label>
-                    <select className="w-full text-sm p-2 bg-slate-50 border border-slate-200 rounded-lg outline-none" value={groupByColumn} onChange={e => setGroupByColumn(e.target.value)}>
+                    <label className="block text-xs font-bold text-[var(--text-secondary)] uppercase mb-2">Group By Column</label>
+                    <select className="w-full text-sm p-2 bg-[var(--panel-muted)] border border-[var(--border-soft)] rounded-lg outline-none" value={groupByColumn} onChange={e => setGroupByColumn(e.target.value)}>
                         <option value="">Select column...</option>
                         {columns.map(c => <option key={c} value={c}>{c}</option>)}
                     </select>
                 </div>
                 <div className="flex gap-4">
                     <div className="w-1/2">
-                        <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Function</label>
-                        <select className="w-full text-sm p-2 bg-slate-50 border border-slate-200 rounded-lg outline-none" value={aggFunction} onChange={e => setAggFunction(e.target.value)}>
+                        <label className="block text-xs font-bold text-[var(--text-secondary)] uppercase mb-2">Function</label>
+                        <select className="w-full text-sm p-2 bg-[var(--panel-muted)] border border-[var(--border-soft)] rounded-lg outline-none" value={aggFunction} onChange={e => setAggFunction(e.target.value)}>
                             <option value="sum">SUM</option>
                             <option value="avg">AVG</option>
                             <option value="min">MIN</option>
@@ -2825,15 +2825,15 @@ const AggregateConfigPanel = ({ node, columns = [], onSave }) => {
                         </select>
                     </div>
                     <div className="w-1/2">
-                        <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Target Variable</label>
-                        <select className="w-full text-sm p-2 bg-slate-50 border border-slate-200 rounded-lg outline-none" value={targetColumn} onChange={e => setTargetColumn(e.target.value)}>
+                        <label className="block text-xs font-bold text-[var(--text-secondary)] uppercase mb-2">Target Variable</label>
+                        <select className="w-full text-sm p-2 bg-[var(--panel-muted)] border border-[var(--border-soft)] rounded-lg outline-none" value={targetColumn} onChange={e => setTargetColumn(e.target.value)}>
                             <option value="">Select column...</option>
                             {columns.map(c => <option key={c} value={c}>{c}</option>)}
                         </select>
                     </div>
                 </div>
             </div>
-            <div className="mt-auto pt-4 border-t border-slate-200 flex justify-end">
+            <div className="mt-auto pt-4 border-t border-[var(--border-soft)] flex justify-end">
                 <button onClick={() => onSave({ groupByColumn, aggFunction, targetColumn })} className="px-5 py-2.5 bg-slate-900 border border-slate-800 hover:bg-slate-800 text-white font-bold rounded-xl shadow-lg transition-transform hover:-translate-y-0.5">Save Aggregation</button>
             </div>
         </div>
@@ -2845,19 +2845,19 @@ const JoinConfigPanel = ({ node, columns = [], onSave }) => {
     const [rightKey, setRightKey] = useState(node.data.rightKey || '');
     const [joinType, setJoinType] = useState(node.data.joinType || 'inner');
     return (
-        <div className="flex flex-col h-full bg-white rounded-3xl shadow-xl border border-slate-100 py-6 px-4">
-            <h3 className="font-bold text-lg text-slate-800 mb-6">Dataset Join</h3>
+        <div className="flex flex-col h-full bg-[var(--panel)] rounded-3xl shadow-xl border border-[var(--border-soft)] py-6 px-4">
+            <h3 className="font-bold text-lg text-[var(--text-primary)] mb-6">Dataset Join</h3>
             <div className="space-y-5 mb-6">
                 <div>
-                    <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Join Type</label>
-                    <select className="w-full text-sm p-2.5 bg-slate-50 border border-slate-200 rounded-lg outline-none" value={joinType} onChange={e => setJoinType(e.target.value)}>
+                    <label className="block text-xs font-bold text-[var(--text-secondary)] uppercase mb-2">Join Type</label>
+                    <select className="w-full text-sm p-2.5 bg-[var(--panel-muted)] border border-[var(--border-soft)] rounded-lg outline-none" value={joinType} onChange={e => setJoinType(e.target.value)}>
                         <option value="inner">Inner Join</option>
                         <option value="left">Left Join</option>
                         <option value="right">Right Join</option>
                         <option value="outer">Full Outer Join</option>
                     </select>
                 </div>
-                <div className="grid grid-cols-2 gap-4 border-t border-slate-100 pt-5">
+                <div className="grid grid-cols-2 gap-4 border-t border-[var(--border-soft)] pt-5">
                     <div>
                         <label className="block text-xs font-bold text-emerald-600 uppercase mb-2">Left Key (This Dataset)</label>
                         <select className="w-full text-sm p-2.5 bg-emerald-50 border border-emerald-200/50 rounded-lg outline-none" value={leftKey} onChange={e => setLeftKey(e.target.value)}>
@@ -2871,7 +2871,7 @@ const JoinConfigPanel = ({ node, columns = [], onSave }) => {
                     </div>
                 </div>
             </div>
-            <div className="mt-auto pt-4 border-t border-slate-200 flex justify-end">
+            <div className="mt-auto pt-4 border-t border-[var(--border-soft)] flex justify-end">
                 <button onClick={() => onSave({ leftKey, rightKey, joinType })} className="px-5 py-2.5 bg-slate-900 border border-slate-800 hover:bg-slate-800 text-white font-bold rounded-xl shadow-lg transition-transform hover:-translate-y-0.5">Save Join Config</button>
             </div>
         </div>
@@ -2882,19 +2882,19 @@ const DeduplicateConfigPanel = ({ node, columns = [], onSave }) => {
     const [subsetColumns, setSubsetColumns] = useState(node.data.subsetColumns || []);
     
     return (
-        <div className="flex flex-col h-full bg-white rounded-3xl shadow-xl border border-slate-100 py-6 px-4">
-            <h3 className="font-bold text-lg text-slate-800 mb-6">Deduplicate Rows</h3>
-            <p className="text-sm text-slate-500 mb-6 leading-relaxed">Select columns to determine uniqueness. If multiple columns are selected, a row is considered a duplicate if all selected columns match.</p>
+        <div className="flex flex-col h-full bg-[var(--panel)] rounded-3xl shadow-xl border border-[var(--border-soft)] py-6 px-4">
+            <h3 className="font-bold text-lg text-[var(--text-primary)] mb-6">Deduplicate Rows</h3>
+            <p className="text-sm text-[var(--text-secondary)] mb-6 leading-relaxed">Select columns to determine uniqueness. If multiple columns are selected, a row is considered a duplicate if all selected columns match.</p>
             <div className="space-y-4 mb-6">
                 <div>
-                    <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Uniqueness Subset</label>
-                    <select multiple className="w-full text-sm p-3 bg-slate-50 border border-slate-200 rounded-xl h-48 outline-none" value={subsetColumns} onChange={e => setSubsetColumns(Array.from(e.target.selectedOptions, option => option.value))}>
+                    <label className="block text-xs font-bold text-[var(--text-secondary)] uppercase mb-2">Uniqueness Subset</label>
+                    <select multiple className="w-full text-sm p-3 bg-[var(--panel-muted)] border border-[var(--border-soft)] rounded-xl h-48 outline-none" value={subsetColumns} onChange={e => setSubsetColumns(Array.from(e.target.selectedOptions, option => option.value))}>
                         {columns.map(c => <option key={c} value={c}>{c}</option>)}
                     </select>
-                    <p className="text-xs text-slate-400 mt-2 font-medium">Hold CMD/Ctrl to select multiple fields.</p>
+                    <p className="text-xs text-[var(--text-muted)] mt-2 font-medium">Hold CMD/Ctrl to select multiple fields.</p>
                 </div>
             </div>
-            <div className="mt-auto pt-4 border-t border-slate-200 flex justify-end">
+            <div className="mt-auto pt-4 border-t border-[var(--border-soft)] flex justify-end">
                 <button onClick={() => onSave({ subsetColumns })} className="px-5 py-2.5 bg-slate-900 border border-slate-800 hover:bg-slate-800 text-white font-bold rounded-xl shadow-lg transition-transform hover:-translate-y-0.5">Save Configuration</button>
             </div>
         </div>
@@ -2904,16 +2904,16 @@ const DeduplicateConfigPanel = ({ node, columns = [], onSave }) => {
 const LoopConfigPanel = ({ node, onSave }) => {
     const [chunkSize, setChunkSize] = useState(node.data.chunkSize || 100);
     return (
-        <div className="flex flex-col h-full bg-white rounded-3xl shadow-xl border border-slate-100 py-6 px-4">
-            <h3 className="font-bold text-lg text-slate-800 mb-6 flex items-center gap-2"><Repeat size={20} className="text-purple-500" /> Loop (Iterator)</h3>
-            <div className="space-y-4 mb-6 border border-slate-200 rounded-xl p-5 bg-slate-50">
+        <div className="flex flex-col h-full bg-[var(--panel)] rounded-3xl shadow-xl border border-[var(--border-soft)] py-6 px-4">
+            <h3 className="font-bold text-lg text-[var(--text-primary)] mb-6 flex items-center gap-2"><Repeat size={20} className="text-purple-500" /> Loop (Iterator)</h3>
+            <div className="space-y-4 mb-6 border border-[var(--border-soft)] rounded-xl p-5 bg-[var(--panel-muted)]">
                 <div>
-                    <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Chunk Processing Size</label>
-                    <input type="number" className="w-full text-sm p-2.5 border border-slate-200 rounded-lg outline-none text-slate-700 font-medium bg-white" value={chunkSize} onChange={e => setChunkSize(e.target.value)} min={1} />
+                    <label className="block text-xs font-bold text-[var(--text-secondary)] uppercase mb-2">Chunk Processing Size</label>
+                    <input type="number" className="w-full text-sm p-2.5 border border-[var(--border-soft)] rounded-lg outline-none text-[var(--text-primary)] font-medium bg-[var(--panel)]" value={chunkSize} onChange={e => setChunkSize(e.target.value)} min={1} />
                 </div>
-                <p className="text-xs text-slate-500 mt-2">Pipeline nodes linked after this iterator will be executed in batches of {chunkSize} rows.</p>
+                <p className="text-xs text-[var(--text-secondary)] mt-2">Pipeline nodes linked after this iterator will be executed in batches of {chunkSize} rows.</p>
             </div>
-            <div className="mt-auto pt-4 border-t border-slate-200 flex justify-end">
+            <div className="mt-auto pt-4 border-t border-[var(--border-soft)] flex justify-end">
                 <button onClick={() => onSave({ chunkSize })} className="px-5 py-2.5 bg-slate-900 border border-slate-800 hover:bg-slate-800 text-white font-bold rounded-xl shadow-lg transition-transform hover:-translate-y-0.5">Save Iterator</button>
             </div>
         </div>
@@ -2923,18 +2923,18 @@ const LoopConfigPanel = ({ node, onSave }) => {
 const ConditionalConfigPanel = ({ node, onSave }) => {
     const [conditionExpression, setConditionExpression] = useState(node.data.conditionExpression || '');
     return (
-        <div className="flex flex-col h-full bg-white rounded-3xl shadow-xl border border-slate-100 py-6 px-4">
-            <h3 className="font-bold text-lg text-slate-800 mb-6 flex items-center gap-2"><GitBranch size={20} className="text-cyan-500" /> Conditional Branch</h3>
+        <div className="flex flex-col h-full bg-[var(--panel)] rounded-3xl shadow-xl border border-[var(--border-soft)] py-6 px-4">
+            <h3 className="font-bold text-lg text-[var(--text-primary)] mb-6 flex items-center gap-2"><GitBranch size={20} className="text-cyan-500" /> Conditional Branch</h3>
             <div className="space-y-4 mb-6">
                 <div>
-                    <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Expression (Python Eval Subset)</label>
-                    <textarea rows="3" className="w-full text-sm p-3 border border-slate-200 rounded-xl font-mono text-slate-800 outline-none bg-slate-50 focus:border-cyan-500 transition-colors" placeholder="e.g. df['amount'] > 1000 and df['status'] == 'active'" value={conditionExpression} onChange={e => setConditionExpression(e.target.value)} />
+                    <label className="block text-xs font-bold text-[var(--text-secondary)] uppercase mb-2">Expression (Python Eval Subset)</label>
+                    <textarea rows="3" className="w-full text-sm p-3 border border-[var(--border-soft)] rounded-xl font-mono text-[var(--text-primary)] outline-none bg-[var(--panel-muted)] focus:border-cyan-500 transition-colors" placeholder="e.g. df['amount'] > 1000 and df['status'] == 'active'" value={conditionExpression} onChange={e => setConditionExpression(e.target.value)} />
                 </div>
                 <div className="px-4 py-3 bg-cyan-50 border border-cyan-100 rounded-xl">
                     <p className="text-xs text-cyan-800">Only rows evaluating to TRUE for this expression will pass through to the subsequent nodes. The expression uses a standard pandas syntax evaluation.</p>
                 </div>
             </div>
-            <div className="mt-auto pt-4 border-t border-slate-200 flex justify-end">
+            <div className="mt-auto pt-4 border-t border-[var(--border-soft)] flex justify-end">
                 <button onClick={() => onSave({ conditionExpression })} className="px-5 py-2.5 bg-slate-900 border border-slate-800 hover:bg-slate-800 text-white font-bold rounded-xl shadow-lg transition-transform hover:-translate-y-0.5">Save Expression</button>
             </div>
         </div>
@@ -2952,25 +2952,25 @@ const EmailConfigPanel = ({ node, onSave }) => {
     };
 
     return (
-        <div className="flex flex-col h-full bg-white rounded-3xl shadow-xl border border-slate-100 py-6 px-4">
-            <h3 className="font-bold text-lg text-slate-800 mb-6 flex items-center gap-2"><Mail size={20} className="text-rose-500" /> Email Notification</h3>
+        <div className="flex flex-col h-full bg-[var(--panel)] rounded-3xl shadow-xl border border-[var(--border-soft)] py-6 px-4">
+            <h3 className="font-bold text-lg text-[var(--text-primary)] mb-6 flex items-center gap-2"><Mail size={20} className="text-rose-500" /> Email Notification</h3>
             <div className="space-y-5 mb-6 overflow-y-auto pr-2 no-scrollbar">
                 <div>
-                    <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Email Connection (Pre-configured)</label>
-                    <input type="text" className="w-full text-sm p-3 bg-slate-100 border border-slate-200 rounded-xl outline-none text-slate-500 cursor-not-allowed" placeholder="Resend (onboarding.cleanflow.one)" value="Resend (onboarding.cleanflow.one)" disabled />
-                    <p className="text-[10px] text-slate-400 mt-1">System automatically sends via @onboarding.cleanflow.one</p>
+                    <label className="block text-xs font-bold text-[var(--text-secondary)] uppercase mb-2">Email Connection (Pre-configured)</label>
+                    <input type="text" className="w-full text-sm p-3 bg-[var(--panel-muted)] border border-[var(--border-soft)] rounded-xl outline-none text-[var(--text-secondary)] cursor-not-allowed" placeholder="Resend (onboarding.cleanflow.one)" value="Resend (onboarding.cleanflow.one)" disabled />
+                    <p className="text-[10px] text-[var(--text-muted)] mt-1">System automatically sends via @onboarding.cleanflow.one</p>
                 </div>
                 <div>
-                    <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Recipient Email Address</label>
-                    <input type="email" className="w-full text-sm p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-rose-300 transition-colors" placeholder="admin@example.com" value={toEmail} onChange={e => setToEmail(e.target.value)} />
+                    <label className="block text-xs font-bold text-[var(--text-secondary)] uppercase mb-2">Recipient Email Address</label>
+                    <input type="email" className="w-full text-sm p-3 bg-[var(--panel-muted)] border border-[var(--border-soft)] rounded-xl outline-none focus:border-rose-300 transition-colors" placeholder="admin@example.com" value={toEmail} onChange={e => setToEmail(e.target.value)} />
                 </div>
                 <div>
-                    <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Email Subject Line</label>
-                    <input type="text" className="w-full text-sm p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-rose-300 transition-colors" value={emailSubject} onChange={e => setEmailSubject(e.target.value)} />
+                    <label className="block text-xs font-bold text-[var(--text-secondary)] uppercase mb-2">Email Subject Line</label>
+                    <input type="text" className="w-full text-sm p-3 bg-[var(--panel-muted)] border border-[var(--border-soft)] rounded-xl outline-none focus:border-rose-300 transition-colors" value={emailSubject} onChange={e => setEmailSubject(e.target.value)} />
                 </div>
                 <div>
                     <div className="flex items-center justify-between mb-2">
-                        <label className="block text-xs font-bold text-slate-500 uppercase">Email Body</label>
+                        <label className="block text-xs font-bold text-[var(--text-secondary)] uppercase">Email Body</label>
                         <div className="flex gap-1.5 flex-wrap">
                             {[ 
                                 { label: 'Date', tag: '{{TODAY_DATE}}' }, 
@@ -2978,17 +2978,17 @@ const EmailConfigPanel = ({ node, onSave }) => {
                                 { label: 'Rows', tag: '{{ROW_COUNT}}' },
                                 { label: 'Pipeline Name', tag: '{{PIPELINE_NAME}}' }
                             ].map(m => (
-                                <button key={m.tag} onClick={() => insertMacro(m.tag)} className="text-[10px] px-2 py-1 bg-slate-100 hover:bg-rose-50 hover:text-rose-600 text-slate-500 rounded-md font-bold transition-colors">
+                                <button key={m.tag} onClick={() => insertMacro(m.tag)} className="text-[10px] px-2 py-1 bg-[var(--panel-muted)] hover:bg-rose-50 hover:text-rose-600 text-[var(--text-secondary)] rounded-md font-bold transition-colors">
                                     + {m.label}
                                 </button>
                             ))}
                         </div>
                     </div>
-                    <textarea rows="5" className="w-full text-sm p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-rose-300 transition-colors leading-relaxed" placeholder="Write your email message..." value={emailBody} onChange={e => setEmailBody(e.target.value)} />
-                    <p className="text-[11px] font-medium text-slate-400 mt-2">Use the buttons above to insert dynamic template variables that populate dynamically on execution.</p>
+                    <textarea rows="5" className="w-full text-sm p-3 bg-[var(--panel-muted)] border border-[var(--border-soft)] rounded-xl outline-none focus:border-rose-300 transition-colors leading-relaxed" placeholder="Write your email message..." value={emailBody} onChange={e => setEmailBody(e.target.value)} />
+                    <p className="text-[11px] font-medium text-[var(--text-muted)] mt-2">Use the buttons above to insert dynamic template variables that populate dynamically on execution.</p>
                 </div>
             </div>
-            <div className="mt-auto pt-4 border-t border-slate-200 flex justify-end">
+            <div className="mt-auto pt-4 border-t border-[var(--border-soft)] flex justify-end">
                 <button onClick={() => onSave({ smtpHost, toEmail, emailSubject, emailBody })} className="px-5 py-2.5 bg-slate-900 border border-slate-800 hover:bg-slate-800 text-white font-bold rounded-xl shadow-lg transition-transform hover:-translate-y-0.5">Save Target</button>
             </div>
         </div>
@@ -2999,23 +2999,23 @@ const WebhookConfigPanel = ({ node, onSave }) => {
     const [webhookUrl, setWebhookUrl] = useState(node.data.webhookUrl || '');
     const [httpMethod, setHttpMethod] = useState(node.data.httpMethod || 'POST');
     return (
-        <div className="flex flex-col h-full bg-white rounded-3xl shadow-xl border border-slate-100 py-6 px-4">
-            <h3 className="font-bold text-lg text-slate-800 mb-6 flex items-center gap-2"><Webhook size={20} className="text-blue-500" /> Webhook Trigger</h3>
+        <div className="flex flex-col h-full bg-[var(--panel)] rounded-3xl shadow-xl border border-[var(--border-soft)] py-6 px-4">
+            <h3 className="font-bold text-lg text-[var(--text-primary)] mb-6 flex items-center gap-2"><Webhook size={20} className="text-blue-500" /> Webhook Trigger</h3>
             <div className="space-y-5 mb-6">
                 <div>
-                    <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Target Webhook URL</label>
-                    <input type="url" className="w-full text-sm p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-blue-400 text-slate-700 font-mono" placeholder="https://api.example.com/v1/event" value={webhookUrl} onChange={e => setWebhookUrl(e.target.value)} />
+                    <label className="block text-xs font-bold text-[var(--text-secondary)] uppercase mb-2">Target Webhook URL</label>
+                    <input type="url" className="w-full text-sm p-3 bg-[var(--panel-muted)] border border-[var(--border-soft)] rounded-xl outline-none focus:border-blue-400 text-[var(--text-primary)] font-mono" placeholder="https://api.example.com/v1/event" value={webhookUrl} onChange={e => setWebhookUrl(e.target.value)} />
                 </div>
                 <div>
-                    <label className="block text-xs font-bold text-slate-500 uppercase mb-2">HTTP Method</label>
-                    <select className="w-full text-sm p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-blue-400" value={httpMethod} onChange={e => setHttpMethod(e.target.value)}>
+                    <label className="block text-xs font-bold text-[var(--text-secondary)] uppercase mb-2">HTTP Method</label>
+                    <select className="w-full text-sm p-3 bg-[var(--panel-muted)] border border-[var(--border-soft)] rounded-xl outline-none focus:border-blue-400" value={httpMethod} onChange={e => setHttpMethod(e.target.value)}>
                         <option value="POST">POST (Payload passed in body)</option>
                         <option value="GET">GET</option>
                         <option value="PUT">PUT</option>
                     </select>
                 </div>
             </div>
-            <div className="mt-auto pt-4 border-t border-slate-200 flex justify-end">
+            <div className="mt-auto pt-4 border-t border-[var(--border-soft)] flex justify-end">
                 <button onClick={() => onSave({ webhookUrl, httpMethod })} className="px-5 py-2.5 bg-slate-900 border border-slate-800 hover:bg-slate-800 text-white font-bold rounded-xl shadow-lg transition-transform hover:-translate-y-0.5">Save Target</button>
             </div>
         </div>
@@ -3032,16 +3032,16 @@ const ExportConfigPanel = ({ node, onSave }) => {
     }, [node]);
 
     return (
-        <div className="flex flex-col h-full bg-white rounded-3xl shadow-xl border border-slate-100 py-6 px-4">
-            <h3 className="font-bold text-lg text-slate-800 mb-6 flex items-center gap-2"><Download size={20} className="text-emerald-600" /> Export Dataset</h3>
+        <div className="flex flex-col h-full bg-[var(--panel)] rounded-3xl shadow-xl border border-[var(--border-soft)] py-6 px-4">
+            <h3 className="font-bold text-lg text-[var(--text-primary)] mb-6 flex items-center gap-2"><Download size={20} className="text-emerald-600" /> Export Dataset</h3>
             <div className="space-y-5 mb-6">
                 <div className="rounded-2xl border border-emerald-100 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
                     Downloads appear only when this export step is present in the Sequence Flow and a dataset is connected through Data Flow.
                 </div>
                 <div>
-                    <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Output Format</label>
+                    <label className="block text-xs font-bold text-[var(--text-secondary)] uppercase mb-2">Output Format</label>
                     <select
-                        className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 text-sm font-medium text-slate-700 outline-none transition-colors focus:border-emerald-500"
+                        className="w-full rounded-xl border border-[var(--border-soft)] bg-[var(--panel-muted)] px-3 py-3 text-sm font-medium text-[var(--text-primary)] outline-none transition-colors focus:border-emerald-500"
                         value={outputFormat}
                         onChange={(e) => setOutputFormat(e.target.value)}
                     >
@@ -3051,17 +3051,17 @@ const ExportConfigPanel = ({ node, onSave }) => {
                     </select>
                 </div>
                 <div>
-                    <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Optional File Name</label>
+                    <label className="block text-xs font-bold text-[var(--text-secondary)] uppercase mb-2">Optional File Name</label>
                     <input
                         type="text"
-                        className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 text-sm text-slate-700 outline-none transition-colors focus:border-emerald-500"
+                        className="w-full rounded-xl border border-[var(--border-soft)] bg-[var(--panel-muted)] px-3 py-3 text-sm text-[var(--text-primary)] outline-none transition-colors focus:border-emerald-500"
                         value={outputName}
                         onChange={(e) => setOutputName(e.target.value)}
                         placeholder="customer_master_cleaned"
                     />
                 </div>
             </div>
-            <div className="mt-auto pt-4 border-t border-slate-200 flex justify-end">
+            <div className="mt-auto pt-4 border-t border-[var(--border-soft)] flex justify-end">
                 <button onClick={() => onSave({ outputFormat, outputName })} className="px-5 py-2.5 bg-slate-900 border border-slate-800 hover:bg-slate-800 text-white font-bold rounded-xl shadow-lg transition-transform hover:-translate-y-0.5">
                     Save Export Step
                 </button>

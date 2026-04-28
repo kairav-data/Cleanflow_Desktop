@@ -20,6 +20,7 @@ import polars as pl
 
 from .base import BaseFeature, FeatureResult
 from .matching import MatchingAlgorithm
+from .validation import UPLOAD_DIR
 
 try:
     from logger import setup_logger
@@ -1000,7 +1001,7 @@ class PricingIntelligence(BaseFeature):
 
     def export_to_csv(self) -> Optional[str]:
         rows = self._export_rows()
-        file_path = os.path.join(os.getcwd(), "uploads", f"pricing_results_{self.session_id}.csv")
+        file_path = os.path.join(UPLOAD_DIR, f"pricing_results_{self.session_id}.csv")
         os.makedirs(os.path.dirname(file_path), exist_ok=True)
         if rows:
             pl.DataFrame(rows).write_csv(file_path)
@@ -1010,7 +1011,7 @@ class PricingIntelligence(BaseFeature):
 
     def export_to_excel(self) -> Optional[str]:
         rows = self._export_rows()
-        file_path = os.path.join(os.getcwd(), "uploads", f"pricing_results_{self.session_id}.xlsx")
+        file_path = os.path.join(UPLOAD_DIR, f"pricing_results_{self.session_id}.xlsx")
         os.makedirs(os.path.dirname(file_path), exist_ok=True)
         if rows:
             pl.DataFrame(rows).write_excel(file_path)

@@ -20,7 +20,7 @@ from features.mapper import SchemaMapper
 from features.matching import DataMatcher
 from features.scraper import WebScraper
 from features.transformer import DataTransformer
-from features.validation import PolarsValidationEngine, UPLOAD_DIR
+from features.validation import PolarsValidationEngine, RESULTS_DIR, UPLOAD_DIR
 
 logger = logging.getLogger(__name__)
 EDGE_KIND_DATA = "data"
@@ -141,7 +141,7 @@ class PipelineOrchestrator:
         if not safe_name:
             raise ValueError("The saved dataset source is missing its stored file reference.")
 
-        uploads_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", UPLOAD_DIR))
+        uploads_dir = os.path.abspath(UPLOAD_DIR)
         file_path = os.path.abspath(os.path.join(uploads_dir, safe_name))
         if os.path.commonpath([uploads_dir, file_path]) != uploads_dir:
             raise ValueError("The saved dataset source path is invalid.")
@@ -556,9 +556,9 @@ class PipelineOrchestrator:
         export_format = str(config.get("outputFormat") or "xlsx").lower()
         if export_format not in {"xlsx", "csv", "json"}:
             export_format = "xlsx"
-        os.makedirs("results", exist_ok=True)
+        os.makedirs(RESULTS_DIR, exist_ok=True)
         base_name = self._sanitize_filename(config.get("outputName") or pipeline_name or f"pipeline_out_{uuid.uuid4().hex[:8]}", "pipeline_output")
-        out_path = os.path.join("results", f"{base_name}.{export_format}")
+        out_path = os.path.join(RESULTS_DIR, f"{base_name}.{export_format}")
         if export_format == "csv":
             dataframe.write_csv(out_path)
         elif export_format == "json":

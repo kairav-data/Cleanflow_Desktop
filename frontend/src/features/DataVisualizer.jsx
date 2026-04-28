@@ -78,8 +78,8 @@ const TONE_STYLES = {
         chip: 'bg-indigo-100 text-indigo-700',
     },
     slate: {
-        panel: 'border-slate-200 bg-slate-50/70',
-        chip: 'bg-slate-100 text-slate-700',
+        panel: 'border-[var(--border-soft)] bg-[var(--panel-muted)]/70',
+        chip: 'bg-[var(--panel-muted)] text-[var(--text-primary)]',
     },
 };
 
@@ -353,14 +353,14 @@ function ChartModal({ chart, index, onClose }) {
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95, y: 16 }}
                 transition={{ type: 'spring', stiffness: 420, damping: 32 }}
-                className="bg-white rounded-3xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden"
+                className="bg-[var(--panel)] rounded-3xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden"
                 onClick={(e) => e.stopPropagation()}
             >
                 {/* Top accent */}
                 <div className="h-1 w-full shrink-0 rounded-t-3xl" style={{ background: `linear-gradient(90deg, ${chart.gradient[0]}, ${chart.gradient[1]})` }} />
 
                 {/* Header */}
-                <div className="flex items-start justify-between gap-4 px-7 py-5 shrink-0 border-b border-slate-100">
+                <div className="flex items-start justify-between gap-4 px-7 py-5 shrink-0 border-b border-[var(--border-soft)]">
                     <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2 mb-2">
                             <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold"
@@ -368,8 +368,8 @@ function ChartModal({ chart, index, onClose }) {
                                 <BadgeIcon size={11} /> {badge.label}
                             </span>
                         </div>
-                        <h2 className="text-xl font-black text-slate-900 leading-tight">{chart.title}</h2>
-                        <p className="text-sm text-slate-400 mt-0.5 font-medium">{chart.description}</p>
+                        <h2 className="text-xl font-black text-[var(--text-primary)] leading-tight">{chart.title}</h2>
+                        <p className="text-sm text-[var(--text-muted)] mt-0.5 font-medium">{chart.description}</p>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
                         <button onClick={() => downloadChartExcel(chart)}
@@ -377,43 +377,43 @@ function ChartModal({ chart, index, onClose }) {
                             <FileSpreadsheet size={14} /> Excel
                         </button>
                         <button onClick={handleDownloadPNG}
-                            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-50 text-slate-600 border border-slate-200/70 text-sm font-semibold hover:bg-slate-100 transition-all">
+                            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[var(--panel-muted)] text-[var(--text-secondary)] border border-[var(--border-soft)]/70 text-sm font-semibold hover:bg-[var(--panel-muted)] transition-all">
                             <ImageDown size={14} /> PNG
                         </button>
                         <button onClick={onClose}
-                            className="w-9 h-9 rounded-xl flex items-center justify-center bg-slate-100 text-slate-400 hover:bg-red-50 hover:text-red-500 transition-all border border-slate-200/50">
+                            className="w-9 h-9 rounded-xl flex items-center justify-center bg-[var(--panel-muted)] text-[var(--text-muted)] hover:bg-red-50 hover:text-red-500 transition-all border border-[var(--border-soft)]/50">
                             <X size={15} />
                         </button>
                     </div>
                 </div>
 
                 {/* Chart */}
-                <div ref={chartRef} className="flex-1 min-h-0 overflow-auto px-6 py-6 bg-slate-50/30">
+                <div ref={chartRef} className="flex-1 min-h-0 overflow-auto px-6 py-6 bg-[var(--panel-muted)]/30">
                     {renderChartJSX(chart, index, 400, '-modal')}
                 </div>
 
                 {/* Data table */}
-                <div className="shrink-0 border-t border-slate-100 max-h-48 overflow-auto">
-                    <div className="px-7 py-3 bg-slate-50/80 border-b border-slate-100 flex items-center justify-between sticky top-0">
-                        <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Data · {chart.data.length} rows</p>
+                <div className="shrink-0 border-t border-[var(--border-soft)] max-h-48 overflow-auto">
+                    <div className="px-7 py-3 bg-[var(--panel-muted)]/80 border-b border-[var(--border-soft)] flex items-center justify-between sticky top-0">
+                        <p className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-widest">Data · {chart.data.length} rows</p>
                         <button onClick={() => downloadChartExcel(chart)}
                             className="flex items-center gap-1.5 text-xs font-semibold text-emerald-600 hover:text-emerald-700 transition-colors">
                             <FileSpreadsheet size={12} /> Export Excel
                         </button>
                     </div>
                     <table className="w-full text-xs">
-                        <thead className="sticky top-0 bg-white border-b border-slate-100">
+                        <thead className="sticky top-0 bg-[var(--panel)] border-b border-[var(--border-soft)]">
                             <tr>
                                 {Object.keys(chart.data[0] || {}).map(k => (
-                                    <th key={k} className="px-5 py-2.5 text-left font-bold text-slate-400 uppercase tracking-wider whitespace-nowrap">{k}</th>
+                                    <th key={k} className="px-5 py-2.5 text-left font-bold text-[var(--text-muted)] uppercase tracking-wider whitespace-nowrap">{k}</th>
                                 ))}
                             </tr>
                         </thead>
                         <tbody>
                             {chart.data.map((row, i) => (
-                                <tr key={i} className={i % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'}>
+                                <tr key={i} className={i % 2 === 0 ? 'bg-[var(--panel)]' : 'bg-[var(--panel-muted)]/50'}>
                                     {Object.values(row).map((val, j) => (
-                                        <td key={j} className="px-5 py-2 text-slate-600 font-medium whitespace-nowrap">
+                                        <td key={j} className="px-5 py-2 text-[var(--text-secondary)] font-medium whitespace-nowrap">
                                             {typeof val === 'number' ? val.toLocaleString() : val ?? '—'}
                                         </td>
                                     ))}
@@ -438,7 +438,7 @@ function ChartCard({ chart, index, onExpand }) {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: index * 0.06, type: 'spring', stiffness: 300, damping: 24 }}
             onClick={onExpand}
-            className="bg-white rounded-2xl border border-slate-100 hover:border-slate-200 shadow-sm hover:shadow-lg transition-all duration-200 flex flex-col overflow-hidden group cursor-pointer"
+            className="bg-[var(--panel)] rounded-2xl border border-[var(--border-soft)] hover:border-[var(--border-soft)] shadow-sm hover:shadow-lg transition-all duration-200 flex flex-col overflow-hidden group cursor-pointer"
         >
             <div className="h-0.5 w-full shrink-0" style={{ background: `linear-gradient(90deg, ${chart.gradient[0]}, ${chart.gradient[1]})` }} />
 
@@ -450,11 +450,11 @@ function ChartCard({ chart, index, onExpand }) {
                             <BadgeIcon size={10} /> {badge.label}
                         </span>
                     </div>
-                    <h3 className="text-sm font-bold text-slate-800 truncate leading-snug">{chart.title}</h3>
-                    <p className="text-xs text-slate-400 mt-0.5 truncate font-medium">{chart.description}</p>
+                    <h3 className="text-sm font-bold text-[var(--text-primary)] truncate leading-snug">{chart.title}</h3>
+                    <p className="text-xs text-[var(--text-muted)] mt-0.5 truncate font-medium">{chart.description}</p>
                 </div>
-                <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0 opacity-0 group-hover:opacity-100 transition-all duration-150 bg-slate-50 border border-slate-200">
-                    <Maximize2 size={13} className="text-slate-500" />
+                <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0 opacity-0 group-hover:opacity-100 transition-all duration-150 bg-[var(--panel-muted)] border border-[var(--border-soft)]">
+                    <Maximize2 size={13} className="text-[var(--text-secondary)]" />
                 </div>
             </div>
 
@@ -463,8 +463,8 @@ function ChartCard({ chart, index, onExpand }) {
             </div>
 
             <div className="px-5 pb-3 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
-                <Maximize2 size={10} className="text-slate-400" />
-                <p className="text-xs text-slate-400 font-medium">Click to expand</p>
+                <Maximize2 size={10} className="text-[var(--text-muted)]" />
+                <p className="text-xs text-[var(--text-muted)] font-medium">Click to expand</p>
             </div>
         </motion.div>
     );
@@ -484,20 +484,20 @@ function PromptBar({ currentPrompt, onRegenerate, aiUsed, loading }) {
     ];
 
     return (
-        <div className="bg-white border border-slate-200/80 rounded-2xl overflow-hidden mb-5 shadow-sm">
+        <div className="bg-[var(--panel)] border border-[var(--border-soft)]/80 rounded-2xl overflow-hidden mb-5 shadow-sm">
             <button onClick={() => setOpen(o => !o)}
-                className="w-full flex items-center justify-between px-5 py-4 hover:bg-slate-50/80 transition-colors">
+                className="w-full flex items-center justify-between px-5 py-4 hover:bg-[var(--panel-muted)]/80 transition-colors">
                 <div className="flex items-center gap-3">
                     <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center shadow-sm shadow-violet-200">
                         <Bot size={15} className="text-white" />
                     </div>
                     <div className="text-left">
-                        <p className="text-sm font-bold text-slate-800">
+                        <p className="text-sm font-bold text-[var(--text-primary)]">
                             {aiUsed ? '✦ AI-Generated Dashboard' : '⚡ Auto-Generated Dashboard'}
                         </p>
                         {currentPrompt
-                            ? <p className="text-xs text-slate-400 truncate max-w-sm mt-0.5">"{currentPrompt}"</p>
-                            : <p className="text-xs text-slate-400 mt-0.5">Click to refine with a new prompt</p>}
+                            ? <p className="text-xs text-[var(--text-muted)] truncate max-w-sm mt-0.5">"{currentPrompt}"</p>
+                            : <p className="text-xs text-[var(--text-muted)] mt-0.5">Click to refine with a new prompt</p>}
                     </div>
                 </div>
                 <div className="flex items-center gap-2">
@@ -506,21 +506,21 @@ function PromptBar({ currentPrompt, onRegenerate, aiUsed, loading }) {
                             AI
                         </span>
                     )}
-                    {open ? <ChevronUp size={15} className="text-slate-400" /> : <ChevronDown size={15} className="text-slate-400" />}
+                    {open ? <ChevronUp size={15} className="text-[var(--text-muted)]" /> : <ChevronDown size={15} className="text-[var(--text-muted)]" />}
                 </div>
             </button>
 
             <AnimatePresence>
                 {open && (
                     <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }}
-                        className="border-t border-slate-100 overflow-hidden">
+                        className="border-t border-[var(--border-soft)] overflow-hidden">
                         <div className="p-4 flex gap-3">
                             <textarea
                                 value={newPrompt}
                                 onChange={e => setNewPrompt(e.target.value)}
                                 placeholder='e.g. "Show revenue trends over time and compare sales across regions"'
                                 rows={2}
-                                className="flex-1 text-sm border border-slate-200 rounded-xl px-3.5 py-2.5 resize-none focus:outline-none focus:ring-2 focus:ring-violet-400 focus:border-transparent placeholder-slate-300 bg-slate-50/50"
+                                className="flex-1 text-sm border border-[var(--border-soft)] rounded-xl px-3.5 py-2.5 resize-none focus:outline-none focus:ring-2 focus:ring-violet-400 focus:border-transparent placeholder-slate-300 bg-[var(--panel-muted)]/50"
                             />
                             <button
                                 onClick={() => { onRegenerate(newPrompt); setOpen(false); }}
@@ -534,7 +534,7 @@ function PromptBar({ currentPrompt, onRegenerate, aiUsed, loading }) {
                         <div className="px-4 pb-4 flex flex-wrap gap-2">
                             {suggestions.map(s => (
                                 <button key={s} onClick={() => setNewPrompt(s)}
-                                    className="px-3 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-600 hover:bg-violet-100 hover:text-violet-700 transition-colors border border-slate-200/60">
+                                    className="px-3 py-1 rounded-full text-xs font-medium bg-[var(--panel-muted)] text-[var(--text-secondary)] hover:bg-violet-100 hover:text-violet-700 transition-colors border border-[var(--border-soft)]/60">
                                     {s}
                                 </button>
                             ))}
@@ -557,10 +557,10 @@ function InsightCard({ card, index }) {
             className={`rounded-2xl border p-5 shadow-sm ${tone.panel}`}
         >
             <div className="flex items-center justify-between gap-3">
-                <p className="text-sm font-bold text-slate-800">{card.title}</p>
+                <p className="text-sm font-bold text-[var(--text-primary)]">{card.title}</p>
                 <span className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-bold ${tone.chip}`}>{card.value}</span>
             </div>
-            <p className="mt-3 text-sm leading-6 text-slate-600">{card.description}</p>
+            <p className="mt-3 text-sm leading-6 text-[var(--text-secondary)]">{card.description}</p>
         </motion.div>
     );
 }
@@ -578,13 +578,13 @@ function ProgressMeter({ label, value, tone = 'violet', helper }) {
     return (
         <div className="space-y-2">
             <div className="flex items-center justify-between gap-3">
-                <p className="text-sm font-semibold text-slate-700">{label}</p>
-                <p className="text-sm font-black text-slate-900">{normalized.toFixed(1)}%</p>
+                <p className="text-sm font-semibold text-[var(--text-primary)]">{label}</p>
+                <p className="text-sm font-black text-[var(--text-primary)]">{normalized.toFixed(1)}%</p>
             </div>
-            <div className="h-2.5 rounded-full bg-slate-100 overflow-hidden">
+            <div className="h-2.5 rounded-full bg-[var(--panel-muted)] overflow-hidden">
                 <div className={`h-full rounded-full bg-gradient-to-r ${toneMap[tone] || toneMap.violet}`} style={{ width: `${normalized}%` }} />
             </div>
-            {helper ? <p className="text-xs text-slate-500">{helper}</p> : null}
+            {helper ? <p className="text-xs text-[var(--text-secondary)]">{helper}</p> : null}
         </div>
     );
 }
@@ -594,9 +594,9 @@ function ProfileMiniStat({ label, value, helper, accent = 'slate' }) {
 
     return (
         <div className={`rounded-2xl border px-4 py-3 ${tone.panel}`}>
-            <p className="text-[11px] font-black uppercase tracking-wider text-slate-400">{label}</p>
-            <p className="mt-2 text-xl font-black text-slate-900">{value}</p>
-            {helper ? <p className="mt-1 text-xs text-slate-500">{helper}</p> : null}
+            <p className="text-[11px] font-black uppercase tracking-wider text-[var(--text-muted)]">{label}</p>
+            <p className="mt-2 text-xl font-black text-[var(--text-primary)]">{value}</p>
+            {helper ? <p className="mt-1 text-xs text-[var(--text-secondary)]">{helper}</p> : null}
         </div>
     );
 }
@@ -611,13 +611,13 @@ function SchemaMixPanel({ profile }) {
     ];
 
     return (
-        <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div className="rounded-3xl border border-[var(--border-soft)] bg-[var(--panel)] p-5 shadow-sm">
             <div className="flex items-center justify-between gap-3">
                 <div>
-                    <p className="text-[11px] font-black uppercase tracking-wider text-slate-400">Schema Mix</p>
-                    <h3 className="mt-1 text-base font-black text-slate-900">Dataset structure at a glance</h3>
+                    <p className="text-[11px] font-black uppercase tracking-wider text-[var(--text-muted)]">Schema Mix</p>
+                    <h3 className="mt-1 text-base font-black text-[var(--text-primary)]">Dataset structure at a glance</h3>
                 </div>
-                <span className="inline-flex rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-600">
+                <span className="inline-flex rounded-full bg-[var(--panel-muted)] px-3 py-1 text-xs font-bold text-[var(--text-secondary)]">
                     {Object.values(typeCounts).reduce((sum, count) => sum + Number(count || 0), 0)} total columns
                 </span>
             </div>
@@ -634,30 +634,30 @@ function ColumnRiskPanel({ title, rows, accent = 'amber', emptyText, valueLabel,
     const tone = TONE_STYLES[accent] || TONE_STYLES.slate;
 
     return (
-        <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div className="rounded-3xl border border-[var(--border-soft)] bg-[var(--panel)] p-5 shadow-sm">
             <div className="flex items-center justify-between gap-3">
                 <div>
-                    <p className="text-[11px] font-black uppercase tracking-wider text-slate-400">{title}</p>
-                    <h3 className="mt-1 text-base font-black text-slate-900">Column watchlist</h3>
+                    <p className="text-[11px] font-black uppercase tracking-wider text-[var(--text-muted)]">{title}</p>
+                    <h3 className="mt-1 text-base font-black text-[var(--text-primary)]">Column watchlist</h3>
                 </div>
                 <span className={`inline-flex rounded-full px-3 py-1 text-xs font-bold ${tone.chip}`}>{rows?.length || 0} columns</span>
             </div>
             <div className="mt-4 space-y-3">
                 {(rows || []).length ? rows.map((row, index) => (
-                    <div key={`${row.name}-${index}`} className="rounded-2xl border border-slate-100 bg-slate-50 px-4 py-3">
+                    <div key={`${row.name}-${index}`} className="rounded-2xl border border-[var(--border-soft)] bg-[var(--panel-muted)] px-4 py-3">
                         <div className="flex items-center justify-between gap-3">
                             <div className="min-w-0">
-                                <p className="text-sm font-bold text-slate-800 truncate">{row.name}</p>
-                                <p className="mt-1 text-xs text-slate-500">{row.type} column · {row.unique?.toLocaleString?.() ?? row.unique} unique values</p>
+                                <p className="text-sm font-bold text-[var(--text-primary)] truncate">{row.name}</p>
+                                <p className="mt-1 text-xs text-[var(--text-secondary)]">{row.type} column · {row.unique?.toLocaleString?.() ?? row.unique} unique values</p>
                             </div>
                             <div className="text-right">
-                                <p className="text-sm font-black text-slate-900">{formatter ? formatter(row.score) : row.score}</p>
-                                <p className="text-[11px] text-slate-400">{valueLabel}</p>
+                                <p className="text-sm font-black text-[var(--text-primary)]">{formatter ? formatter(row.score) : row.score}</p>
+                                <p className="text-[11px] text-[var(--text-muted)]">{valueLabel}</p>
                             </div>
                         </div>
                     </div>
                 )) : (
-                    <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-5 text-sm text-slate-500">
+                    <div className="rounded-2xl border border-dashed border-[var(--border-soft)] bg-[var(--panel-muted)] px-4 py-5 text-sm text-[var(--text-secondary)]">
                         {emptyText}
                     </div>
                 )}
@@ -668,18 +668,18 @@ function ColumnRiskPanel({ title, rows, accent = 'amber', emptyText, valueLabel,
 
 function ColumnTablePanel({ columns }) {
     return (
-        <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
-            <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+        <div className="bg-[var(--panel)] rounded-3xl border border-[var(--border-soft)] shadow-sm overflow-hidden">
+            <div className="px-6 py-4 border-b border-[var(--border-soft)] flex items-center justify-between">
                 <div>
-                    <p className="text-[11px] font-black uppercase tracking-wider text-slate-400">Column Intelligence</p>
-                    <h3 className="mt-1 font-black text-slate-800 text-base">Column analysis</h3>
-                    <p className="text-xs text-slate-400 font-medium mt-0.5">{columns?.length} columns detected</p>
+                    <p className="text-[11px] font-black uppercase tracking-wider text-[var(--text-muted)]">Column Intelligence</p>
+                    <h3 className="mt-1 font-black text-[var(--text-primary)] text-base">Column analysis</h3>
+                    <p className="text-xs text-[var(--text-muted)] font-medium mt-0.5">{columns?.length} columns detected</p>
                 </div>
             </div>
             <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                     <thead>
-                        <tr className="bg-slate-50/80 text-xs font-bold uppercase text-slate-400 tracking-widest border-b border-slate-100">
+                        <tr className="bg-[var(--panel-muted)]/80 text-xs font-bold uppercase text-[var(--text-muted)] tracking-widest border-b border-[var(--border-soft)]">
                             <th className="px-6 py-3 text-left">Column</th>
                             <th className="px-4 py-3 text-left">Type</th>
                             <th className="px-4 py-3 text-right">Unique</th>
@@ -692,24 +692,24 @@ function ColumnTablePanel({ columns }) {
                     <tbody>
                         {columns?.map((col, i) => {
                             const TypeIcon = TYPE_ICON[col.type] || Hash;
-                            const typeStyle = TYPE_COLOR[col.type] || 'text-slate-500 bg-slate-100';
+                            const typeStyle = TYPE_COLOR[col.type] || 'text-[var(--text-secondary)] bg-[var(--panel-muted)]';
                             return (
-                                <tr key={i} className="border-t border-slate-50 hover:bg-slate-50/60 transition-colors">
-                                    <td className="px-6 py-3.5 font-bold text-slate-800 text-sm">{col.name}</td>
+                                <tr key={i} className="border-t border-slate-50 hover:bg-[var(--panel-muted)]/60 transition-colors">
+                                    <td className="px-6 py-3.5 font-bold text-[var(--text-primary)] text-sm">{col.name}</td>
                                     <td className="px-4 py-3.5">
                                         <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold ${typeStyle}`}>
                                             <TypeIcon size={9} /> {col.type}
                                         </span>
                                     </td>
-                                    <td className="px-4 py-3.5 text-right text-slate-500 font-medium text-sm">{col.unique?.toLocaleString()}</td>
+                                    <td className="px-4 py-3.5 text-right text-[var(--text-secondary)] font-medium text-sm">{col.unique?.toLocaleString()}</td>
                                     <td className="px-4 py-3.5 text-right">
                                         <span className={`font-bold text-sm ${col.nullPct > 20 ? 'text-red-500' : col.nullPct > 5 ? 'text-amber-500' : 'text-emerald-500'}`}>
                                             {col.nullPct}%
                                         </span>
                                     </td>
-                                    <td className="px-4 py-3.5 text-right text-slate-400 font-mono text-xs">{col.min ?? '—'}</td>
-                                    <td className="px-4 py-3.5 text-right text-slate-400 font-mono text-xs">{col.max ?? '—'}</td>
-                                    <td className="px-6 py-3.5 text-right text-slate-400 font-mono text-xs">{col.mean ?? '—'}</td>
+                                    <td className="px-4 py-3.5 text-right text-[var(--text-muted)] font-mono text-xs">{col.min ?? '—'}</td>
+                                    <td className="px-4 py-3.5 text-right text-[var(--text-muted)] font-mono text-xs">{col.max ?? '—'}</td>
+                                    <td className="px-6 py-3.5 text-right text-[var(--text-muted)] font-mono text-xs">{col.mean ?? '—'}</td>
                                 </tr>
                             );
                         })}
@@ -723,30 +723,30 @@ function ColumnTablePanel({ columns }) {
 function DashboardWorkspace({ analysis, dashboardSummary, filename, activeView, regenerating, onExpandChart, smartKpis, sessionId }) {
     return (
         <div className="space-y-6">
-            <div className="relative overflow-hidden rounded-[28px] border border-slate-200 bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950 p-6 md:p-7 shadow-xl shadow-slate-900/10">
+            <div className="relative overflow-hidden rounded-[28px] border border-[var(--border-soft)] bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950 p-6 md:p-7 shadow-xl shadow-slate-900/10">
                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(129,140,248,0.28),transparent_34%),radial-gradient(circle_at_bottom_left,rgba(16,185,129,0.2),transparent_28%)]" />
                 <div className="relative flex flex-col xl:flex-row xl:items-start xl:justify-between gap-6">
                     <div className="max-w-3xl">
-                        <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.22em] text-indigo-100">
+                        <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-[var(--panel)]/5 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.22em] text-indigo-100">
                             <Sparkles size={12} className="text-indigo-200" /> {dashboardSummary?.headline || 'Dataset intelligence'}
                         </div>
                         <h2 className="mt-4 text-2xl md:text-3xl font-black tracking-tight text-white">
                             {filename.replace(/\.[^.]+$/, '') || 'AI Visualizer dashboard'}
                         </h2>
-                        <p className="mt-3 max-w-2xl text-sm md:text-[15px] leading-7 text-slate-300">
+                        <p className="mt-3 max-w-2xl text-sm md:text-[15px] leading-7 text-[var(--text-muted)]">
                             {dashboardSummary?.summary || 'Dynamic dashboard generated from your uploaded dataset.'}
                         </p>
                         <div className="mt-5 flex flex-wrap gap-2.5">
-                            <span className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3.5 py-1.5 text-xs font-semibold text-white">
+                            <span className="inline-flex items-center gap-2 rounded-full bg-[var(--panel)]/10 px-3.5 py-1.5 text-xs font-semibold text-white">
                                 <LayoutDashboard size={12} className="text-indigo-200" /> {analysis.charts?.length || 0} charts
                             </span>
-                            <span className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3.5 py-1.5 text-xs font-semibold text-white">
+                            <span className="inline-flex items-center gap-2 rounded-full bg-[var(--panel)]/10 px-3.5 py-1.5 text-xs font-semibold text-white">
                                 <Database size={12} className="text-emerald-200" /> {analysis.totalRows?.toLocaleString()} rows
                             </span>
-                            <span className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3.5 py-1.5 text-xs font-semibold text-white">
+                            <span className="inline-flex items-center gap-2 rounded-full bg-[var(--panel)]/10 px-3.5 py-1.5 text-xs font-semibold text-white">
                                 <TableProperties size={12} className="text-sky-200" /> {analysis.totalColumns} columns
                             </span>
-                            <span className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3.5 py-1.5 text-xs font-semibold text-white">
+                            <span className="inline-flex items-center gap-2 rounded-full bg-[var(--panel)]/10 px-3.5 py-1.5 text-xs font-semibold text-white">
                                 <Bot size={12} className="text-violet-200" /> {analysis.aiUsed ? 'AI-guided layout' : 'Automatic layout'}
                             </span>
                         </div>
@@ -771,31 +771,31 @@ function DashboardWorkspace({ analysis, dashboardSummary, filename, activeView, 
                                 initial={{ opacity: 0, scale: 0.96 }}
                                 animate={{ opacity: 1, scale: 1 }}
                                 transition={{ delay: i * 0.05, type: 'spring', stiffness: 300 }}
-                                className="rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-sm"
+                                className="rounded-2xl border border-[var(--border-soft)] bg-[var(--panel)] px-5 py-4 shadow-sm"
                             >
                                 <div className="flex items-start justify-between gap-3">
                                     <div className="min-w-0">
-                                        <p className="text-[11px] font-black uppercase tracking-wider text-slate-400">{kpi.label}</p>
-                                        <p className="mt-3 text-2xl font-black tracking-tight text-slate-900 truncate">{kpi.value}</p>
+                                        <p className="text-[11px] font-black uppercase tracking-wider text-[var(--text-muted)]">{kpi.label}</p>
+                                        <p className="mt-3 text-2xl font-black tracking-tight text-[var(--text-primary)] truncate">{kpi.value}</p>
                                     </div>
                                     <div className="w-11 h-11 rounded-2xl flex items-center justify-center shrink-0" style={{ backgroundColor: `${kpi.color}15` }}>
                                         <Icon size={18} style={{ color: kpi.color }} />
                                     </div>
                                 </div>
-                                {kpi.hint ? <p className="mt-3 text-xs leading-5 text-slate-500">{kpi.hint}</p> : null}
+                                {kpi.hint ? <p className="mt-3 text-xs leading-5 text-[var(--text-secondary)]">{kpi.hint}</p> : null}
                             </motion.div>
                         );
                     })}
                 </div>
             )}
 
-            <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm mt-6">
+            <div className="rounded-3xl border border-[var(--border-soft)] bg-[var(--panel)] p-5 shadow-sm mt-6">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                     <div>
-                        <p className="text-[11px] font-black uppercase tracking-wider text-slate-400">Executive Insights</p>
-                        <h3 className="mt-1 text-base font-black text-slate-900">AI-generated dashboard briefing</h3>
+                        <p className="text-[11px] font-black uppercase tracking-wider text-[var(--text-muted)]">Executive Insights</p>
+                        <h3 className="mt-1 text-base font-black text-[var(--text-primary)]">AI-generated dashboard briefing</h3>
                     </div>
-                    <span className="inline-flex rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-600">
+                    <span className="inline-flex rounded-full bg-[var(--panel-muted)] px-3 py-1 text-xs font-bold text-[var(--text-secondary)]">
                         {dashboardSummary?.insightCards?.length || 0} live insights
                     </span>
                 </div>
@@ -812,19 +812,19 @@ function DashboardWorkspace({ analysis, dashboardSummary, filename, activeView, 
                         <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center mb-5 shadow-xl shadow-violet-200">
                             <Sparkles size={26} className="text-white animate-pulse" />
                         </div>
-                        <p className="text-slate-700 font-black text-lg mb-1.5">Rethinking your dashboard...</p>
-                        <p className="text-sm text-slate-400 font-medium max-w-xs">
+                        <p className="text-[var(--text-primary)] font-black text-lg mb-1.5">Rethinking your dashboard...</p>
+                        <p className="text-sm text-[var(--text-muted)] font-medium max-w-xs">
                             AI is selecting the most useful chart layout from your dataset.
                         </p>
                     </div>
                 ) : analysis.charts?.length > 0 ? (
-                    <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+                    <div className="rounded-3xl border border-[var(--border-soft)] bg-[var(--panel)] p-5 shadow-sm">
                         <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
                             <div>
-                                <p className="text-[11px] font-black uppercase tracking-wider text-slate-400">Live Dashboard</p>
-                                <h3 className="mt-1 text-base font-black text-slate-900">Interactive chart board</h3>
+                                <p className="text-[11px] font-black uppercase tracking-wider text-[var(--text-muted)]">Live Dashboard</p>
+                                <h3 className="mt-1 text-base font-black text-[var(--text-primary)]">Interactive chart board</h3>
                             </div>
-                            <div className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-500 font-medium">
+                            <div className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-[var(--panel-muted)] border border-[var(--border-soft)] rounded-xl text-xs text-[var(--text-secondary)] font-medium">
                                 <Maximize2 size={11} className="text-violet-500" />
                                 Click any chart to enlarge, download Excel, or export PNG
                             </div>
@@ -836,12 +836,12 @@ function DashboardWorkspace({ analysis, dashboardSummary, filename, activeView, 
                         </div>
                     </div>
                 ) : (
-                    <div className="flex flex-col items-center justify-center py-20 text-center rounded-3xl border border-slate-200 bg-white shadow-sm">
-                        <div className="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center mb-4">
-                            <BarChart3 size={26} className="text-slate-300" />
+                    <div className="flex flex-col items-center justify-center py-20 text-center rounded-3xl border border-[var(--border-soft)] bg-[var(--panel)] shadow-sm">
+                        <div className="w-16 h-16 rounded-2xl bg-[var(--panel-muted)] flex items-center justify-center mb-4">
+                            <BarChart3 size={26} className="text-[var(--text-muted)]" />
                         </div>
-                        <p className="text-slate-600 font-bold mb-1.5">No charts generated</p>
-                        <p className="text-sm text-slate-400 max-w-sm font-medium">
+                        <p className="text-[var(--text-secondary)] font-bold mb-1.5">No charts generated</p>
+                        <p className="text-sm text-[var(--text-muted)] max-w-sm font-medium">
                             Try a different prompt, or use a dataset with numeric and categorical columns.
                         </p>
                     </div>
@@ -1078,7 +1078,7 @@ export default function DataVisualizer({
     const showLegacyVisualizer = false;
 
     return (
-        <div className="flex flex-col h-full w-full bg-slate-50/80">
+        <div className="flex flex-col h-full w-full bg-[var(--panel-muted)]/80">
 
             {/* ── Modal ── */}
             <AnimatePresence>
@@ -1092,13 +1092,13 @@ export default function DataVisualizer({
             </AnimatePresence>
 
             {/* ── Header ── */}
-            <div className="shrink-0 bg-white border-b border-slate-100 px-6 md:px-8 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div className="shrink-0 bg-[var(--panel)] border-b border-[var(--border-soft)] px-6 md:px-8 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center shadow-md shadow-violet-200/60">
                         <BarChart3 size={19} className="text-white" />
                     </div>
                     <div>
-                        <h1 className="text-base font-black text-slate-900 flex items-center gap-2">
+                        <h1 className="text-base font-black text-[var(--text-primary)] flex items-center gap-2">
                             AI Visualizer
                             {HF_API_KEY && (
                                 <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-violet-50 text-violet-600 border border-violet-200/60">
@@ -1106,7 +1106,7 @@ export default function DataVisualizer({
                                 </span>
                             )}
                         </h1>
-                        <p className="text-xs text-slate-400 font-medium mt-0.5">
+                        <p className="text-xs text-[var(--text-muted)] font-medium mt-0.5">
                             {HF_API_KEY
                                 ? 'Upload a dataset + describe what you want → AI builds your dashboard'
                                 : 'Upload a dataset → instant AI-powered dashboard'}
@@ -1120,17 +1120,17 @@ export default function DataVisualizer({
                         <div key={s.n} className="flex items-center gap-2">
                             <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${step === s.n ? 'bg-violet-600 text-white shadow-sm shadow-violet-300'
                                     : step > s.n ? 'bg-emerald-100 text-emerald-700 border border-emerald-200/60'
-                                        : 'bg-slate-100 text-slate-400'}`}>
+                                        : 'bg-[var(--panel-muted)] text-[var(--text-muted)]'}`}>
                                 {step > s.n ? <CheckCircle2 size={11} /> : <span className="w-4 text-center">{s.n}</span>}
                                 {s.label}
                             </div>
-                            {i < steps.length - 1 && <ChevronRight size={13} className="text-slate-300" />}
+                            {i < steps.length - 1 && <ChevronRight size={13} className="text-[var(--text-muted)]" />}
                         </div>
                     ))}
                     {onClose && (
                         <button
                             onClick={onClose}
-                            className="ml-1 flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-400 transition-all hover:border-red-200 hover:bg-red-50 hover:text-red-500"
+                            className="ml-1 flex h-10 w-10 items-center justify-center rounded-xl border border-[var(--border-soft)] bg-[var(--panel)] text-[var(--text-muted)] transition-all hover:border-red-200 hover:bg-red-50 hover:text-red-500"
                             title="Close visualizer"
                         >
                             <X size={16} />
@@ -1158,7 +1158,7 @@ export default function DataVisualizer({
                                         className={`relative rounded-2xl border-2 border-dashed cursor-pointer transition-all duration-200
                                             ${dragging ? 'border-violet-400 bg-violet-50/60 scale-[1.01]'
                                                 : file ? 'border-emerald-400 bg-emerald-50/30'
-                                                    : 'border-slate-200 hover:border-violet-300 hover:bg-violet-50/20 bg-white'}`}
+                                                    : 'border-[var(--border-soft)] hover:border-violet-300 hover:bg-violet-50/20 bg-[var(--panel)]'}`}
                                     >
                                         <input ref={fileInputRef} type="file" accept=".csv,.tsv,.txt,.xlsx,.xls" className="hidden"
                                             onChange={(e) => setFile(e.target.files?.[0] || null)} />
@@ -1168,21 +1168,21 @@ export default function DataVisualizer({
                                                     <div className="w-14 h-14 rounded-2xl bg-emerald-100 flex items-center justify-center mb-4">
                                                         <FileText size={26} className="text-emerald-600" />
                                                     </div>
-                                                    <p className="text-base font-black text-slate-800 mb-1">{file.name}</p>
-                                                    <p className="text-sm text-slate-400 font-medium">{(file.size / 1024).toFixed(1)} KB · Click to change</p>
+                                                    <p className="text-base font-black text-[var(--text-primary)] mb-1">{file.name}</p>
+                                                    <p className="text-sm text-[var(--text-muted)] font-medium">{(file.size / 1024).toFixed(1)} KB · Click to change</p>
                                                 </>
                                             ) : (
                                                 <>
                                                     <div className="w-16 h-16 rounded-2xl bg-violet-50 border border-violet-100 flex items-center justify-center mb-5">
                                                         <Upload size={28} className="text-violet-400" />
                                                     </div>
-                                                    <p className="text-lg font-black text-slate-800 mb-1.5">Drop your dataset here</p>
-                                                    <p className="text-sm text-slate-400 font-medium">CSV, Excel, TSV, TXT supported</p>
+                                                    <p className="text-lg font-black text-[var(--text-primary)] mb-1.5">Drop your dataset here</p>
+                                                    <p className="text-sm text-[var(--text-muted)] font-medium">CSV, Excel, TSV, TXT supported</p>
                                                 </>
                                             )}
                                         </div>
                                         {file && (
-                                            <button className="absolute top-3 right-3 p-1.5 rounded-lg bg-white border border-slate-200 text-slate-400 hover:text-red-500 hover:border-red-200 shadow-sm transition-all"
+                                            <button className="absolute top-3 right-3 p-1.5 rounded-lg bg-[var(--panel)] border border-[var(--border-soft)] text-[var(--text-muted)] hover:text-red-500 hover:border-red-200 shadow-sm transition-all"
                                                 onClick={(e) => { e.stopPropagation(); setFile(null); }}>
                                                 <X size={13} />
                                             </button>
@@ -1190,21 +1190,21 @@ export default function DataVisualizer({
                                     </div>
 
                                     {/* Separator */}
-                                    <div className="bg-white rounded-2xl border border-slate-100 p-5 shadow-sm">
-                                        <p className="text-xs font-bold uppercase text-slate-400 tracking-widest mb-3">Column Separator</p>
+                                    <div className="bg-[var(--panel)] rounded-2xl border border-[var(--border-soft)] p-5 shadow-sm">
+                                        <p className="text-xs font-bold uppercase text-[var(--text-muted)] tracking-widest mb-3">Column Separator</p>
                                         <div className="flex items-center flex-wrap gap-2">
                                             {SEPARATORS.map(s => (
                                                 <button key={s.value}
                                                     onClick={() => { setDelimiter(s.value); setCustomDelim(''); }}
                                                     className={`px-4 py-2 rounded-xl text-sm font-semibold border transition-all ${delimiter === s.value && !customDelim
                                                         ? 'bg-violet-600 text-white border-violet-600 shadow-sm shadow-violet-200'
-                                                        : 'bg-slate-50 text-slate-600 border-slate-200 hover:border-violet-300 hover:text-violet-600'}`}>
+                                                        : 'bg-[var(--panel-muted)] text-[var(--text-secondary)] border-[var(--border-soft)] hover:border-violet-300 hover:text-violet-600'}`}>
                                                     {s.label}
                                                 </button>
                                             ))}
                                             <input type="text" placeholder="Custom…" value={customDelim}
                                                 onChange={(e) => setCustomDelim(e.target.value)}
-                                                className="border border-slate-200 rounded-xl px-3 py-2 text-sm font-mono w-24 focus:outline-none focus:ring-2 focus:ring-violet-400 focus:border-transparent bg-slate-50" />
+                                                className="border border-[var(--border-soft)] rounded-xl px-3 py-2 text-sm font-mono w-24 focus:outline-none focus:ring-2 focus:ring-violet-400 focus:border-transparent bg-[var(--panel-muted)]" />
                                         </div>
                                     </div>
                                 </div>
@@ -1217,7 +1217,7 @@ export default function DataVisualizer({
                                                 <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center shadow-sm">
                                                     <Wand2 size={13} className="text-white" />
                                                 </div>
-                                                <p className="text-sm font-bold text-slate-800">
+                                                <p className="text-sm font-bold text-[var(--text-primary)]">
                                                     Describe your dashboard
                                                     <span className="text-violet-500 font-medium ml-1">(optional)</span>
                                                 </p>
@@ -1226,27 +1226,27 @@ export default function DataVisualizer({
                                                 value={prompt} onChange={e => setPrompt(e.target.value)}
                                                 placeholder='e.g. "Show me revenue by region as a bar chart, top 5 products as pie, and sales trends over time"'
                                                 rows={3}
-                                                className="w-full text-sm border border-violet-200/70 bg-white rounded-xl px-3.5 py-2.5 resize-none focus:outline-none focus:ring-2 focus:ring-violet-400 focus:border-transparent placeholder-slate-300 shadow-sm"
+                                                className="w-full text-sm border border-violet-200/70 bg-[var(--panel)] rounded-xl px-3.5 py-2.5 resize-none focus:outline-none focus:ring-2 focus:ring-violet-400 focus:border-transparent placeholder-slate-300 shadow-sm"
                                             />
                                             <div className="mt-2.5 flex flex-wrap gap-2">
                                                 {['Top categories by count', 'Numeric correlations', 'Revenue over time', 'Category distributions'].map(s => (
                                                     <button key={s} onClick={() => setPrompt(s)}
-                                                        className="px-3 py-1 rounded-full text-xs font-medium bg-white text-violet-600 border border-violet-200/70 hover:bg-violet-100 transition-colors shadow-sm">
+                                                        className="px-3 py-1 rounded-full text-xs font-medium bg-[var(--panel)] text-violet-600 border border-violet-200/70 hover:bg-violet-100 transition-colors shadow-sm">
                                                         {s}
                                                     </button>
                                                 ))}
                                             </div>
-                                            <p className="text-xs text-slate-400 mt-3 pt-3 border-t border-violet-200/40 font-medium">
-                                                Powered by <span className="text-slate-500 font-semibold">Qwen2.5-72B</span> · Leave blank for auto-detect
+                                            <p className="text-xs text-[var(--text-muted)] mt-3 pt-3 border-t border-violet-200/40 font-medium">
+                                                Powered by <span className="text-[var(--text-secondary)] font-semibold">Qwen2.5-72B</span> · Leave blank for auto-detect
                                             </p>
                                         </div>
                                     ) : (
-                                        <div className="bg-slate-50 rounded-2xl border border-slate-200 p-6 flex-grow mb-4 flex flex-col items-center justify-center text-center">
-                                            <div className="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center mb-3">
-                                                <BarChart3 size={22} className="text-slate-400" />
+                                        <div className="bg-[var(--panel-muted)] rounded-2xl border border-[var(--border-soft)] p-6 flex-grow mb-4 flex flex-col items-center justify-center text-center">
+                                            <div className="w-12 h-12 rounded-xl bg-[var(--panel-muted)] flex items-center justify-center mb-3">
+                                                <BarChart3 size={22} className="text-[var(--text-muted)]" />
                                             </div>
-                                            <h3 className="text-slate-700 font-bold mb-1.5">Standard Dashboard</h3>
-                                            <p className="text-sm text-slate-400 max-w-sm leading-relaxed">
+                                            <h3 className="text-[var(--text-primary)] font-bold mb-1.5">Standard Dashboard</h3>
+                                            <p className="text-sm text-[var(--text-muted)] max-w-sm leading-relaxed">
                                                 Automatic dashboard built from statistical heuristics on your data.
                                             </p>
                                         </div>
@@ -1295,17 +1295,17 @@ export default function DataVisualizer({
                             exit={{ opacity: 0, y: -12 }}
                             className="w-full p-6 md:p-8"
                         >
-                            <div className="mx-auto max-w-3xl rounded-[28px] border border-slate-100 bg-white p-8 shadow-xl shadow-slate-200/60">
+                            <div className="mx-auto max-w-3xl rounded-[28px] border border-[var(--border-soft)] bg-[var(--panel)] p-8 shadow-xl shadow-slate-200/60">
                                 <div className="flex flex-col items-center text-center">
                                     <div className="mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-500 to-indigo-600 shadow-lg shadow-violet-200">
                                         {analyzing
                                             ? <RefreshCw size={26} className="animate-spin text-white" />
                                             : <AlertCircle size={26} className="text-white" />}
                                     </div>
-                                    <h2 className="text-2xl font-black text-slate-900">
+                                    <h2 className="text-2xl font-black text-[var(--text-primary)]">
                                         {analyzing ? 'Opening pipeline output' : 'Visualizer could not load'}
                                     </h2>
-                                    <p className="mt-2 max-w-xl text-sm font-medium text-slate-400">
+                                    <p className="mt-2 max-w-xl text-sm font-medium text-[var(--text-muted)]">
                                         {analyzing
                                             ? `Preparing the full AI visualizer for ${filename || 'your pipeline dataset'} so you can explore charts, columns, prompts, and raw rows in one place.`
                                             : (error || 'Try reloading the pipeline output visualization.')}
@@ -1326,7 +1326,7 @@ export default function DataVisualizer({
                                         </button>
                                         <button
                                             onClick={handleReset}
-                                            className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-500 transition-all hover:bg-slate-50"
+                                            className="inline-flex items-center gap-2 rounded-2xl border border-[var(--border-soft)] bg-[var(--panel)] px-5 py-3 text-sm font-semibold text-[var(--text-secondary)] transition-all hover:bg-[var(--panel-muted)]"
                                         >
                                             <RotateCcw size={15} /> New Dataset
                                         </button>
@@ -1343,13 +1343,13 @@ export default function DataVisualizer({
                             {/* Toolbar */}
                             <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
                                 <div className="flex items-center gap-3 flex-wrap">
-                                    <div className="flex items-center gap-2 px-3.5 py-2 bg-white border border-slate-200/80 rounded-xl text-sm shadow-sm">
-                                        <FileText size={13} className="text-slate-400" />
-                                        <span className="font-semibold text-slate-700">{filename}</span>
-                                        <span className="text-slate-300">·</span>
-                                        <span className="text-slate-500 font-medium">{analysis.totalRows?.toLocaleString()} rows</span>
-                                        <span className="text-slate-300">·</span>
-                                        <span className="text-slate-500 font-medium">{analysis.totalColumns} cols</span>
+                                    <div className="flex items-center gap-2 px-3.5 py-2 bg-[var(--panel)] border border-[var(--border-soft)]/80 rounded-xl text-sm shadow-sm">
+                                        <FileText size={13} className="text-[var(--text-muted)]" />
+                                        <span className="font-semibold text-[var(--text-primary)]">{filename}</span>
+                                        <span className="text-[var(--text-muted)]">·</span>
+                                        <span className="text-[var(--text-secondary)] font-medium">{analysis.totalRows?.toLocaleString()} rows</span>
+                                        <span className="text-[var(--text-muted)]">·</span>
+                                        <span className="text-[var(--text-secondary)] font-medium">{analysis.totalColumns} cols</span>
                                     </div>
                                     <WorkspaceTabs
                                         tone="violet"
@@ -1364,11 +1364,11 @@ export default function DataVisualizer({
                                 </div>
                                 <div className="flex items-center gap-2">
                                     <button onClick={handleDownloadDashboard}
-                                        className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200/80 text-slate-600 rounded-xl text-sm font-semibold hover:bg-slate-50 transition-all shadow-sm">
+                                        className="flex items-center gap-2 px-4 py-2 bg-[var(--panel)] border border-[var(--border-soft)]/80 text-[var(--text-secondary)] rounded-xl text-sm font-semibold hover:bg-[var(--panel-muted)] transition-all shadow-sm">
                                         <Download size={13} /> Export PNG
                                     </button>
                                     <button onClick={handleReset}
-                                        className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200/80 text-slate-500 rounded-xl text-sm font-semibold hover:bg-slate-50 transition-all shadow-sm">
+                                        className="flex items-center gap-2 px-4 py-2 bg-[var(--panel)] border border-[var(--border-soft)]/80 text-[var(--text-secondary)] rounded-xl text-sm font-semibold hover:bg-[var(--panel-muted)] transition-all shadow-sm">
                                         <RotateCcw size={13} /> New Dataset
                                     </button>
                                 </div>
@@ -1409,13 +1409,13 @@ export default function DataVisualizer({
                                             <motion.div key={i}
                                                 initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }}
                                                 transition={{ delay: i * 0.06, type: 'spring', stiffness: 300 }}
-                                                className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 flex items-center gap-4">
+                                                className="bg-[var(--panel)] rounded-2xl border border-[var(--border-soft)] shadow-sm p-5 flex items-center gap-4">
                                                 <div className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: kpi.color + '15' }}>
                                                     <Icon size={19} style={{ color: kpi.color }} />
                                                 </div>
                                                 <div className="min-w-0">
-                                                    <p className="text-2xl font-black text-slate-900 leading-none truncate">{kpi.value}</p>
-                                                    <p className="text-xs text-slate-400 font-semibold mt-1 uppercase tracking-wide">{kpi.label}</p>
+                                                    <p className="text-2xl font-black text-[var(--text-primary)] leading-none truncate">{kpi.value}</p>
+                                                    <p className="text-xs text-[var(--text-muted)] font-semibold mt-1 uppercase tracking-wide">{kpi.label}</p>
                                                 </div>
                                             </motion.div>
                                         );
@@ -1428,14 +1428,14 @@ export default function DataVisualizer({
                                             <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center mb-5 shadow-xl shadow-violet-200">
                                                 <Sparkles size={26} className="text-white animate-pulse" />
                                             </div>
-                                            <p className="text-slate-700 font-black text-lg mb-1.5">Rethinking your dashboard…</p>
-                                            <p className="text-sm text-slate-400 font-medium max-w-xs">
+                                            <p className="text-[var(--text-primary)] font-black text-lg mb-1.5">Rethinking your dashboard…</p>
+                                            <p className="text-sm text-[var(--text-muted)] font-medium max-w-xs">
                                                 AI is selecting the best charts from your dataset
                                             </p>
                                         </div>
                                     ) : analysis.charts?.length > 0 ? (
                                         <>
-                                            <div className="mb-4 inline-flex items-center gap-1.5 px-3.5 py-2 bg-white border border-slate-200/70 rounded-xl text-xs text-slate-500 font-medium shadow-sm">
+                                            <div className="mb-4 inline-flex items-center gap-1.5 px-3.5 py-2 bg-[var(--panel)] border border-[var(--border-soft)]/70 rounded-xl text-xs text-[var(--text-secondary)] font-medium shadow-sm">
                                                 <Maximize2 size={11} className="text-violet-500" />
                                                 Click any chart to enlarge · download Excel or PNG
                                             </div>
@@ -1448,28 +1448,28 @@ export default function DataVisualizer({
                                         </>
                                     ) : (
                                         <div className="flex flex-col items-center justify-center py-20 text-center">
-                                            <div className="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center mb-4">
-                                                <BarChart3 size={26} className="text-slate-300" />
+                                            <div className="w-16 h-16 rounded-2xl bg-[var(--panel-muted)] flex items-center justify-center mb-4">
+                                                <BarChart3 size={26} className="text-[var(--text-muted)]" />
                                             </div>
-                                            <p className="text-slate-600 font-bold mb-1.5">No charts generated</p>
-                                            <p className="text-sm text-slate-400 max-w-sm font-medium">
+                                            <p className="text-[var(--text-secondary)] font-bold mb-1.5">No charts generated</p>
+                                            <p className="text-sm text-[var(--text-muted)] max-w-sm font-medium">
                                                 Try a different prompt, or use a dataset with numeric + categorical columns.
                                             </p>
                                         </div>
                                     )
                                 ) : (
                                     /* Column Table */
-                                    <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-                                        <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+                                    <div className="bg-[var(--panel)] rounded-2xl border border-[var(--border-soft)] shadow-sm overflow-hidden">
+                                        <div className="px-6 py-4 border-b border-[var(--border-soft)] flex items-center justify-between">
                                             <div>
-                                                <h3 className="font-black text-slate-800 text-sm">Column Analysis</h3>
-                                                <p className="text-xs text-slate-400 font-medium mt-0.5">{analysis.columnSummary?.length} columns detected</p>
+                                                <h3 className="font-black text-[var(--text-primary)] text-sm">Column Analysis</h3>
+                                                <p className="text-xs text-[var(--text-muted)] font-medium mt-0.5">{analysis.columnSummary?.length} columns detected</p>
                                             </div>
                                         </div>
                                         <div className="overflow-x-auto">
                                             <table className="w-full text-sm">
                                                 <thead>
-                                                    <tr className="bg-slate-50/80 text-xs font-bold uppercase text-slate-400 tracking-widest border-b border-slate-100">
+                                                    <tr className="bg-[var(--panel-muted)]/80 text-xs font-bold uppercase text-[var(--text-muted)] tracking-widest border-b border-[var(--border-soft)]">
                                                         <th className="px-6 py-3 text-left">Column</th>
                                                         <th className="px-4 py-3 text-left">Type</th>
                                                         <th className="px-4 py-3 text-right">Unique</th>
@@ -1482,24 +1482,24 @@ export default function DataVisualizer({
                                                 <tbody>
                                                     {analysis.columnSummary?.map((col, i) => {
                                                         const TypeIcon = TYPE_ICON[col.type] || Hash;
-                                                        const typeStyle = TYPE_COLOR[col.type] || 'text-slate-500 bg-slate-100';
+                                                        const typeStyle = TYPE_COLOR[col.type] || 'text-[var(--text-secondary)] bg-[var(--panel-muted)]';
                                                         return (
-                                                            <tr key={i} className="border-t border-slate-50 hover:bg-slate-50/60 transition-colors">
-                                                                <td className="px-6 py-3.5 font-bold text-slate-800 text-sm">{col.name}</td>
+                                                            <tr key={i} className="border-t border-slate-50 hover:bg-[var(--panel-muted)]/60 transition-colors">
+                                                                <td className="px-6 py-3.5 font-bold text-[var(--text-primary)] text-sm">{col.name}</td>
                                                                 <td className="px-4 py-3.5">
                                                                     <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold ${typeStyle}`}>
                                                                         <TypeIcon size={9} /> {col.type}
                                                                     </span>
                                                                 </td>
-                                                                <td className="px-4 py-3.5 text-right text-slate-500 font-medium text-sm">{col.unique?.toLocaleString()}</td>
+                                                                <td className="px-4 py-3.5 text-right text-[var(--text-secondary)] font-medium text-sm">{col.unique?.toLocaleString()}</td>
                                                                 <td className="px-4 py-3.5 text-right">
                                                                     <span className={`font-bold text-sm ${col.nullPct > 20 ? 'text-red-500' : col.nullPct > 5 ? 'text-amber-500' : 'text-emerald-500'}`}>
                                                                         {col.nullPct}%
                                                                     </span>
                                                                 </td>
-                                                                <td className="px-4 py-3.5 text-right text-slate-400 font-mono text-xs">{col.min ?? '—'}</td>
-                                                                <td className="px-4 py-3.5 text-right text-slate-400 font-mono text-xs">{col.max ?? '—'}</td>
-                                                                <td className="px-6 py-3.5 text-right text-slate-400 font-mono text-xs">{col.mean ?? '—'}</td>
+                                                                <td className="px-4 py-3.5 text-right text-[var(--text-muted)] font-mono text-xs">{col.min ?? '—'}</td>
+                                                                <td className="px-4 py-3.5 text-right text-[var(--text-muted)] font-mono text-xs">{col.max ?? '—'}</td>
+                                                                <td className="px-6 py-3.5 text-right text-[var(--text-muted)] font-mono text-xs">{col.mean ?? '—'}</td>
                                                             </tr>
                                                         );
                                                     })}

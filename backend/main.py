@@ -10,11 +10,10 @@ import sys
 import uuid
 # Adding current directory to Python path for modules like models.py
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
-try:
-    from dotenv import load_dotenv
-    load_dotenv(os.path.join(os.path.dirname(__file__), "..", ".env"))
-except ImportError:
-    pass
+
+from runtime_env import bootstrap_environment
+
+bootstrap_environment()
 
 import shutil
 import polars as pl
@@ -46,19 +45,24 @@ from features.pipeline_runner import PipelineOrchestrator
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # This runs when the backend starts
-    logger.info("🚀 Backend starting up...")
-    try:
-        # This triggers the _init_postgres() method in your database.py
-        # which creates the tables if they don't exist.
-        db._init_postgres() 
-    except Exception as e:
-        logger.error(f"❌ Database initialization failed: {e}")
+    logger.info("Backend starting up...")
+
+    def _log_database_init(task: asyncio.Task) -> None:
+        try:
+            task.result()
+        except Exception as exc:
+            logger.error("Database initialization failed: %s", exc)
+
+    database_init_task = asyncio.create_task(asyncio.to_thread(db._init_postgres))
+    database_init_task.add_done_callback(_log_database_init)
+    app.state.database_init_task = database_init_task
+
     scheduler = PipelineSchedulerService(session_store=sessions)
     app.state.pipeline_scheduler = scheduler
     try:
         await scheduler.start()
     except Exception as exc:
-        logger.error("❌ Pipeline scheduler failed to start: %s", exc)
+        logger.error("Pipeline scheduler failed to start: %s", exc)
 
     try:
         yield
@@ -66,9 +70,9 @@ async def lifespan(app: FastAPI):
         try:
             await scheduler.stop()
         except Exception as exc:
-            logger.error("❌ Pipeline scheduler failed to stop cleanly: %s", exc)
+            logger.error("Pipeline scheduler failed to stop cleanly: %s", exc)
         # This runs when the backend shuts down
-        logger.info("👋 Backend shutting down...")
+        logger.info("Backend shutting down...")
 
 # Initialize FastAPI with the lifespan handler
 app = FastAPI(
@@ -87,6 +91,7 @@ origins = [
     "http://127.0.0.1:3000",
     "http://localhost:5173",
     "http://127.0.0.1:5173",
+    "null",
     "https://cleanflow-one.vercel.app",
     "https://www.cleanflow.one",
     "https://cleanflow.one",

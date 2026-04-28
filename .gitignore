@@ -12,6 +12,11 @@ results/
 # React build files
 frontend/dist/
 frontend/build/
+build/
+dist/
+backend/build/
+backend/dist/
+dist-electron/
  
 # Python Virtual Environments
 venv/

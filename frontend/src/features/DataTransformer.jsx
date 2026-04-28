@@ -68,7 +68,7 @@ function StatusBadge({ status, error }) {
     </span>
   );
   return (
-    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-500 border border-slate-200">
+    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-[var(--panel-muted)] text-[var(--text-secondary)] border border-[var(--border-soft)]">
       <AlertCircle size={10} /> Pending
     </span>
   );
@@ -78,13 +78,13 @@ function StatusBadge({ status, error }) {
 
 function DataPreviewTable({ data, columns, loading, label = 'Dataset Preview', rowCount }) {
   if (loading) return (
-    <div className="flex flex-col items-center justify-center py-16 text-slate-400">
+    <div className="flex flex-col items-center justify-center py-16 text-[var(--text-muted)]">
       <Loader2 size={28} className="animate-spin mb-3 text-violet-500" />
       <p className="text-sm font-medium">Running transformations…</p>
     </div>
   );
   if (!data || data.length === 0) return (
-    <div className="flex flex-col items-center justify-center py-16 text-slate-400">
+    <div className="flex flex-col items-center justify-center py-16 text-[var(--text-muted)]">
       <Table size={32} className="mb-3 opacity-30" />
       <p className="text-sm font-medium">{label}</p>
     </div>
@@ -93,12 +93,12 @@ function DataPreviewTable({ data, columns, loading, label = 'Dataset Preview', r
   const cols = columns || (data.length > 0 ? Object.keys(data[0]) : []);
 
   return (
-    <div className="overflow-auto rounded-xl border border-slate-200 bg-white">
-      <div className="flex items-center justify-between px-4 py-2.5 bg-slate-50 border-b border-slate-200">
-        <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">{label}</span>
-        <div className="flex items-center gap-3 text-xs text-slate-500">
+    <div className="overflow-auto rounded-xl border border-[var(--border-soft)] bg-[var(--panel)]">
+      <div className="flex items-center justify-between px-4 py-2.5 bg-[var(--panel-muted)] border-b border-[var(--border-soft)]">
+        <span className="text-xs font-bold text-[var(--text-secondary)] uppercase tracking-wider">{label}</span>
+        <div className="flex items-center gap-3 text-xs text-[var(--text-secondary)]">
           <span>{data.length} rows shown</span>
-          {rowCount !== undefined && <span className="font-bold text-slate-700">{formatNumber(rowCount)} total</span>}
+          {rowCount !== undefined && <span className="font-bold text-[var(--text-primary)]">{formatNumber(rowCount)} total</span>}
           <span>{cols.length} cols</span>
         </div>
       </div>
@@ -115,12 +115,12 @@ function DataPreviewTable({ data, columns, loading, label = 'Dataset Preview', r
           </thead>
           <tbody>
             {data.map((row, ri) => (
-              <tr key={ri} className={`border-b border-slate-100 ${ri % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'} hover:bg-violet-50/40 transition-colors`}>
+              <tr key={ri} className={`border-b border-[var(--border-soft)] ${ri % 2 === 0 ? 'bg-[var(--panel)]' : 'bg-[var(--panel-muted)]/50'} hover:bg-violet-50/40 transition-colors`}>
                 {cols.map(c => (
-                  <td key={c} className="px-3 py-1.5 text-slate-700 border-r border-slate-100/80 last:border-0 max-w-[160px] whitespace-nowrap">
+                  <td key={c} className="px-3 py-1.5 text-[var(--text-primary)] border-r border-[var(--border-soft)]/80 last:border-0 max-w-[160px] whitespace-nowrap">
                     <span className="block truncate" title={String(row[c] ?? '')}>
                       {row[c] === null || row[c] === undefined
-                        ? <span className="text-slate-300 italic">null</span>
+                        ? <span className="text-[var(--text-muted)] italic">null</span>
                         : String(row[c])}
                     </span>
                   </td>
@@ -147,7 +147,7 @@ function StepConfigForm({ step, operations, onParamChange, columns, lookupDatase
     if (param.type === 'column_select') {
       return (
         <select value={val} onChange={e => onChange(e.target.value)}
-          className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 shadow-sm focus:border-violet-400 focus:ring-2 focus:ring-violet-200 focus:outline-none">
+          className="w-full rounded-lg border border-[var(--border-soft)] bg-[var(--panel)] px-3 py-2 text-sm text-[var(--text-primary)] shadow-sm focus:border-violet-400 focus:ring-2 focus:ring-violet-200 focus:outline-none">
           <option value="">— select column —</option>
           {columns.map(c => <option key={c} value={c}>{c}</option>)}
         </select>
@@ -161,12 +161,12 @@ function StepConfigForm({ step, operations, onParamChange, columns, lookupDatase
         onChange(next);
       };
       return (
-        <div className="flex flex-wrap gap-1.5 p-2 rounded-lg border border-slate-200 bg-slate-50 min-h-[38px]">
+        <div className="flex flex-wrap gap-1.5 p-2 rounded-lg border border-[var(--border-soft)] bg-[var(--panel-muted)] min-h-[38px]">
           {columns.map(c => (
             <button key={c} type="button" onClick={() => toggle(c)}
               className={`px-2 py-0.5 rounded-md text-xs font-semibold border transition-all ${selected.includes(c)
                 ? 'bg-violet-600 text-white border-violet-700 shadow-sm'
-                : 'bg-white text-slate-600 border-slate-200 hover:border-violet-300 hover:text-violet-700'}`}>
+                : 'bg-[var(--panel)] text-[var(--text-secondary)] border-[var(--border-soft)] hover:border-violet-300 hover:text-violet-700'}`}>
               {c}
             </button>
           ))}
@@ -183,18 +183,18 @@ function StepConfigForm({ step, operations, onParamChange, columns, lookupDatase
         onChange(next);
       };
       return (
-        <div className="space-y-1 rounded-lg border border-slate-200 bg-slate-50 p-2">
+        <div className="space-y-1 rounded-lg border border-[var(--border-soft)] bg-[var(--panel-muted)] p-2">
           {order.filter(c => columns.includes(c)).concat(columns.filter(c => !order.includes(c))).map((col, i, arr) => (
-            <div key={col} className="flex items-center gap-2 bg-white rounded-md border border-slate-100 px-2 py-1.5 shadow-sm">
-              <GripVertical size={14} className="text-slate-300 flex-shrink-0" />
-              <span className="flex-1 text-xs font-medium text-slate-700 truncate">{col}</span>
+            <div key={col} className="flex items-center gap-2 bg-[var(--panel)] rounded-md border border-[var(--border-soft)] px-2 py-1.5 shadow-sm">
+              <GripVertical size={14} className="text-[var(--text-muted)] flex-shrink-0" />
+              <span className="flex-1 text-xs font-medium text-[var(--text-primary)] truncate">{col}</span>
               <div className="flex gap-1">
                 <button type="button" disabled={i === 0} onClick={() => move(i, i - 1)}
-                  className="p-0.5 rounded text-slate-400 hover:text-violet-600 disabled:opacity-30">
+                  className="p-0.5 rounded text-[var(--text-muted)] hover:text-violet-600 disabled:opacity-30">
                   <ChevronDown size={12} className="rotate-180" />
                 </button>
                 <button type="button" disabled={i === arr.length - 1} onClick={() => move(i, i + 1)}
-                  className="p-0.5 rounded text-slate-400 hover:text-violet-600 disabled:opacity-30">
+                  className="p-0.5 rounded text-[var(--text-muted)] hover:text-violet-600 disabled:opacity-30">
                   <ChevronDown size={12} />
                 </button>
               </div>
@@ -207,7 +207,7 @@ function StepConfigForm({ step, operations, onParamChange, columns, lookupDatase
     if (param.type === 'lookup_select') {
       return (
         <select value={val} onChange={e => onChange(e.target.value)}
-          className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 shadow-sm focus:border-violet-400 focus:ring-2 focus:ring-violet-200 focus:outline-none">
+          className="w-full rounded-lg border border-[var(--border-soft)] bg-[var(--panel)] px-3 py-2 text-sm text-[var(--text-primary)] shadow-sm focus:border-violet-400 focus:ring-2 focus:ring-violet-200 focus:outline-none">
           <option value="">— select lookup dataset —</option>
           {lookupDatasets.map(d => (
             <option key={d.lookup_id} value={d.lookup_id}>{d.name} ({formatNumber(d.rows)} rows)</option>
@@ -221,7 +221,7 @@ function StepConfigForm({ step, operations, onParamChange, columns, lookupDatase
       const lkpCols = lookupDatasets.find(d => d.lookup_id === lookupId)?.columns || [];
       return (
         <select value={val} onChange={e => onChange(e.target.value)}
-          className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 shadow-sm focus:border-violet-400 focus:ring-2 focus:ring-violet-200 focus:outline-none">
+          className="w-full rounded-lg border border-[var(--border-soft)] bg-[var(--panel)] px-3 py-2 text-sm text-[var(--text-primary)] shadow-sm focus:border-violet-400 focus:ring-2 focus:ring-violet-200 focus:outline-none">
           <option value="">— select lookup column —</option>
           {lkpCols.map(c => <option key={c} value={c}>{c}</option>)}
         </select>
@@ -237,14 +237,14 @@ function StepConfigForm({ step, operations, onParamChange, columns, lookupDatase
         onChange(next);
       };
       return (
-        <div className="flex flex-wrap gap-1.5 p-2 rounded-lg border border-slate-200 bg-slate-50 min-h-[38px]">
+        <div className="flex flex-wrap gap-1.5 p-2 rounded-lg border border-[var(--border-soft)] bg-[var(--panel-muted)] min-h-[38px]">
           {lkpCols.length === 0
-            ? <p className="text-xs text-slate-400 italic">Select a lookup dataset first</p>
+            ? <p className="text-xs text-[var(--text-muted)] italic">Select a lookup dataset first</p>
             : lkpCols.map(c => (
               <button key={c} type="button" onClick={() => toggle(c)}
                 className={`px-2 py-0.5 rounded-md text-xs font-semibold border transition-all ${selected.includes(c)
                   ? 'bg-violet-600 text-white border-violet-700'
-                  : 'bg-white text-slate-600 border-slate-200 hover:border-violet-300'}`}>
+                  : 'bg-[var(--panel)] text-[var(--text-secondary)] border-[var(--border-soft)] hover:border-violet-300'}`}>
                 {c}
               </button>
             ))}
@@ -255,7 +255,7 @@ function StepConfigForm({ step, operations, onParamChange, columns, lookupDatase
     if (param.type === 'dropdown') {
       return (
         <select value={val} onChange={e => onChange(e.target.value)}
-          className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 shadow-sm focus:border-violet-400 focus:ring-2 focus:ring-violet-200 focus:outline-none">
+          className="w-full rounded-lg border border-[var(--border-soft)] bg-[var(--panel)] px-3 py-2 text-sm text-[var(--text-primary)] shadow-sm focus:border-violet-400 focus:ring-2 focus:ring-violet-200 focus:outline-none">
           {(param.options || []).map(o => <option key={o} value={o}>{o}</option>)}
         </select>
       );
@@ -265,7 +265,7 @@ function StepConfigForm({ step, operations, onParamChange, columns, lookupDatase
       return (
         <input type="number" value={val} placeholder={param.placeholder || ''}
           onChange={e => onChange(e.target.value)}
-          className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 shadow-sm focus:border-violet-400 focus:ring-2 focus:ring-violet-200 focus:outline-none" />
+          className="w-full rounded-lg border border-[var(--border-soft)] bg-[var(--panel)] px-3 py-2 text-sm text-[var(--text-primary)] shadow-sm focus:border-violet-400 focus:ring-2 focus:ring-violet-200 focus:outline-none" />
       );
     }
 
@@ -274,9 +274,9 @@ function StepConfigForm({ step, operations, onParamChange, columns, lookupDatase
         <div>
           <input type="text" value={val} placeholder={param.placeholder || 'e.g. col_a * 1.18 - col_b'}
             onChange={e => onChange(e.target.value)}
-            className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-mono text-slate-800 shadow-sm focus:border-violet-400 focus:ring-2 focus:ring-violet-200 focus:outline-none" />
-          <p className="mt-1.5 text-[11px] text-slate-400 flex items-center gap-1">
-            <Info size={10} /> Use column names directly: <code className="text-[10px] bg-slate-100 px-1 rounded">price * qty</code>. Supports +, −, ×, ÷ and parentheses.
+            className="w-full rounded-lg border border-[var(--border-soft)] bg-[var(--panel)] px-3 py-2 text-sm font-mono text-[var(--text-primary)] shadow-sm focus:border-violet-400 focus:ring-2 focus:ring-violet-200 focus:outline-none" />
+          <p className="mt-1.5 text-[11px] text-[var(--text-muted)] flex items-center gap-1">
+            <Info size={10} /> Use column names directly: <code className="text-[10px] bg-[var(--panel-muted)] px-1 rounded">price * qty</code>. Supports +, −, ×, ÷ and parentheses.
           </p>
         </div>
       );
@@ -286,7 +286,7 @@ function StepConfigForm({ step, operations, onParamChange, columns, lookupDatase
     return (
       <input type="text" value={val} placeholder={param.placeholder || ''}
         onChange={e => onChange(e.target.value)}
-        className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 shadow-sm focus:border-violet-400 focus:ring-2 focus:ring-violet-200 focus:outline-none" />
+        className="w-full rounded-lg border border-[var(--border-soft)] bg-[var(--panel)] px-3 py-2 text-sm text-[var(--text-primary)] shadow-sm focus:border-violet-400 focus:ring-2 focus:ring-violet-200 focus:outline-none" />
     );
   };
 
@@ -297,13 +297,13 @@ function StepConfigForm({ step, operations, onParamChange, columns, lookupDatase
     <div className="space-y-3 pt-1">
       {opMeta.params.map(param => (
         <div key={param.key}>
-          <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wide mb-1.5">
+          <label className="block text-[11px] font-bold text-[var(--text-secondary)] uppercase tracking-wide mb-1.5">
             {param.label}
-            {param.optional && <span className="ml-1 text-[10px] font-normal text-slate-400 normal-case">(optional)</span>}
+            {param.optional && <span className="ml-1 text-[10px] font-normal text-[var(--text-muted)] normal-case">(optional)</span>}
           </label>
           {renderField(param)}
           {param.key === 'join_type' && joinType && (
-            <p className="mt-1 text-[11px] text-slate-500 flex items-start gap-1">
+            <p className="mt-1 text-[11px] text-[var(--text-secondary)] flex items-start gap-1">
               <Info size={10} className="mt-0.5 flex-shrink-0" />
               {JOIN_TYPE_DESC[joinType]}
             </p>
@@ -353,50 +353,50 @@ function StepCard({ step, index, operations, columns, lookupDatasets, expanded, 
   };
 
   return (
-    <div className={`rounded-xl border-2 transition-all ${expanded ? 'border-violet-300 shadow-lg shadow-violet-100' : 'border-slate-200 hover:border-slate-300'} bg-white overflow-hidden`}>
+    <div className={`rounded-xl border-2 transition-all ${expanded ? 'border-violet-300 shadow-lg shadow-violet-100' : 'border-[var(--border-soft)] hover:border-[var(--border-strong)]'} bg-[var(--panel)] overflow-hidden`}>
       {/* Card Header */}
       <div
         className="flex items-center gap-3 px-4 py-3 cursor-pointer select-none"
         onClick={onToggle}
       >
-        <div className={`flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg ${catMeta.bg || 'bg-slate-50'} border ${catMeta.border || 'border-slate-200'}`}>
-          <Icon size={14} className={catMeta.text || 'text-slate-500'} />
+        <div className={`flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg ${catMeta.bg || 'bg-[var(--panel-muted)]'} border ${catMeta.border || 'border-[var(--border-soft)]'}`}>
+          <Icon size={14} className={catMeta.text || 'text-[var(--text-secondary)]'} />
         </div>
 
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-[11px] font-black text-slate-400 tabular-nums">#{index + 1}</span>
-            <span className="text-sm font-bold text-slate-800">{opMeta?.name || step.operation}</span>
+            <span className="text-[11px] font-black text-[var(--text-muted)] tabular-nums">#{index + 1}</span>
+            <span className="text-sm font-bold text-[var(--text-primary)]">{opMeta?.name || step.operation}</span>
             <CategoryBadge category={opMeta?.category} small />
           </div>
           {getSummary() && !expanded && (
-            <p className="text-[11px] text-slate-400 mt-0.5 truncate">{getSummary()}</p>
+            <p className="text-[11px] text-[var(--text-muted)] mt-0.5 truncate">{getSummary()}</p>
           )}
         </div>
 
         <div className="flex items-center gap-2 flex-shrink-0">
           {stepLog && <StatusBadge status={stepLog.status} error={stepLog.error} />}
           {stepLog?.status === 'ok' && stepLog.rows_before !== stepLog.rows_after && (
-            <span className="text-[10px] font-bold text-slate-500">
+            <span className="text-[10px] font-bold text-[var(--text-secondary)]">
               {formatNumber(stepLog.rows_before)} → {formatNumber(stepLog.rows_after)}
             </span>
           )}
           <button
             type="button"
             onClick={e => { e.stopPropagation(); onDelete(); }}
-            className="p-1.5 rounded-lg text-slate-300 hover:text-red-500 hover:bg-red-50 transition-all"
+            className="p-1.5 rounded-lg text-[var(--text-muted)] hover:text-red-500 hover:bg-red-50 transition-all"
           >
             <Trash2 size={14} />
           </button>
-          {expanded ? <ChevronUp size={16} className="text-slate-400" /> : <ChevronDown size={16} className="text-slate-400" />}
+          {expanded ? <ChevronUp size={16} className="text-[var(--text-muted)]" /> : <ChevronDown size={16} className="text-[var(--text-muted)]" />}
         </div>
       </div>
 
       {/* Expanded Config */}
       {expanded && (
-        <div className="border-t border-slate-100 px-4 pb-4 pt-3 bg-slate-50/50">
+        <div className="border-t border-[var(--border-soft)] px-4 pb-4 pt-3 bg-[var(--panel-muted)]/50">
           {opMeta?.description && (
-            <p className="text-[11px] text-slate-500 mb-3 flex items-start gap-1.5">
+            <p className="text-[11px] text-[var(--text-secondary)] mb-3 flex items-start gap-1.5">
               <Info size={11} className="mt-0.5 flex-shrink-0 text-violet-400" />
               {opMeta.description}
             </p>
@@ -416,7 +416,7 @@ function StepCard({ step, index, operations, columns, lookupDatasets, expanded, 
           />
 
           {/* ── Confirm button ── */}
-          <div className="mt-4 pt-3 border-t border-slate-100">
+          <div className="mt-4 pt-3 border-t border-[var(--border-soft)]">
             <button
               type="button"
               onClick={onConfirm}
@@ -473,31 +473,31 @@ function OperationPickerModal({ operations, categories, onSelect, onClose }) {
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onClose}>
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
       <div
-        className="relative z-10 w-full max-w-2xl rounded-2xl bg-white shadow-2xl overflow-hidden flex flex-col max-h-[80vh]"
+        className="relative z-10 w-full max-w-2xl rounded-2xl bg-[var(--panel)] shadow-2xl overflow-hidden flex flex-col max-h-[80vh]"
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 bg-gradient-to-r from-violet-600 to-indigo-600">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--border-soft)] bg-gradient-to-r from-violet-600 to-indigo-600">
           <div>
             <h3 className="text-base font-black text-white">Add Transformation Step</h3>
             <p className="text-xs text-violet-200 mt-0.5">Choose an operation to apply to your dataset</p>
           </div>
-          <button onClick={onClose} className="p-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white transition-all">
+          <button onClick={onClose} className="p-1.5 rounded-lg bg-[var(--panel)]/10 hover:bg-[var(--panel)]/20 text-white transition-all">
             <X size={18} />
           </button>
         </div>
 
         {/* Search + Category tabs */}
-        <div className="px-4 py-3 border-b border-slate-100 space-y-2 bg-slate-50">
+        <div className="px-4 py-3 border-b border-[var(--border-soft)] space-y-2 bg-[var(--panel-muted)]">
           <div className="relative">
-            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" />
             <input
               autoFocus
               type="text"
               placeholder="Search operations…"
               value={search}
               onChange={e => setSearch(e.target.value)}
-              className="w-full pl-9 pr-4 py-2 text-sm rounded-lg border border-slate-200 bg-white focus:border-violet-400 focus:ring-2 focus:ring-violet-100 outline-none"
+              className="w-full pl-9 pr-4 py-2 text-sm rounded-lg border border-[var(--border-soft)] bg-[var(--panel)] focus:border-violet-400 focus:ring-2 focus:ring-violet-100 outline-none"
             />
           </div>
           <div className="flex gap-1.5 flex-wrap">
@@ -509,7 +509,7 @@ function OperationPickerModal({ operations, categories, onSelect, onClose }) {
                   onClick={() => setActiveCategory(cat.id)}
                   className={`px-3 py-1 rounded-full text-[11px] font-bold transition-all border ${activeCategory === cat.id
                     ? 'bg-violet-600 text-white border-violet-700 shadow-sm'
-                    : `bg-white text-slate-600 border-slate-200 hover:border-violet-300 ${m ? m.text : ''}`}`}
+                    : `bg-[var(--panel)] text-[var(--text-secondary)] border-[var(--border-soft)] hover:border-violet-300 ${m ? m.text : ''}`}`}
                 >
                   {cat.label || cat.name}
                 </button>
@@ -521,30 +521,30 @@ function OperationPickerModal({ operations, categories, onSelect, onClose }) {
         {/* Operation List */}
         <div className="overflow-y-auto flex-1 p-3 space-y-3">
           {Object.keys(grouped).length === 0 && (
-            <div className="text-center py-10 text-slate-400 text-sm">No operations match your search.</div>
+            <div className="text-center py-10 text-[var(--text-muted)] text-sm">No operations match your search.</div>
           )}
           {Object.entries(grouped).map(([catId, ops]) => {
             const catMeta = CATEGORY_META[catId] || {};
             const CatIcon = catMeta.Icon || Settings2;
             return (
               <div key={catId}>
-                <div className={`flex items-center gap-2 mb-2 px-2 py-1 rounded-lg ${catMeta.bg || 'bg-slate-50'}`}>
-                  <CatIcon size={13} className={catMeta.text || 'text-slate-500'} />
-                  <span className={`text-[11px] font-black uppercase tracking-wider ${catMeta.text || 'text-slate-500'}`}>{catMeta.label}</span>
+                <div className={`flex items-center gap-2 mb-2 px-2 py-1 rounded-lg ${catMeta.bg || 'bg-[var(--panel-muted)]'}`}>
+                  <CatIcon size={13} className={catMeta.text || 'text-[var(--text-secondary)]'} />
+                  <span className={`text-[11px] font-black uppercase tracking-wider ${catMeta.text || 'text-[var(--text-secondary)]'}`}>{catMeta.label}</span>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
                   {ops.map(op => (
                     <button
                       key={op.id}
                       onClick={() => onSelect(op)}
-                      className={`w-full text-left px-3 py-2.5 rounded-xl border-2 border-transparent hover:border-violet-300 bg-white shadow-sm hover:shadow-md transition-all group flex items-start gap-2.5`}
+                      className={`w-full text-left px-3 py-2.5 rounded-xl border-2 border-transparent hover:border-violet-300 bg-[var(--panel)] shadow-sm hover:shadow-md transition-all group flex items-start gap-2.5`}
                     >
-                      <div className={`mt-0.5 flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg ${catMeta.bg || 'bg-slate-50'} border ${catMeta.border || 'border-slate-200'}`}>
-                        <CatIcon size={13} className={catMeta.text || 'text-slate-500'} />
+                      <div className={`mt-0.5 flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg ${catMeta.bg || 'bg-[var(--panel-muted)]'} border ${catMeta.border || 'border-[var(--border-soft)]'}`}>
+                        <CatIcon size={13} className={catMeta.text || 'text-[var(--text-secondary)]'} />
                       </div>
                       <div className="min-w-0">
-                        <p className="text-sm font-bold text-slate-800 group-hover:text-violet-700 transition-colors">{op.name}</p>
-                        <p className="text-[11px] text-slate-400 leading-relaxed truncate">{op.description}</p>
+                        <p className="text-sm font-bold text-[var(--text-primary)] group-hover:text-violet-700 transition-colors">{op.name}</p>
+                        <p className="text-[11px] text-[var(--text-muted)] leading-relaxed truncate">{op.description}</p>
                       </div>
                     </button>
                   ))}
@@ -601,31 +601,31 @@ function LookupManager({ sessionId, lookupDatasets, onLookupAdded, onLookupDelet
       <div className="flex items-center gap-2 px-4 py-3 bg-violet-600">
         <Link size={15} className="text-white" />
         <span className="text-sm font-black text-white">Lookup Datasets</span>
-        <span className="ml-auto text-xs bg-white/20 text-white px-2 py-0.5 rounded-full font-bold">
+        <span className="ml-auto text-xs bg-[var(--panel)]/20 text-white px-2 py-0.5 rounded-full font-bold">
           {lookupDatasets.length} available
         </span>
       </div>
 
       {/* Upload form */}
       {!readOnly ? (
-        <div className="p-4 border-b border-violet-100 bg-white">
-        <p className="text-xs text-slate-500 mb-3 flex items-start gap-1.5">
+        <div className="p-4 border-b border-violet-100 bg-[var(--panel)]">
+        <p className="text-xs text-[var(--text-secondary)] mb-3 flex items-start gap-1.5">
           <Info size={11} className="mt-0.5 flex-shrink-0 text-violet-400" />
           Upload reference datasets to use in <strong>Lookup Join</strong> steps. You can upload <strong>any number</strong> of them.
         </p>
         <div className="flex gap-2 mb-2">
           <input type="text" value={lookupName} onChange={e => setLookupName(e.target.value)}
             placeholder="Dataset label (optional)"
-            className="flex-1 rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-violet-400 focus:ring-2 focus:ring-violet-100 outline-none" />
+            className="flex-1 rounded-lg border border-[var(--border-soft)] px-3 py-2 text-sm focus:border-violet-400 focus:ring-2 focus:ring-violet-100 outline-none" />
           <select value={delimiter} onChange={e => setDelimiter(e.target.value)}
-            className="rounded-lg border border-slate-200 px-2 py-2 text-sm focus:border-violet-400 outline-none bg-white">
+            className="rounded-lg border border-[var(--border-soft)] px-2 py-2 text-sm focus:border-violet-400 outline-none bg-[var(--panel)]">
             <option value=",">, CSV</option>
             <option value="&#9;">↹ TSV</option>
             <option value="|">| Pipe</option>
           </select>
         </div>
         <label className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border-2 border-dashed cursor-pointer transition-all text-sm font-semibold
-          ${disabled ? 'opacity-40 cursor-not-allowed border-slate-200 text-slate-400' : 'border-violet-300 text-violet-700 bg-violet-50 hover:bg-violet-100 hover:border-violet-400'}`}>
+          ${disabled ? 'opacity-40 cursor-not-allowed border-[var(--border-soft)] text-[var(--text-muted)]' : 'border-violet-300 text-violet-700 bg-violet-50 hover:bg-violet-100 hover:border-violet-400'}`}>
           {uploading ? <Loader2 size={16} className="animate-spin" /> : <FolderPlus size={16} />}
           {uploading ? 'Uploading…' : 'Upload CSV / Excel'}
           <input ref={fileInputRef} type="file" accept=".csv,.tsv,.xlsx,.xls" className="hidden"
@@ -635,8 +635,8 @@ function LookupManager({ sessionId, lookupDatasets, onLookupAdded, onLookupDelet
         {error && <p className="mt-2 text-xs text-red-600 flex items-center gap-1"><XCircle size={11} />{error}</p>}
         </div>
       ) : (
-        <div className="border-b border-violet-100 bg-white px-4 py-3">
-          <p className="text-xs text-slate-500 flex items-start gap-1.5">
+        <div className="border-b border-violet-100 bg-[var(--panel)] px-4 py-3">
+          <p className="text-xs text-[var(--text-secondary)] flex items-start gap-1.5">
             <Info size={11} className="mt-0.5 flex-shrink-0 text-violet-400" />
             Additional Data Flow inputs become lookup datasets here. Connect one main dataset plus any lookup sources in the pipeline builder.
           </p>
@@ -647,15 +647,15 @@ function LookupManager({ sessionId, lookupDatasets, onLookupAdded, onLookupDelet
       {lookupDatasets.length > 0 && (
         <div className="p-3 space-y-2">
           {lookupDatasets.map(d => (
-            <div key={d.lookup_id} className="flex items-center gap-2 bg-white rounded-lg border border-violet-100 px-3 py-2 shadow-sm">
+            <div key={d.lookup_id} className="flex items-center gap-2 bg-[var(--panel)] rounded-lg border border-violet-100 px-3 py-2 shadow-sm">
               <Database size={13} className="text-violet-500 flex-shrink-0" />
               <div className="flex-1 min-w-0">
-                <p className="text-xs font-bold text-slate-800 truncate">{d.name}</p>
-                <p className="text-[10px] text-slate-400">{formatNumber(d.rows)} rows · {d.columns?.length} cols</p>
+                <p className="text-xs font-bold text-[var(--text-primary)] truncate">{d.name}</p>
+                <p className="text-[10px] text-[var(--text-muted)]">{formatNumber(d.rows)} rows · {d.columns?.length} cols</p>
               </div>
               {!readOnly && !d.locked && (
                 <button onClick={() => handleDelete(d.lookup_id)}
-                  className="p-1 rounded text-slate-300 hover:text-red-500 hover:bg-red-50 transition-all flex-shrink-0">
+                  className="p-1 rounded text-[var(--text-muted)] hover:text-red-500 hover:bg-red-50 transition-all flex-shrink-0">
                   <Trash2 size={13} />
                 </button>
               )}
@@ -964,34 +964,22 @@ export default function DataTransformer({
   const canRun = sessionId && hasSteps;
 
   return (
-    <div className="flex flex-col h-full bg-slate-50">
-
-      {/* ── Header Bar ── */}
-      <div className="flex items-center justify-between gap-3 px-5 py-3.5 bg-white border-b border-slate-200 shadow-sm flex-shrink-0">
-        <div className="flex items-center gap-3">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-violet-600 to-indigo-600 shadow-md">
-            <ArrowLeftRight size={18} className="text-white" />
-          </div>
-          <div>
-            <h1 className="text-lg font-black text-slate-900 tracking-tight">Data Transformation</h1>
-            <p className="text-xs text-slate-500">Low-code pipeline: build steps, preview changes, apply to full dataset</p>
-          </div>
-        </div>
-
+    <div className="flex flex-col h-full min-h-0 bg-[var(--panel-muted)]">
+      <div className="flex items-center justify-end gap-2 px-5 py-2.5 bg-[var(--panel)] border-b border-[var(--border-soft)] flex-shrink-0">
         <div className="flex items-center gap-2 flex-shrink-0">
           {sessionId && (
             <>
-              <span className="hidden sm:flex items-center gap-1.5 text-xs font-semibold text-slate-500 bg-slate-100 rounded-full px-3 py-1.5">
+              <span className="hidden sm:flex items-center gap-1.5 text-xs font-semibold text-[var(--text-secondary)] bg-[var(--panel-muted)] rounded-full px-3 py-1.5">
                 <FileText size={12} className="text-violet-500" />
                 {filename}
-                <span className="text-slate-400">·</span>
+                <span className="text-[var(--text-muted)]">·</span>
                 <span className="text-violet-600 font-bold">{formatNumber(rowCount)} rows</span>
-                <span className="text-slate-400">·</span>
+                <span className="text-[var(--text-muted)]">·</span>
                 {columns.length} cols
               </span>
 
               <button onClick={handlePreview} disabled={!canRun || previewLoading}
-                className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-sm font-bold bg-slate-100 text-slate-700 hover:bg-violet-50 hover:text-violet-700 border border-slate-200 hover:border-violet-300 transition-all disabled:opacity-40">
+                className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-sm font-bold bg-[var(--panel-muted)] text-[var(--text-primary)] hover:bg-violet-50 hover:text-violet-700 border border-[var(--border-soft)] hover:border-violet-300 transition-all disabled:opacity-40">
                 {previewLoading ? <Loader2 size={15} className="animate-spin" /> : <Eye size={15} />}
                 Preview
               </button>
@@ -1018,10 +1006,10 @@ export default function DataTransformer({
                   <Download size={15} /> Export
                   <ChevronDown size={13} />
                 </button>
-                <div className="absolute right-0 top-full mt-1 rounded-xl border border-slate-200 bg-white shadow-xl p-1 z-20 hidden group-hover:block min-w-[130px]">
+                <div className="absolute right-0 top-full mt-1 rounded-xl border border-[var(--border-soft)] bg-[var(--panel)] shadow-xl p-1 z-20 hidden group-hover:block min-w-[130px]">
                   {[['csv', 'CSV'], ['xlsx', 'Excel'], ['json', 'JSON']].map(([fmt, label]) => (
                     <button key={fmt} onClick={() => handleExport(fmt)}
-                      className="w-full text-left px-3 py-2 text-sm text-slate-700 hover:bg-violet-50 hover:text-violet-700 rounded-lg transition-all font-medium">
+                      className="w-full text-left px-3 py-2 text-sm text-[var(--text-primary)] hover:bg-violet-50 hover:text-violet-700 rounded-lg transition-all font-medium">
                       {label}
                     </button>
                   ))}
@@ -1048,35 +1036,35 @@ export default function DataTransformer({
       <div className="flex flex-1 overflow-hidden gap-0">
 
         {/* ── Left Panel: Steps Builder ── */}
-        <div className="flex flex-col w-[420px] flex-shrink-0 border-r border-slate-200 bg-white overflow-hidden">
+        <div className="flex flex-col w-[420px] flex-shrink-0 border-r border-[var(--border-soft)] bg-[var(--panel)] overflow-hidden">
 
           {/* Upload area (if no session) */}
           {workspaceLoading && (
-            <div className="flex flex-1 flex-col items-center justify-center p-8 text-slate-400">
+            <div className="flex flex-1 flex-col items-center justify-center p-8 text-[var(--text-muted)]">
               <Loader2 size={32} className="mb-4 animate-spin text-violet-500" />
-              <p className="text-sm font-bold text-slate-800 mb-1">Preparing pipeline inputs</p>
+              <p className="text-sm font-bold text-[var(--text-primary)] mb-1">Preparing pipeline inputs</p>
               <p className="text-xs text-center max-w-[260px]">Loading the main dataset and any connected lookup datasets from the current pipeline graph.</p>
             </div>
           )}
 
           {!sessionId && !workspaceLoading && !isPipelineEmbedded && (
             <div
-              className={`flex flex-col items-center justify-center flex-1 p-8 transition-all cursor-pointer ${isDragging ? 'bg-violet-50 border-violet-400' : 'bg-white'}`}
+              className={`flex flex-col items-center justify-center flex-1 p-8 transition-all cursor-pointer ${isDragging ? 'bg-violet-50 border-violet-400' : 'bg-[var(--panel)]'}`}
               onDragOver={e => { e.preventDefault(); setIsDragging(true); }}
               onDragLeave={() => setIsDragging(false)}
               onDrop={handleDrop}
               onClick={() => fileInputRef.current?.click()}
             >
-              <div className="mb-5 flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-100 to-indigo-100 border-2 border-dashed border-violet-300">
+              <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-100 to-indigo-100 border-2 border-dashed border-violet-300">
                 <Upload size={32} className="text-violet-500" />
               </div>
-              <h3 className="text-xl font-black text-slate-900 mb-2">Import Your Dataset</h3>
-              <p className="text-sm text-slate-500 text-center max-w-[260px] mb-4">
+              <h3 className="text-lg font-black text-[var(--text-primary)] mb-1.5">Import Dataset</h3>
+              <p className="text-sm text-[var(--text-secondary)] text-center max-w-[260px] mb-3">
                 Drop a CSV or Excel file here, or click to browse. Then build transformation steps.
               </p>
-              <div className="flex flex-wrap gap-2 justify-center text-xs text-slate-400">
+              <div className="flex flex-wrap gap-2 justify-center text-xs text-[var(--text-muted)]">
                 {['.csv', '.tsv', '.xlsx', '.xls'].map(ext => (
-                  <span key={ext} className="px-2.5 py-1 bg-slate-100 rounded-full font-mono font-bold">{ext}</span>
+                  <span key={ext} className="px-2.5 py-1 bg-[var(--panel-muted)] rounded-full font-mono font-bold">{ext}</span>
                 ))}
               </div>
               <input ref={fileInputRef} type="file" accept=".csv,.tsv,.xlsx,.xls" className="hidden"
@@ -1085,9 +1073,9 @@ export default function DataTransformer({
           )}
 
           {!sessionId && !workspaceLoading && isPipelineEmbedded && (
-            <div className="flex flex-1 flex-col items-center justify-center p-8 text-slate-400">
+            <div className="flex flex-1 flex-col items-center justify-center p-8 text-[var(--text-muted)]">
               <Database size={32} className="mb-4 opacity-30" />
-              <p className="text-sm font-bold text-slate-800 mb-1">Connect a main dataset first</p>
+              <p className="text-sm font-bold text-[var(--text-primary)] mb-1">Connect a main dataset first</p>
               <p className="text-xs text-center max-w-[260px]">This transformation task opens from the pipeline graph, so it needs a Data Flow input before the workspace can load.</p>
             </div>
           )}
@@ -1096,10 +1084,10 @@ export default function DataTransformer({
           {sessionId && (
             <>
               {/* Steps header */}
-              <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100 bg-slate-50 flex-shrink-0">
+              <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--border-soft)] bg-[var(--panel-muted)] flex-shrink-0">
                 <div>
-                  <h2 className="text-sm font-black text-slate-800">Transformation Steps</h2>
-                  <p className="text-[11px] text-slate-400">{steps.length} step{steps.length !== 1 ? 's' : ''} — executed top to bottom</p>
+                  <h2 className="text-sm font-black text-[var(--text-primary)]">Transformation Steps</h2>
+                  <p className="text-[11px] text-[var(--text-muted)]">{steps.length} step{steps.length !== 1 ? 's' : ''} — executed top to bottom</p>
                 </div>
                 <button onClick={() => setShowOpPicker(true)}
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-violet-600 text-white text-xs font-bold hover:bg-violet-700 shadow-sm transition-all">
@@ -1110,10 +1098,10 @@ export default function DataTransformer({
               {/* Steps scroll area */}
               <div className="flex-1 overflow-y-auto p-3 space-y-2">
                 {steps.length === 0 && (
-                  <div className="flex flex-col items-center justify-center py-16 text-slate-400">
+                  <div className="flex flex-col items-center justify-center py-16 text-[var(--text-muted)]">
                     <ArrowLeftRight size={36} className="mb-4 opacity-20" />
-                    <p className="text-sm font-bold text-slate-800 mb-1">No steps yet</p>
-                    <p className="text-xs text-slate-400 text-center mx-4">Click <strong>+ Add Step</strong> to choose a transformation operation.</p>
+                    <p className="text-sm font-bold text-[var(--text-primary)] mb-1">No steps yet</p>
+                    <p className="text-xs text-[var(--text-muted)] text-center mx-4">Click <strong>+ Add Step</strong> to choose a transformation operation.</p>
                   </div>
                 )}
                 {steps.map((step, i) => (
@@ -1137,7 +1125,7 @@ export default function DataTransformer({
               </div>
 
               {/* Lookup Manager */}
-              <div className="border-t border-slate-100 p-3 flex-shrink-0">
+              <div className="border-t border-[var(--border-soft)] p-3 flex-shrink-0">
                 <LookupManager
                   sessionId={sessionId}
                   lookupDatasets={lookupDatasets}
@@ -1154,8 +1142,8 @@ export default function DataTransformer({
         {/* ── Right Panel: Data Preview ── */}
         <div className="flex flex-col flex-1 overflow-hidden">
           {/* View toggle */}
-          <div className="flex items-center gap-3 px-5 py-2.5 bg-white border-b border-slate-200 flex-shrink-0">
-            <div className="inline-flex rounded-lg border border-slate-200 bg-slate-50 p-0.5">
+          <div className="flex items-center gap-3 px-5 py-2.5 bg-[var(--panel)] border-b border-[var(--border-soft)] flex-shrink-0">
+            <div className="inline-flex rounded-lg border border-[var(--border-soft)] bg-[var(--panel-muted)] p-0.5">
               {[
                 { id: 'original', label: 'Original', icon: Table },
                 { id: 'preview',  label: 'Transformed',  icon: CheckCircle2 },
@@ -1165,8 +1153,8 @@ export default function DataTransformer({
                 return (
                   <button key={v.id} onClick={() => setActiveView(v.id)}
                     className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold transition-all ${active
-                      ? 'bg-white text-violet-700 shadow-sm border border-slate-200'
-                      : 'text-slate-500 hover:text-slate-800'}`}>
+                      ? 'bg-[var(--panel)] text-violet-700 shadow-sm border border-[var(--border-soft)]'
+                      : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}>
                     <Icon size={12} /> {v.label}
                     {v.id === 'preview' && previewData.length > 0 && (
                       <span className="ml-0.5 px-1.5 py-0.5 bg-violet-100 text-violet-700 rounded-full text-[9px] font-black">
@@ -1181,7 +1169,7 @@ export default function DataTransformer({
             {/* Step execution summary */}
             {Object.keys(stepLogs).length > 0 && (
               <div className="flex items-center gap-2 ml-2">
-                <span className="text-xs text-slate-500">Steps:</span>
+                <span className="text-xs text-[var(--text-secondary)]">Steps:</span>
                 {steps.map((s, i) => {
                   const log = stepLogs[s.id];
                   return log ? (
@@ -1199,7 +1187,7 @@ export default function DataTransformer({
             {sessionId && !isPipelineEmbedded && (
               <button
                 onClick={() => handleFileUpload(null) || fileInputRef.current?.click()}
-                className="ml-auto flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-all border border-slate-200"
+                className="ml-auto flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--panel-muted)] rounded-lg transition-all border border-[var(--border-soft)]"
               >
                 <RefreshCw size={12} /> Change Dataset
               </button>
@@ -1228,9 +1216,9 @@ export default function DataTransformer({
 
             {/* Empty state if no data and has session */}
             {sessionId && activeView === 'preview' && !previewLoading && previewData.length === 0 && (
-              <div className="mt-5 rounded-xl border-2 border-dashed border-slate-200 bg-white p-10 flex flex-col items-center justify-center text-slate-400">
+              <div className="mt-5 rounded-xl border-2 border-dashed border-[var(--border-soft)] bg-[var(--panel)] p-10 flex flex-col items-center justify-center text-[var(--text-muted)]">
                 <Eye size={32} className="mb-3 opacity-20" />
-                <p className="text-sm font-bold text-slate-800 mb-1">No preview yet</p>
+                <p className="text-sm font-bold text-[var(--text-primary)] mb-1">No preview yet</p>
                 <p className="text-xs text-center">Add at least one transformation step, then click <strong>Preview</strong> to see results here.</p>
                 <button onClick={() => setShowOpPicker(true)} disabled={!sessionId}
                   className="mt-4 flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-bold bg-violet-600 text-white hover:bg-violet-700 shadow-sm transition-all disabled:opacity-40">

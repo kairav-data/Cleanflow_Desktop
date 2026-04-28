@@ -1,6 +1,7 @@
 import os
 import time
 import uuid
+import sys
 from sqlalchemy import create_engine, Column, Integer, String, Boolean, Text, DateTime, Float, text, ForeignKey
 from sqlalchemy.orm import sessionmaker, declarative_base, relationship, joinedload
 from datetime import datetime
@@ -177,12 +178,16 @@ class PipelineRun(Base):
 
 class DatabaseManager:
     def __init__(self):
-        self.pg_engine = create_engine(PG_URL)
+        engine_kwargs = {"pool_pre_ping": True}
+        if PG_URL.startswith("postgresql"):
+            engine_kwargs["connect_args"] = {
+                "connect_timeout": int(os.getenv("DATABASE_CONNECT_TIMEOUT", "5"))
+            }
+        self.pg_engine = create_engine(PG_URL, **engine_kwargs)
         self.SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=self.pg_engine)
-        self._init_postgres()
 
     def _init_postgres(self):
-        retries = 10
+        retries = int(os.getenv("DATABASE_INIT_RETRIES", "3" if getattr(sys, "frozen", False) else "10"))
         while retries > 0:
             try:
                 with self.pg_engine.connect() as conn:
@@ -312,10 +317,10 @@ class DatabaseManager:
                     except Exception as e:
                         pass
                 
-                print("✅ PostgreSQL initialized and tables verified.")
+                print("PostgreSQL initialized and tables verified.")
                 return
             except Exception as e:
-                print(f"🔄 Postgres not ready ({retries} retries left): {e}")
+                print(f"Postgres not ready ({retries} retries left): {e}")
                 retries -= 1
                 time.sleep(5)
 

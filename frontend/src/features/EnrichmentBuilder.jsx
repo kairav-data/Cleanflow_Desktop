@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { DataConnection, DatasetViewer, WorkspaceTabs } from '../components';
 import RepoSidebar from '../components/RepoSidebar';
+import FeatureLayout from './FeatureLayout';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || 'http://localhost:8000';
 const STEPS = ['Upload', 'Configure', 'Results'];
@@ -45,12 +46,12 @@ const DownloadCard = ({ fmt, label, Icon, onClick }) => (
     <button
         type="button"
         onClick={() => onClick(fmt)}
-        className="group flex flex-col items-center gap-3 rounded-2xl border-2 border-slate-200 py-7 transition-all hover:-translate-y-1 hover:border-emerald-400 hover:bg-emerald-50 hover:shadow-lg"
+        className="group flex flex-col items-center gap-3 rounded-2xl border-2 border-[var(--border-soft)] py-7 transition-all hover:-translate-y-1 hover:border-emerald-400 hover:bg-emerald-50 hover:shadow-lg"
     >
-        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-slate-100 shadow-sm transition-colors group-hover:bg-white">
-            <Icon className="text-slate-500 transition-colors group-hover:text-emerald-600" size={26} />
+        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[var(--panel-muted)] shadow-sm transition-colors group-hover:bg-[var(--panel)]">
+            <Icon className="text-[var(--text-secondary)] transition-colors group-hover:text-emerald-600" size={26} />
         </div>
-        <span className="text-sm font-bold text-slate-700 transition-colors group-hover:text-emerald-700">{label}</span>
+        <span className="text-sm font-bold text-[var(--text-primary)] transition-colors group-hover:text-emerald-700">{label}</span>
     </button>
 );
 
@@ -285,14 +286,14 @@ export default function EnrichmentBuilder({
     const renderParams = (rule) => {
         const meta = getOperationMeta(rule.operation);
         if (!meta?.requires_input) {
-            return <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-400">No additional parameters required</span>;
+            return <span className="rounded-full bg-[var(--panel-muted)] px-3 py-1 text-xs font-semibold text-[var(--text-muted)]">No additional parameters required</span>;
         }
 
         if (rule.operation === 'fill_nulls') {
             return (
                 <div className="flex flex-col gap-3">
                     <select
-                        className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-medium text-slate-700 outline-none transition-all focus:border-emerald-500"
+                        className="w-full rounded-xl border border-[var(--border-soft)] bg-[var(--panel-muted)] px-3 py-2.5 text-sm font-medium text-[var(--text-primary)] outline-none transition-all focus:border-emerald-500"
                         value={rule.params.method || 'mean'}
                         onChange={(event) => updateParams(rule.id, 'method', event.target.value)}
                     >
@@ -305,7 +306,7 @@ export default function EnrichmentBuilder({
                     {rule.params.method === 'custom' && (
                         <input
                             type="text"
-                            className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-medium text-slate-700 outline-none transition-all focus:border-emerald-500"
+                            className="w-full rounded-xl border border-[var(--border-soft)] bg-[var(--panel-muted)] px-3 py-2.5 text-sm font-medium text-[var(--text-primary)] outline-none transition-all focus:border-emerald-500"
                             placeholder="e.g. Unknown, 0, Pending"
                             value={rule.params.custom_value || ''}
                             onChange={(event) => updateParams(rule.id, 'custom_value', event.target.value)}
@@ -319,7 +320,7 @@ export default function EnrichmentBuilder({
             return (
                 <div className="flex flex-col gap-2">
                     <select
-                        className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-medium text-slate-700 outline-none transition-all focus:border-emerald-500"
+                        className="w-full rounded-xl border border-[var(--border-soft)] bg-[var(--panel-muted)] px-3 py-2.5 text-sm font-medium text-[var(--text-primary)] outline-none transition-all focus:border-emerald-500"
                         value={rule.params.match_type || 'whole'}
                         onChange={(event) => updateParams(rule.id, 'match_type', event.target.value)}
                     >
@@ -329,14 +330,14 @@ export default function EnrichmentBuilder({
                     <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
                         <input
                             type="text"
-                            className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-medium text-slate-700 outline-none transition-all focus:border-emerald-500"
+                            className="rounded-xl border border-[var(--border-soft)] bg-[var(--panel-muted)] px-3 py-2.5 text-sm font-medium text-[var(--text-primary)] outline-none transition-all focus:border-emerald-500"
                             placeholder="Find text..."
                             value={rule.params.target_value || ''}
                             onChange={(event) => updateParams(rule.id, 'target_value', event.target.value)}
                         />
                         <input
                             type="text"
-                            className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2.5 text-sm font-medium text-slate-700 outline-none transition-all focus:border-emerald-500"
+                            className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2.5 text-sm font-medium text-[var(--text-primary)] outline-none transition-all focus:border-emerald-500"
                             placeholder="Replace with..."
                             value={rule.params.replacement_value || ''}
                             onChange={(event) => updateParams(rule.id, 'replacement_value', event.target.value)}
@@ -350,10 +351,10 @@ export default function EnrichmentBuilder({
             return (
                 <div className="flex flex-col gap-3">
                     <div>
-                        <label className="mb-1.5 block text-[11px] font-black uppercase tracking-wider text-slate-400">Subset Columns <span className="text-slate-300 font-normal normal-case">(leave empty to check all columns)</span></label>
-                        <div className="flex flex-wrap gap-2 rounded-xl border border-slate-200 bg-slate-50 p-3 max-h-36 overflow-y-auto">
+                        <label className="mb-1.5 block text-[11px] font-black uppercase tracking-wider text-[var(--text-muted)]">Subset Columns <span className="text-[var(--text-muted)] font-normal normal-case">(leave empty to check all columns)</span></label>
+                        <div className="flex flex-wrap gap-2 rounded-xl border border-[var(--border-soft)] bg-[var(--panel-muted)] p-3 max-h-36 overflow-y-auto">
                             {columns.map((col) => (
-                                <label key={col} className="flex items-center gap-1.5 cursor-pointer text-sm text-slate-700">
+                                <label key={col} className="flex items-center gap-1.5 cursor-pointer text-sm text-[var(--text-primary)]">
                                     <input
                                         type="checkbox"
                                         className="accent-emerald-600 w-3.5 h-3.5"
@@ -367,13 +368,13 @@ export default function EnrichmentBuilder({
                                     {col}
                                 </label>
                             ))}
-                            {columns.length === 0 && <span className="text-xs text-slate-400 italic">Upload a dataset first to see columns.</span>}
+                            {columns.length === 0 && <span className="text-xs text-[var(--text-muted)] italic">Upload a dataset first to see columns.</span>}
                         </div>
                     </div>
                     <div>
-                        <label className="mb-1.5 block text-[11px] font-black uppercase tracking-wider text-slate-400">Keep Strategy</label>
+                        <label className="mb-1.5 block text-[11px] font-black uppercase tracking-wider text-[var(--text-muted)]">Keep Strategy</label>
                         <select
-                            className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-medium text-slate-700 outline-none transition-all focus:border-emerald-500"
+                            className="w-full rounded-xl border border-[var(--border-soft)] bg-[var(--panel-muted)] px-3 py-2.5 text-sm font-medium text-[var(--text-primary)] outline-none transition-all focus:border-emerald-500"
                             value={rule.params.keep || 'first'}
                             onChange={(e) => updateParams(rule.id, 'keep', e.target.value)}
                         >
@@ -390,49 +391,30 @@ export default function EnrichmentBuilder({
     };
 
     const effectiveStep = !sessionId ? 1 : step >= 4 ? 3 : step;
-
     return (
-        <div className="flex h-full w-full flex-col">
-            <div className="flex shrink-0 items-center justify-between border-b border-slate-200 bg-white px-8 py-5">
-                <div className="flex items-center gap-4">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-emerald-100 bg-emerald-50">
-                        <Sparkles size={20} className="text-emerald-600" />
-                    </div>
-                    <div>
-                        <h2 className="text-2xl font-black tracking-tight text-slate-900">Data Cleaning</h2>
-                        <p className="mt-0.5 text-sm text-slate-500">Build an automated sequence of cleaning operations on your dataset.</p>
-                    </div>
-                </div>
-                <div className="flex items-center gap-1">
-                    {STEPS.map((label, index) => {
-                        const currentStep = index + 1;
-                        return (
-                            <div key={label} className="flex items-center">
-                                <div className={`flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-bold transition-all ${effectiveStep === currentStep ? 'bg-emerald-600 text-white' : effectiveStep > currentStep ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-400'}`}>
-                                    <span className={`flex h-4 w-4 items-center justify-center rounded-full text-[10px] font-black ${effectiveStep === currentStep ? 'bg-white text-emerald-600' : effectiveStep > currentStep ? 'bg-emerald-500 text-white' : 'bg-slate-300 text-slate-500'}`}>{effectiveStep > currentStep ? '✓' : currentStep}</span>
-                                    {label}
-                                </div>
-                                {currentStep < STEPS.length && <div className={`mx-1 h-px w-6 ${effectiveStep > currentStep ? 'bg-emerald-300' : 'bg-slate-200'}`} />}
-                            </div>
-                        );
-                    })}
-                </div>
-            </div>
-
-            <div className="flex-1 overflow-y-auto px-8 py-6">
+        <FeatureLayout
+            icon={<Sparkles className="h-5 w-5" />}
+            accentColor="var(--accent-strong)"
+            accentBg="var(--accent-soft)"
+            title="Data Cleaning"
+            subtitle="Build an automated sequence of cleaning operations on your dataset."
+            steps={STEPS}
+            currentStep={effectiveStep}
+        >
+            <div className="px-6 py-5">
                 {loading && (
                     <div className="flex h-64 flex-col items-center justify-center gap-4">
                         <Sparkles className="animate-pulse text-emerald-500" size={40} />
-                        <p className="text-lg font-bold text-slate-700">Processing pipeline...</p>
-                        <p className="text-sm text-slate-400">This may take a moment for large datasets.</p>
+                        <p className="text-lg font-bold text-[var(--text-primary)]">Processing pipeline...</p>
+                        <p className="text-sm text-[var(--text-muted)]">This may take a moment for large datasets.</p>
                     </div>
                 )}
 
                 {!loading && !sessionId && (
                     <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
                         <div className="mb-5">
-                            <h3 className="text-lg font-bold text-slate-800">Import Dataset</h3>
-                            <p className="mt-1 text-sm text-slate-500">Upload a file or connect a database to begin building your cleaning pipeline.</p>
+                            <h3 className="text-lg font-bold text-[var(--text-primary)]">Import Dataset</h3>
+                            <p className="mt-1 text-sm text-[var(--text-secondary)]">Upload a file or connect a database to begin building your cleaning pipeline.</p>
                         </div>
                         <DataConnection
                             compact={true}
@@ -453,11 +435,11 @@ export default function EnrichmentBuilder({
                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-5">
                         <div className="flex flex-wrap items-start justify-between gap-4">
                             <div>
-                                <h3 className="text-lg font-bold text-slate-800">Cleaning Workspace</h3>
-                                <p className="mt-1 text-sm text-slate-500">Review source rows, import shared operation packs, and assemble reusable cleaning flows.</p>
+                                <h3 className="text-lg font-bold text-[var(--text-primary)]">Cleaning Workspace</h3>
+                                <p className="mt-1 text-sm text-[var(--text-secondary)]">Review source rows, import shared operation packs, and assemble reusable cleaning flows.</p>
                             </div>
                             <div className="flex flex-wrap items-center gap-2">
-                                <span className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 shadow-sm">{columns.length} columns</span>
+                                <span className="rounded-full border border-[var(--border-soft)] bg-[var(--panel)] px-3 py-1.5 text-xs font-semibold text-[var(--text-secondary)] shadow-sm">{columns.length} columns</span>
                                 <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700 shadow-sm">{rules.length} operation{rules.length !== 1 ? 's' : ''}</span>
                             </div>
                         </div>
@@ -467,15 +449,15 @@ export default function EnrichmentBuilder({
                         {workspaceTab === 'dataset' ? (
                             <DatasetViewer sessionId={sessionId} tone="emerald" title="Cleaning Dataset" subtitle="Inspect source rows here, then jump back to the pipeline tab to configure transformations." />
                         ) : (
-                            <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+                            <div className="rounded-3xl border border-[var(--border-soft)] bg-[var(--panel)] p-5 shadow-sm">
                                 <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
                                     <div>
-                                        <h3 className="text-lg font-bold text-slate-800">Cleaning Operations</h3>
-                                        <p className="mt-1 text-sm text-slate-500">{rules.length} operation{rules.length !== 1 ? 's' : ''} in the current pipeline</p>
+                                        <h3 className="text-lg font-bold text-[var(--text-primary)]">Cleaning Operations</h3>
+                                        <p className="mt-1 text-sm text-[var(--text-secondary)]">{rules.length} operation{rules.length !== 1 ? 's' : ''} in the current pipeline</p>
                                     </div>
                                     <div className="flex flex-wrap gap-2">
                                         {embedded && (
-                                            <button type="button" onClick={handleSaveConfig} disabled={!sessionId} className="flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400">
+                                            <button type="button" onClick={handleSaveConfig} disabled={!sessionId} className="flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-[var(--panel-muted)] disabled:text-[var(--text-muted)]">
                                                 Apply to Pipeline
                                             </button>
                                         )}
@@ -491,7 +473,7 @@ export default function EnrichmentBuilder({
                                             </button>
                                         )}
                                         {pastJobs.length > 0 && (
-                                            <button type="button" onClick={() => setShowHistoryModal(true)} className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-100">
+                                            <button type="button" onClick={() => setShowHistoryModal(true)} className="flex items-center gap-2 rounded-xl border border-[var(--border-soft)] bg-[var(--panel-muted)] px-4 py-2 text-sm font-semibold text-[var(--text-primary)] transition-colors hover:bg-[var(--panel-muted)]">
                                                 <History size={16} /> Load Previous
                                             </button>
                                         )}
@@ -509,26 +491,26 @@ export default function EnrichmentBuilder({
                                                 initial={{ opacity: 0, height: 0 }}
                                                 animate={{ opacity: 1, height: 'auto' }}
                                                 exit={{ opacity: 0, height: 0 }}
-                                                className="rounded-2xl border border-slate-200 border-l-4 border-l-emerald-400 bg-white p-5 shadow-sm transition-shadow hover:shadow-md"
+                                                className="rounded-2xl border border-[var(--border-soft)] border-l-4 border-l-emerald-400 bg-[var(--panel)] p-5 shadow-sm transition-shadow hover:shadow-md"
                                             >
                                                 <div className="mb-4 flex items-center justify-between">
-                                                    <span className="inline-flex items-center gap-1.5 rounded-lg bg-slate-100 px-2.5 py-1 text-xs font-black text-slate-500">Operation {index + 1}</span>
-                                                    <button type="button" onClick={() => removeRule(rule.id)} className="rounded-lg p-1.5 text-slate-400 transition-all hover:bg-red-50 hover:text-red-600">
+                                                    <span className="inline-flex items-center gap-1.5 rounded-lg bg-[var(--panel-muted)] px-2.5 py-1 text-xs font-black text-[var(--text-secondary)]">Operation {index + 1}</span>
+                                                    <button type="button" onClick={() => removeRule(rule.id)} className="rounded-lg p-1.5 text-[var(--text-muted)] transition-all hover:bg-red-50 hover:text-red-600">
                                                         <Trash2 size={15} />
                                                     </button>
                                                 </div>
 
                                                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                                                     <div>
-                                                        <label className="mb-1.5 block text-[11px] font-black uppercase tracking-wider text-slate-400">Target Column</label>
-                                                        <select className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-medium text-slate-700 outline-none transition-all focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/10" value={rule.column} onChange={(event) => updateRule(rule.id, 'column', event.target.value)}>
+                                                        <label className="mb-1.5 block text-[11px] font-black uppercase tracking-wider text-[var(--text-muted)]">Target Column</label>
+                                                        <select className="w-full rounded-xl border border-[var(--border-soft)] bg-[var(--panel-muted)] px-3 py-2.5 text-sm font-medium text-[var(--text-primary)] outline-none transition-all focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/10" value={rule.column} onChange={(event) => updateRule(rule.id, 'column', event.target.value)}>
                                                             <option value="" disabled>Select column...</option>
                                                             {columns.map((column) => <option key={column} value={column}>{column}</option>)}
                                                         </select>
                                                     </div>
                                                     <div>
-                                                        <label className="mb-1.5 block text-[11px] font-black uppercase tracking-wider text-slate-400">Cleaning Action</label>
-                                                        <select className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-medium text-slate-700 outline-none transition-all focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/10" value={rule.operation} onChange={(event) => updateRule(rule.id, 'operation', event.target.value)}>
+                                                        <label className="mb-1.5 block text-[11px] font-black uppercase tracking-wider text-[var(--text-muted)]">Cleaning Action</label>
+                                                        <select className="w-full rounded-xl border border-[var(--border-soft)] bg-[var(--panel-muted)] px-3 py-2.5 text-sm font-medium text-[var(--text-primary)] outline-none transition-all focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/10" value={rule.operation} onChange={(event) => updateRule(rule.id, 'operation', event.target.value)}>
                                                             <option value="" disabled>Select action...</option>
                                                             {operations.map((operation) => <option key={operation.id} value={operation.id}>{operation.name}</option>)}
                                                         </select>
@@ -536,7 +518,7 @@ export default function EnrichmentBuilder({
                                                 </div>
 
                                                 <div className="mt-4">
-                                                    <label className="mb-1.5 block text-[11px] font-black uppercase tracking-wider text-slate-400">Parameters</label>
+                                                    <label className="mb-1.5 block text-[11px] font-black uppercase tracking-wider text-[var(--text-muted)]">Parameters</label>
                                                     {renderParams(rule)}
                                                 </div>
                                             </motion.div>
@@ -544,10 +526,10 @@ export default function EnrichmentBuilder({
                                     </AnimatePresence>
 
                                     {rules.length === 0 && (
-                                        <div className="rounded-2xl border-2 border-dashed border-slate-200 bg-white py-14 text-center">
-                                            <AlertCircle className="mx-auto mb-3 text-slate-300" size={36} />
-                                            <h3 className="mb-1 text-base font-bold text-slate-700">Pipeline is empty</h3>
-                                            <p className="mb-5 text-sm text-slate-500">Add cleaning operations or import a shared template to get started.</p>
+                                        <div className="rounded-2xl border-2 border-dashed border-[var(--border-soft)] bg-[var(--panel)] py-14 text-center">
+                                            <AlertCircle className="mx-auto mb-3 text-[var(--text-muted)]" size={36} />
+                                            <h3 className="mb-1 text-base font-bold text-[var(--text-primary)]">Pipeline is empty</h3>
+                                            <p className="mb-5 text-sm text-[var(--text-secondary)]">Add cleaning operations or import a shared template to get started.</p>
                                             <div className="flex flex-wrap items-center justify-center gap-3">
                                                 <button type="button" onClick={() => setShowRepoSidebar(true)} className="rounded-xl border border-emerald-200 bg-emerald-50 px-5 py-2.5 text-sm font-bold text-emerald-700 transition-colors hover:bg-emerald-100">Open Global Repo</button>
                                                 <button type="button" onClick={addRule} className="rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-bold text-white transition-colors hover:bg-emerald-700">Add First Operation</button>
@@ -557,8 +539,8 @@ export default function EnrichmentBuilder({
                                 </div>
 
                                 {rules.length > 0 && !embedded && (
-                                    <div className="flex justify-end border-t border-slate-100 pt-4">
-                                        <button type="button" onClick={handlePreview} disabled={loading} className="flex items-center gap-2.5 rounded-xl bg-emerald-600 px-6 py-3 text-sm font-bold text-white shadow-md shadow-emerald-600/20 transition-all hover:-translate-y-0.5 hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400">
+                                    <div className="flex justify-end border-t border-[var(--border-soft)] pt-4">
+                                        <button type="button" onClick={handlePreview} disabled={loading} className="flex items-center gap-2.5 rounded-xl bg-emerald-600 px-6 py-3 text-sm font-bold text-white shadow-md shadow-emerald-600/20 transition-all hover:-translate-y-0.5 hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-[var(--panel-muted)] disabled:text-[var(--text-muted)]">
                                             <Eye size={16} /> Preview Cleaned Data
                                         </button>
                                     </div>
@@ -572,11 +554,11 @@ export default function EnrichmentBuilder({
                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
                         <div className="mb-5 flex items-center justify-between">
                             <div>
-                                <h3 className="text-lg font-bold text-slate-800">Data Preview</h3>
-                                <p className="mt-1 text-sm text-slate-500">Top sample rows after applying your cleaning pipeline.</p>
+                                <h3 className="text-lg font-bold text-[var(--text-primary)]">Data Preview</h3>
+                                <p className="mt-1 text-sm text-[var(--text-secondary)]">Top sample rows after applying your cleaning pipeline.</p>
                             </div>
                             <div className="flex items-center gap-3">
-                                <button type="button" onClick={() => { setWorkspaceTab('rules'); setStep(2); }} className="flex items-center gap-2 rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 transition-colors hover:bg-slate-50">
+                                <button type="button" onClick={() => { setWorkspaceTab('rules'); setStep(2); }} className="flex items-center gap-2 rounded-xl border border-[var(--border-soft)] px-4 py-2 text-sm font-semibold text-[var(--text-secondary)] transition-colors hover:bg-[var(--panel-muted)]">
                                     <ArrowLeft size={15} /> Edit Pipeline
                                 </button>
                                 <button type="button" onClick={handleExecute} disabled={loading} className="flex items-center gap-2 rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-bold text-white shadow-md shadow-emerald-600/20 transition-all hover:-translate-y-0.5 hover:bg-emerald-700">
@@ -585,19 +567,19 @@ export default function EnrichmentBuilder({
                             </div>
                         </div>
 
-                        <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+                        <div className="overflow-hidden rounded-2xl border border-[var(--border-soft)] bg-[var(--panel)] shadow-sm">
                             {previewData.length > 0 ? (
                                 <div className="overflow-x-auto">
                                     <table className="w-full">
                                         <thead>
-                                            <tr className="border-b border-slate-200 bg-slate-50">
-                                                {Object.keys(previewData[0]).map((key) => <th key={key} className="whitespace-nowrap px-5 py-3 text-left text-[11px] font-bold uppercase tracking-widest text-slate-500">{key}</th>)}
+                                            <tr className="border-b border-[var(--border-soft)] bg-[var(--panel-muted)]">
+                                                {Object.keys(previewData[0]).map((key) => <th key={key} className="whitespace-nowrap px-5 py-3 text-left text-[11px] font-bold uppercase tracking-widest text-[var(--text-secondary)]">{key}</th>)}
                                             </tr>
                                         </thead>
-                                        <tbody className="divide-y divide-slate-100">
+                                        <tbody className="divide-y divide-[var(--border-soft)]">
                                             {previewData.map((row, index) => (
-                                                <tr key={index} className="transition-colors hover:bg-slate-50/80">
-                                                    {Object.values(row).map((value, valueIndex) => <td key={valueIndex} className="px-5 py-3 text-sm font-medium text-slate-700">{String(value)}</td>)}
+                                                <tr key={index} className="transition-colors hover:bg-[var(--panel-muted)]/80">
+                                                    {Object.values(row).map((value, valueIndex) => <td key={valueIndex} className="px-5 py-3 text-sm font-medium text-[var(--text-primary)]">{String(value)}</td>)}
                                                 </tr>
                                             ))}
                                         </tbody>
@@ -605,9 +587,9 @@ export default function EnrichmentBuilder({
                                 </div>
                             ) : (
                                 <div className="px-6 py-12 text-center">
-                                    <AlertCircle className="mx-auto mb-3 text-slate-300" size={32} />
-                                    <h4 className="text-base font-bold text-slate-700">No preview rows returned</h4>
-                                    <p className="mt-2 text-sm text-slate-500">The pipeline ran, but there were no rows available in the sample output.</p>
+                                    <AlertCircle className="mx-auto mb-3 text-[var(--text-muted)]" size={32} />
+                                    <h4 className="text-base font-bold text-[var(--text-primary)]">No preview rows returned</h4>
+                                    <p className="mt-2 text-sm text-[var(--text-secondary)]">The pipeline ran, but there were no rows available in the sample output.</p>
                                 </div>
                             )}
                         </div>
@@ -619,14 +601,14 @@ export default function EnrichmentBuilder({
                         <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-emerald-100">
                             <CheckCircle className="text-emerald-600" size={44} />
                         </div>
-                        <h3 className="mb-3 text-3xl font-black tracking-tight text-slate-900">Data Cleaned Successfully</h3>
-                        <p className="mx-auto mb-10 max-w-md text-base text-slate-500">Your pipeline ran on the full dataset. Download the cleaned result in any format below.</p>
+                        <h3 className="mb-3 text-3xl font-black tracking-tight text-[var(--text-primary)]">Data Cleaned Successfully</h3>
+                        <p className="mx-auto mb-10 max-w-md text-base text-[var(--text-secondary)]">Your pipeline ran on the full dataset. Download the cleaned result in any format below.</p>
                         <div className="mx-auto mb-10 grid max-w-xl grid-cols-1 gap-4 sm:grid-cols-3">
                             <DownloadCard fmt="csv" label="CSV Format" Icon={FileText} onClick={handleDownload} />
                             <DownloadCard fmt="xlsx" label="Excel Workbook" Icon={FileSpreadsheet} onClick={handleDownload} />
                             <DownloadCard fmt="json" label="JSON Array" Icon={FileJson} onClick={handleDownload} />
                         </div>
-                        <button type="button" onClick={resetWorkspace} className="rounded-xl border-2 border-slate-200 px-8 py-3 text-sm font-bold text-slate-700 transition-all hover:border-slate-300 hover:bg-slate-50">
+                        <button type="button" onClick={resetWorkspace} className="rounded-xl border-2 border-[var(--border-soft)] px-8 py-3 text-sm font-bold text-[var(--text-primary)] transition-all hover:border-[var(--border-strong)] hover:bg-[var(--panel-muted)]">
                             Start New Cleaning Job
                         </button>
                     </motion.div>
@@ -657,22 +639,22 @@ export default function EnrichmentBuilder({
                             initial={{ opacity: 0, scale: 0.95, y: 10 }}
                             animate={{ opacity: 1, scale: 1, y: 0 }}
                             exit={{ opacity: 0, scale: 0.95, y: 10 }}
-                            className="relative max-h-[80vh] w-full max-w-lg overflow-y-auto rounded-2xl bg-white p-6 shadow-2xl"
+                            className="relative max-h-[80vh] w-full max-w-lg overflow-y-auto rounded-2xl bg-[var(--panel)] p-6 shadow-2xl"
                         >
                             <div className="flex justify-between items-center mb-6">
-                                <h3 className="text-xl font-bold text-slate-900">Saved Operations</h3>
-                                <button onClick={() => setShowSavedRulesModal(false)} className="text-slate-400 hover:text-slate-600">
+                                <h3 className="text-xl font-bold text-[var(--text-primary)]">Saved Operations</h3>
+                                <button onClick={() => setShowSavedRulesModal(false)} className="text-[var(--text-muted)] hover:text-[var(--text-secondary)]">
                                     <X size={20} />
                                 </button>
                             </div>
 
                             <div className="space-y-3">
                                 {savedRuleSets.map((set) => (
-                                    <div key={set.id} className="p-4 border border-slate-200 rounded-xl">
+                                    <div key={set.id} className="p-4 border border-[var(--border-soft)] rounded-xl">
                                         <div className="flex items-start justify-between gap-3">
                                             <div>
-                                                <h4 className="font-bold text-slate-800">{set.name}</h4>
-                                                <p className="text-xs text-slate-500 mt-1">
+                                                <h4 className="font-bold text-[var(--text-primary)]">{set.name}</h4>
+                                                <p className="text-xs text-[var(--text-secondary)] mt-1">
                                                     {new Date(set.created_at).toLocaleString()} • {set.rules?.length || 0} operations
                                                 </p>
                                             </div>
@@ -708,30 +690,30 @@ export default function EnrichmentBuilder({
                             initial={{ opacity: 0, scale: 0.95, y: 10 }}
                             animate={{ opacity: 1, scale: 1, y: 0 }}
                             exit={{ opacity: 0, scale: 0.95, y: 10 }}
-                            className="relative max-h-[80vh] w-full max-w-lg overflow-y-auto rounded-2xl bg-white p-6 shadow-2xl"
+                            className="relative max-h-[80vh] w-full max-w-lg overflow-y-auto rounded-2xl bg-[var(--panel)] p-6 shadow-2xl"
                         >
                             <div className="flex justify-between items-center mb-6">
-                                <h3 className="text-xl font-bold text-slate-900">Past Cleaning Pipelines</h3>
-                                <button onClick={() => setShowHistoryModal(false)} className="text-slate-400 hover:text-slate-600">
+                                <h3 className="text-xl font-bold text-[var(--text-primary)]">Past Cleaning Pipelines</h3>
+                                <button onClick={() => setShowHistoryModal(false)} className="text-[var(--text-muted)] hover:text-[var(--text-secondary)]">
                                     <X size={20} />
                                 </button>
                             </div>
 
                             <div className="space-y-3">
                                 {pastJobs.map((job) => (
-                                    <div key={job.id} className="p-4 border border-slate-200 rounded-xl hover:border-emerald-500/50 transition-colors group">
+                                    <div key={job.id} className="p-4 border border-[var(--border-soft)] rounded-xl hover:border-emerald-500/50 transition-colors group">
                                         <div className="flex justify-between items-start mb-2">
                                             <div>
-                                                <h4 className="font-bold text-slate-800">{job.file_name || job.filename}</h4>
-                                                <p className="text-xs text-slate-500">{new Date(job.created_at).toLocaleString()}</p>
+                                                <h4 className="font-bold text-[var(--text-primary)]">{job.file_name || job.filename}</h4>
+                                                <p className="text-xs text-[var(--text-secondary)]">{new Date(job.created_at).toLocaleString()}</p>
                                             </div>
-                                            <span className="bg-slate-100 text-slate-600 text-xs font-bold px-2 py-1 rounded-lg">
+                                            <span className="bg-[var(--panel-muted)] text-[var(--text-secondary)] text-xs font-bold px-2 py-1 rounded-lg">
                                                 {job.rules.length} operations
                                             </span>
                                         </div>
                                         <button
                                             onClick={() => loadRulesFromJob(job)}
-                                            className="w-full mt-3 py-2 bg-slate-50 group-hover:bg-emerald-600 group-hover:text-white text-slate-600 rounded-lg font-medium text-sm transition-colors"
+                                            className="w-full mt-3 py-2 bg-[var(--panel-muted)] group-hover:bg-emerald-600 group-hover:text-white text-[var(--text-secondary)] rounded-lg font-medium text-sm transition-colors"
                                         >
                                             Apply Operations
                                         </button>
@@ -742,6 +724,6 @@ export default function EnrichmentBuilder({
                     </div>
                 )}
             </AnimatePresence>
-        </div>
+        </FeatureLayout>
     );
 }

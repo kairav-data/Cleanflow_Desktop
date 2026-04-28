@@ -19,7 +19,7 @@ export default function WorkspaceTabs({ tabs = [], activeTab, onChange, tone = '
     const styles = TONE_STYLES[tone] || TONE_STYLES.indigo;
 
     return (
-        <div className={`inline-flex flex-wrap items-center gap-1 rounded-2xl border border-slate-200 bg-white p-1 shadow-sm ${className}`}>
+        <div className={`inline-flex flex-wrap items-center gap-1 rounded-2xl border border-[var(--border-soft)] bg-[var(--panel)] p-1 shadow-sm ${className}`}>
             {tabs.map(({ id, label, icon: Icon, disabled = false }) => {
                 const isActive = activeTab === id;
 
@@ -32,8 +32,8 @@ export default function WorkspaceTabs({ tabs = [], activeTab, onChange, tone = '
                         className={`inline-flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-semibold transition-all ${
                             isActive
                                 ? styles.active
-                                : 'text-slate-500 hover:bg-slate-50 hover:text-slate-700'
-                        } ${disabled ? 'cursor-not-allowed opacity-45 hover:bg-transparent hover:text-slate-500' : ''}`}
+                                : 'text-[var(--text-secondary)] hover:bg-[var(--panel-muted)] hover:text-[var(--text-primary)]'
+                        } ${disabled ? 'cursor-not-allowed opacity-45 hover:bg-transparent hover:text-[var(--text-secondary)]' : ''}`}
                     >
                         {Icon ? <Icon size={14} /> : null}
                         {label}

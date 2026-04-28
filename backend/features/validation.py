@@ -4,12 +4,11 @@ import os
 from typing import List, Tuple, Dict, Any
 from models import ValidationRule, ValidationRuleType, DataType
 import re
+from runtime_paths import RESULTS_DIR, UPLOAD_DIR
 
 from logger import setup_logger
 logger = setup_logger(__name__)
 
-UPLOAD_DIR = "uploads"
-RESULTS_DIR = "results"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 os.makedirs(RESULTS_DIR, exist_ok=True)
 

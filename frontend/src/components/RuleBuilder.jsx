@@ -3,8 +3,7 @@ import { Plus, Trash2, Play, AlertCircle, CheckCircle2, History, X, Save, Folder
 import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
 import RepoSidebar from './RepoSidebar';
-
-const API_BASE = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || 'http://localhost:8000';
+import { API_BASE } from '../lib/runtimeConfig';
 const SAVED_RULESETS_KEY = 'cleanflow_saved_rulesets_v1';
 
 const RULE_CATEGORIES = {
@@ -237,8 +236,8 @@ const RuleBuilder = ({
     };
 
     const shellClass = compact
-        ? 'w-full rounded-[30px] border border-[var(--border-soft)] bg-[var(--panel)] p-5 shadow-[var(--shadow-soft)]'
-        : 'w-full rounded-[30px] border border-[var(--border-soft)] bg-[var(--panel)] p-6 shadow-[var(--shadow-soft)]';
+        ? 'w-full'
+        : 'w-full rounded-[28px] border border-slate-200 bg-white p-6 shadow-lg';
     const headerClass = compact
         ? 'flex flex-col md:flex-row md:justify-between md:items-start gap-4 mb-6'
         : 'mb-8 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between';
@@ -246,17 +245,17 @@ const RuleBuilder = ({
         ? 'flex flex-wrap gap-2'
         : 'flex flex-wrap gap-3';
     const secondaryButtonClass = compact
-        ? 'flex items-center gap-2 rounded-xl border border-[var(--border-soft)] bg-[var(--panel-muted)] px-3.5 py-2.5 text-sm font-semibold text-[var(--text-secondary)] transition-all hover:text-[var(--text-primary)]'
-        : 'flex items-center gap-2 rounded-xl border border-[var(--border-soft)] bg-[var(--panel-muted)] px-3.5 py-2.5 text-sm font-semibold text-[var(--text-secondary)] transition-all hover:text-[var(--text-primary)]';
+        ? 'flex items-center gap-2 px-3 py-2 bg-slate-50 border border-slate-200 hover:bg-slate-100 text-slate-700 rounded-lg font-semibold text-sm transition-colors'
+        : 'flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3.5 py-2 text-sm font-semibold text-slate-700 transition-all hover:bg-slate-100';
     const accentButtonClass = compact
-        ? 'flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-3.5 py-2.5 text-sm font-semibold text-emerald-700 transition-all hover:bg-emerald-100'
-        : 'flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-3.5 py-2.5 text-sm font-semibold text-emerald-700 transition-all hover:bg-emerald-100';
+        ? 'flex items-center gap-2 px-3 py-2 bg-emerald-50 border border-emerald-200 hover:bg-emerald-100 text-emerald-700 rounded-lg font-semibold text-sm transition-colors'
+        : 'flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3.5 py-2 text-sm font-semibold text-emerald-700 transition-all hover:bg-emerald-100';
     const repoButtonClass = compact
-        ? 'flex items-center gap-2 rounded-xl border border-sky-200 bg-sky-50 px-3.5 py-2.5 text-sm font-semibold text-sky-700 transition-all hover:bg-sky-100'
-        : 'flex items-center gap-2 rounded-xl border border-sky-200 bg-sky-50 px-3.5 py-2.5 text-sm font-semibold text-sky-700 transition-all hover:bg-sky-100';
+        ? 'flex items-center gap-2 px-3 py-2 bg-blue-50 border border-blue-200 hover:bg-blue-100 text-blue-700 rounded-lg font-semibold text-sm transition-colors'
+        : 'flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-3.5 py-2 text-sm font-semibold text-blue-700 transition-all hover:bg-blue-100';
     const modalCardClass = compact
-        ? 'relative w-full max-w-2xl max-h-[84vh] overflow-y-auto rounded-[28px] border border-[var(--border-soft)] bg-[var(--panel)] p-6 shadow-[var(--shadow-strong)]'
-        : 'relative w-full max-w-2xl max-h-[84vh] overflow-y-auto rounded-[28px] border border-[var(--border-soft)] bg-[var(--panel)] p-6 shadow-[var(--shadow-strong)]';
+        ? 'relative bg-white rounded-2xl shadow-2xl w-full max-w-lg p-5 max-h-[80vh] overflow-y-auto'
+        : 'relative max-h-[80vh] w-full max-w-lg overflow-y-auto rounded-2xl bg-white p-6 shadow-2xl';
     
     const getCategoryColor = (category) => {
         const colors = {
@@ -270,8 +269,8 @@ const RuleBuilder = ({
     };
 
     const ruleCardClass = (category) => compact
-        ? `p-4 rounded-2xl bg-[var(--panel-muted)] border border-[var(--border-soft)] flex flex-col gap-4 relative shadow-[var(--shadow-soft)] border-l-4 ${getCategoryColor(category)}`
-        : `relative flex flex-col items-start gap-4 rounded-2xl border border-[var(--border-soft)] border-l-4 bg-[var(--panel-muted)] p-5 shadow-[var(--shadow-soft)] transition-shadow hover:shadow-[var(--shadow-strong)] md:flex-row md:items-center ${getCategoryColor(category)}`;
+        ? `p-4 rounded-xl bg-white border border-slate-200 flex flex-col gap-4 relative shadow-sm border-l-4 ${getCategoryColor(category)}`
+        : `relative flex flex-col items-start gap-4 rounded-xl border border-slate-200 border-l-4 bg-white p-5 shadow-sm transition-shadow hover:shadow-md md:flex-row md:items-center ${getCategoryColor(category)}`;
     
     const gridClass = compact
         ? 'grid grid-cols-1 lg:grid-cols-2 gap-4 w-full'
@@ -280,8 +279,8 @@ const RuleBuilder = ({
     const columnSpanClass = compact ? '' : 'col-span-3';
     
     const emptyStateClass = compact
-        ? 'text-center py-10 bg-[var(--panel-muted)] rounded-2xl border border-dashed border-[var(--border-strong)]'
-        : 'rounded-2xl border border-dashed border-[var(--border-strong)] bg-[var(--panel-muted)] py-12 text-center';
+        ? 'text-center py-10 bg-slate-50 rounded-xl border border-dashed border-slate-200'
+        : 'rounded-2xl border border-dashed border-slate-200 bg-slate-50 py-12 text-center';
 
     return (
         <div className={shellClass}>
@@ -293,8 +292,8 @@ const RuleBuilder = ({
                         </div>
                     )}
                     <div>
-                        <h3 className={`${compact ? 'text-lg' : 'text-xl'} font-semibold text-[var(--text-primary)] tracking-tight`}>Validation Rules</h3>
-                        <p className="text-[var(--text-secondary)] font-medium text-sm mt-0.5">{rules.length} conditions established</p>
+                        <h3 className={`${compact ? 'text-lg' : 'text-xl'} font-black text-slate-900 tracking-tight`}>Validation Rules</h3>
+                        <p className="text-slate-500 font-medium text-sm mt-0.5">{rules.length} conditions established</p>
                     </div>
                 </div>
                 <div className={actionsClass}>
@@ -355,19 +354,19 @@ const RuleBuilder = ({
                             className={modalCardClass}
                         >
                             <div className="flex justify-between items-center mb-6">
-                                <h3 className="text-xl font-bold text-[var(--text-primary)]">Saved Rule Sets</h3>
-                                <button onClick={() => setShowSavedRulesModal(false)} className="text-[var(--text-muted)] hover:text-[var(--text-secondary)]">
+                                <h3 className="text-xl font-bold text-slate-900">Saved Rule Sets</h3>
+                                <button onClick={() => setShowSavedRulesModal(false)} className="text-slate-400 hover:text-slate-600">
                                     <X size={20} />
                                 </button>
                             </div>
 
                             <div className="space-y-3">
                                 {savedRuleSets.map((set) => (
-                                    <div key={set.id} className="p-4 border border-[var(--border-soft)] rounded-xl">
+                                    <div key={set.id} className="p-4 border border-slate-200 rounded-xl">
                                         <div className="flex items-start justify-between gap-3">
                                             <div>
-                                                <h4 className="font-bold text-[var(--text-primary)]">{set.name}</h4>
-                                                <p className="text-xs text-[var(--text-secondary)] mt-1">
+                                                <h4 className="font-bold text-slate-800">{set.name}</h4>
+                                                <p className="text-xs text-slate-500 mt-1">
                                                     {new Date(set.created_at).toLocaleString()} • {set.rules?.length || 0} rules
                                                 </p>
                                             </div>
@@ -406,27 +405,27 @@ const RuleBuilder = ({
                             className={modalCardClass}
                         >
                             <div className="flex justify-between items-center mb-6">
-                                <h3 className="text-xl font-bold text-[var(--text-primary)]">Past Validations</h3>
-                                <button onClick={() => setShowHistoryModal(false)} className="text-[var(--text-muted)] hover:text-[var(--text-secondary)]">
+                                <h3 className="text-xl font-bold text-slate-900">Past Validations</h3>
+                                <button onClick={() => setShowHistoryModal(false)} className="text-slate-400 hover:text-slate-600">
                                     <X size={20} />
                                 </button>
                             </div>
 
                             <div className="space-y-3">
                                 {pastJobs.map((job) => (
-                                    <div key={job.id} className="p-4 border border-[var(--border-soft)] rounded-xl hover:border-brand-blue/50 transition-colors group">
+                                    <div key={job.id} className="p-4 border border-slate-200 rounded-xl hover:border-brand-blue/50 transition-colors group">
                                         <div className="flex justify-between items-start mb-2">
                                             <div>
-                                                <h4 className="font-bold text-[var(--text-primary)]">{job.file_name || job.filename}</h4>
-                                                <p className="text-xs text-[var(--text-secondary)]">{new Date(job.created_at).toLocaleString()}</p>
+                                                <h4 className="font-bold text-slate-800">{job.file_name || job.filename}</h4>
+                                                <p className="text-xs text-slate-500">{new Date(job.created_at).toLocaleString()}</p>
                                             </div>
-                                            <span className="bg-[var(--panel-muted)] text-[var(--text-secondary)] text-xs font-bold px-2 py-1 rounded-lg">
+                                            <span className="bg-slate-100 text-slate-600 text-xs font-bold px-2 py-1 rounded-lg">
                                                 {job.rules.length} rules
                                             </span>
                                         </div>
                                         <button
                                             onClick={() => loadRulesFromJob(job)}
-                                            className="w-full mt-3 py-2 bg-[var(--panel-muted)] group-hover:bg-blue-600 group-hover:text-white text-[var(--text-secondary)] rounded-lg font-medium text-sm transition-colors"
+                                            className="w-full mt-3 py-2 bg-slate-50 group-hover:bg-blue-600 group-hover:text-white text-slate-600 rounded-lg font-medium text-sm transition-colors"
                                         >
                                             Apply Rules
                                         </button>
@@ -450,12 +449,12 @@ const RuleBuilder = ({
                         >
                             {/* Card header: rule number + delete */}
                             <div className="flex items-center justify-between mb-4">
-                                <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-[var(--text-secondary)] bg-[var(--panel-muted)] px-2.5 py-1 rounded-lg">
+                                <span className="inline-flex items-center gap-1.5 text-xs font-black text-slate-500 bg-slate-100 px-2.5 py-1 rounded-lg">
                                     Rule {index + 1}
                                 </span>
                                 <button
                                     onClick={() => removeRule(rule.id)}
-                                    className="p-1.5 text-[var(--text-muted)] hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
+                                    className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
                                     title="Remove Rule"
                                 >
                                     <Trash2 size={15} />
@@ -465,10 +464,10 @@ const RuleBuilder = ({
                             <div className={gridClass}>
                                 {/* Column Selection */}
                                 <div className={columnSpanClass}>
-                                    <label className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider mb-2 block">Column Target</label>
+                                    <label className="text-xs font-black text-slate-400 uppercase tracking-wider mb-2 block">Column Target</label>
                                     {columns.length > 0 ? (
                                         <select
-                                            className={`w-full ${compact ? 'p-2.5 rounded-lg text-sm' : 'p-3.5 rounded-xl'} bg-[var(--panel-muted)] border border-[var(--border-soft)] font-semibold focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all`}
+                                            className={`w-full ${compact ? 'p-2.5 rounded-lg text-sm' : 'p-3.5 rounded-xl'} bg-slate-50 border border-slate-200 font-semibold focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all`}
                                             value={rule.column}
                                             onChange={(e) => updateRule(rule.id, 'column', e.target.value)}
                                         >
@@ -479,7 +478,7 @@ const RuleBuilder = ({
                                         <input
                                             type="text"
                                             placeholder="Type column name"
-                                            className={`w-full ${compact ? 'p-2.5 rounded-lg' : 'p-3.5 rounded-xl'} bg-[var(--panel-muted)] border border-[var(--border-soft)] font-semibold focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all text-sm`}
+                                            className={`w-full ${compact ? 'p-2.5 rounded-lg' : 'p-3.5 rounded-xl'} bg-slate-50 border border-slate-200 font-semibold focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all text-sm`}
                                             value={rule.column}
                                             onChange={(e) => updateRule(rule.id, 'column', e.target.value)}
                                         />
@@ -488,9 +487,9 @@ const RuleBuilder = ({
 
                                 {/* Category Selection */}
                                 <div className={columnSpanClass}>
-                                    <label className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider mb-2 block">Rule Category</label>
+                                    <label className="text-xs font-black text-slate-400 uppercase tracking-wider mb-2 block">Rule Category</label>
                                     <select
-                                        className={`w-full ${compact ? 'p-2.5 rounded-lg text-sm' : 'p-3.5 rounded-xl'} bg-[var(--panel-muted)] border border-[var(--border-soft)] font-semibold focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all`}
+                                        className={`w-full ${compact ? 'p-2.5 rounded-lg text-sm' : 'p-3.5 rounded-xl'} bg-slate-50 border border-slate-200 font-semibold focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all`}
                                             value={rule.category}
                                             onChange={(e) => {
                                                 const newCategory = e.target.value;
@@ -508,9 +507,9 @@ const RuleBuilder = ({
 
                                 {/* Rule Type Selection */}
                                 <div className={columnSpanClass}>
-                                    <label className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider mb-2 block">Specific Condition</label>
+                                    <label className="text-xs font-black text-slate-400 uppercase tracking-wider mb-2 block">Specific Condition</label>
                                     <select
-                                        className={`w-full ${compact ? 'p-2.5 rounded-lg text-sm' : 'p-3.5 rounded-xl'} bg-[var(--panel-muted)] border border-[var(--border-soft)] font-semibold focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all`}
+                                        className={`w-full ${compact ? 'p-2.5 rounded-lg text-sm' : 'p-3.5 rounded-xl'} bg-slate-50 border border-slate-200 font-semibold focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all`}
                                         value={rule.rule_type}
                                         onChange={(e) => updateRule(rule.id, 'rule_type', e.target.value)}
                                     >
@@ -522,10 +521,10 @@ const RuleBuilder = ({
 
                                 {/* Dynamic Parameters */}
                                 <div className={columnSpanClass}>
-                                    <label className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider mb-2 block">Parameters Config</label>
+                                    <label className="text-xs font-black text-slate-400 uppercase tracking-wider mb-2 block">Parameters Config</label>
                                     {rule.rule_type === 'type_check' && (
                                         <select
-                                            className={`w-full ${compact ? 'p-2.5 rounded-lg text-sm' : 'p-3.5 rounded-xl'} bg-[var(--panel-muted)] border border-[var(--border-soft)] font-semibold focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all`}
+                                            className={`w-full ${compact ? 'p-2.5 rounded-lg text-sm' : 'p-3.5 rounded-xl'} bg-slate-50 border border-slate-200 font-semibold focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all`}
                                             onChange={(e) => updateParams(rule.id, 'type', e.target.value)}
                                             value={rule.params.type || 'string'}
                                         >
@@ -535,7 +534,7 @@ const RuleBuilder = ({
 
                                     {rule.rule_type === 'date_format' && (
                                         <select
-                                            className={`w-full ${compact ? 'p-2.5 rounded-lg text-sm' : 'p-3.5 rounded-xl'} bg-[var(--panel-muted)] border border-[var(--border-soft)] font-semibold focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all`}
+                                            className={`w-full ${compact ? 'p-2.5 rounded-lg text-sm' : 'p-3.5 rounded-xl'} bg-slate-50 border border-slate-200 font-semibold focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all`}
                                             onChange={(e) => updateParams(rule.id, 'format', e.target.value)}
                                             value={rule.params.format || '%Y-%m-%d'}
                                         >
@@ -547,7 +546,7 @@ const RuleBuilder = ({
                                         <input
                                             type="number"
                                             placeholder="Numeric Value"
-                                            className={`w-full ${compact ? 'p-2.5 rounded-lg text-sm' : 'p-3.5 rounded-xl'} bg-[var(--panel-muted)] border border-[var(--border-soft)] font-semibold outline-none transition-all`}
+                                            className={`w-full ${compact ? 'p-2.5 rounded-lg text-sm' : 'p-3.5 rounded-xl'} bg-slate-50 border border-slate-200 font-semibold outline-none transition-all`}
                                             value={rule.params[rule.rule_type === 'length_exact' ? 'len' : rule.rule_type.split('_')[1]] || ''}
                                             onChange={(e) => updateParams(rule.id, rule.rule_type === 'length_exact' ? 'len' : (rule.rule_type.split('_')[1]), e.target.value)}
                                         />
@@ -557,7 +556,7 @@ const RuleBuilder = ({
                                         <input
                                             type="number"
                                             placeholder="Set Threshold"
-                                            className={`w-full ${compact ? 'p-2.5 rounded-lg text-sm' : 'p-3.5 rounded-xl'} bg-[var(--panel-muted)] border border-[var(--border-soft)] font-semibold outline-none transition-all`}
+                                            className={`w-full ${compact ? 'p-2.5 rounded-lg text-sm' : 'p-3.5 rounded-xl'} bg-slate-50 border border-slate-200 font-semibold outline-none transition-all`}
                                             value={rule.params.value || ''}
                                             onChange={(e) => updateParams(rule.id, 'value', e.target.value)}
                                         />
@@ -567,13 +566,13 @@ const RuleBuilder = ({
                                         <div className="flex gap-2">
                                             <input
                                                 type="number" placeholder="Min"
-                                                className={`w-1/2 ${compact ? 'p-2.5 rounded-lg text-sm' : 'p-3.5 rounded-xl'} bg-[var(--panel-muted)] border border-[var(--border-soft)] font-semibold outline-none transition-all`}
+                                                className={`w-1/2 ${compact ? 'p-2.5 rounded-lg text-sm' : 'p-3.5 rounded-xl'} bg-slate-50 border border-slate-200 font-semibold outline-none transition-all`}
                                                 value={rule.params.min || ''}
                                                 onChange={(e) => updateParams(rule.id, 'min', e.target.value)}
                                             />
                                             <input
                                                 type="number" placeholder="Max"
-                                                className={`w-1/2 ${compact ? 'p-2.5 rounded-lg text-sm' : 'p-3.5 rounded-xl'} bg-[var(--panel-muted)] border border-[var(--border-soft)] font-semibold outline-none transition-all`}
+                                                className={`w-1/2 ${compact ? 'p-2.5 rounded-lg text-sm' : 'p-3.5 rounded-xl'} bg-slate-50 border border-slate-200 font-semibold outline-none transition-all`}
                                                 value={rule.params.max || ''}
                                                 onChange={(e) => updateParams(rule.id, 'max', e.target.value)}
                                             />
@@ -581,7 +580,7 @@ const RuleBuilder = ({
                                     )}
 
                                     {(rule.rule_type === 'regex_email' || rule.rule_type === 'not_null' || rule.rule_type === 'value_positive' || rule.rule_type === 'value_negative') && (
-                                        <div className={`p-3.5 bg-[var(--panel-muted)] rounded-xl text-[var(--text-muted)] text-sm font-semibold text-center h-full flex flex-col justify-center border border-[var(--border-soft)] border-dashed`}>
+                                        <div className={`p-3.5 bg-slate-100 rounded-xl text-slate-400 text-sm font-semibold text-center h-full flex flex-col justify-center border border-slate-200 border-dashed`}>
                                             No additional parameters
                                         </div>
                                     )}
@@ -590,7 +589,7 @@ const RuleBuilder = ({
                                         <input
                                             type="text"
                                             placeholder="Pattern (e.g. ^[0-9]{3}$)"
-                                            className={`w-full ${compact ? 'p-2.5 rounded-lg text-sm' : 'p-3.5 rounded-xl'} bg-[var(--panel-muted)] border border-[var(--border-soft)] font-semibold outline-none transition-all text-sm`}
+                                            className={`w-full ${compact ? 'p-2.5 rounded-lg text-sm' : 'p-3.5 rounded-xl'} bg-slate-50 border border-slate-200 font-semibold outline-none transition-all text-sm`}
                                             value={rule.params.regex || ''}
                                             onChange={(e) => updateParams(rule.id, 'regex', e.target.value)}
                                         />
@@ -600,7 +599,7 @@ const RuleBuilder = ({
                                         <input
                                             type="text"
                                             placeholder="Comma separated lists"
-                                            className={`w-full ${compact ? 'p-2.5 rounded-lg text-sm' : 'p-3.5 rounded-xl'} bg-[var(--panel-muted)] border border-[var(--border-soft)] font-semibold outline-none transition-all text-sm`}
+                                            className={`w-full ${compact ? 'p-2.5 rounded-lg text-sm' : 'p-3.5 rounded-xl'} bg-slate-50 border border-slate-200 font-semibold outline-none transition-all text-sm`}
                                             value={rule.params.values ? (Array.isArray(rule.params.values) ? rule.params.values.join(',') : rule.params.values) : ''}
                                             onChange={(e) => updateParams(rule.id, 'values', e.target.value.split(','))}
                                         />
@@ -610,7 +609,7 @@ const RuleBuilder = ({
                                         <input
                                             type="text"
                                             placeholder="Target substring..."
-                                            className={`w-full ${compact ? 'p-2.5 rounded-lg text-sm' : 'p-3.5 rounded-xl'} bg-[var(--panel-muted)] border border-[var(--border-soft)] font-semibold outline-none transition-all`}
+                                            className={`w-full ${compact ? 'p-2.5 rounded-lg text-sm' : 'p-3.5 rounded-xl'} bg-slate-50 border border-slate-200 font-semibold outline-none transition-all`}
                                             value={rule.params[rule.rule_type === 'starts_with' ? 'prefix' : 'suffix'] || ''}
                                             onChange={(e) => updateParams(rule.id, rule.rule_type === 'starts_with' ? 'prefix' : 'suffix', e.target.value)}
                                         />
@@ -621,7 +620,7 @@ const RuleBuilder = ({
                                             <input
                                                 type="text"
                                                 placeholder="e.g. value > 100"
-                                                className={`w-full ${compact ? 'p-2.5 rounded-lg' : 'p-3.5 rounded-xl'} bg-[var(--panel-muted)] border border-[var(--border-soft)] font-semibold outline-none transition-all text-sm`}
+                                                className={`w-full ${compact ? 'p-2.5 rounded-lg' : 'p-3.5 rounded-xl'} bg-slate-50 border border-slate-200 font-semibold outline-none transition-all text-sm`}
                                                 value={rule.params.expression || ''}
                                                 onChange={(e) => updateParams(rule.id, 'expression', e.target.value)}
                                             />
@@ -631,7 +630,7 @@ const RuleBuilder = ({
                                     {rule.rule_type === 'column_compare' && (
                                         <div className="flex gap-2 items-center">
                                             <select
-                                                className={`w-1/3 ${compact ? 'p-2.5 rounded-lg text-sm' : 'p-3.5 rounded-xl'} bg-[var(--panel-muted)] border border-[var(--border-soft)] font-semibold outline-none transition-all`}
+                                                className={`w-1/3 ${compact ? 'p-2.5 rounded-lg text-sm' : 'p-3.5 rounded-xl'} bg-slate-50 border border-slate-200 font-semibold outline-none transition-all`}
                                                 value={rule.params.operator || '=='}
                                                 onChange={(e) => updateParams(rule.id, 'operator', e.target.value)}
                                             >
@@ -643,7 +642,7 @@ const RuleBuilder = ({
                                                 <option value="<=">&lt;=</option>
                                             </select>
                                             <select
-                                                className={`w-2/3 ${compact ? 'p-2.5 rounded-lg text-sm' : 'p-3.5 rounded-xl'} bg-[var(--panel-muted)] border border-[var(--border-soft)] font-semibold outline-none transition-all`}
+                                                className={`w-2/3 ${compact ? 'p-2.5 rounded-lg text-sm' : 'p-3.5 rounded-xl'} bg-slate-50 border border-slate-200 font-semibold outline-none transition-all`}
                                                 value={rule.params.compare_column || ''}
                                                 onChange={(e) => updateParams(rule.id, 'compare_column', e.target.value)}
                                             >
@@ -657,7 +656,7 @@ const RuleBuilder = ({
                                         <div className="flex flex-col gap-2">
                                             <div className="flex gap-2">
                                                 <select
-                                                    className={`w-1/2 ${compact ? 'p-2.5 rounded-lg text-xs' : 'p-3.5 rounded-xl text-sm'} bg-[var(--panel-muted)] border border-[var(--border-soft)] font-semibold outline-none transition-all`}
+                                                    className={`w-1/2 ${compact ? 'p-2.5 rounded-lg text-xs' : 'p-3.5 rounded-xl text-sm'} bg-slate-50 border border-slate-200 font-semibold outline-none transition-all`}
                                                     value={rule.params.condition_column || ''}
                                                     onChange={(e) => updateParams(rule.id, 'condition_column', e.target.value)}
                                                 >
@@ -667,7 +666,7 @@ const RuleBuilder = ({
                                                 <input
                                                     type="text"
                                                     placeholder="is equal to..."
-                                                    className={`w-1/2 ${compact ? 'p-2.5 rounded-lg text-xs' : 'p-3.5 rounded-xl text-sm'} bg-[var(--panel-muted)] border border-[var(--border-soft)] font-semibold outline-none transition-all`}
+                                                    className={`w-1/2 ${compact ? 'p-2.5 rounded-lg text-xs' : 'p-3.5 rounded-xl text-sm'} bg-slate-50 border border-slate-200 font-semibold outline-none transition-all`}
                                                     value={rule.params.condition_value || ''}
                                                     onChange={(e) => updateParams(rule.id, 'condition_value', e.target.value)}
                                                 />
@@ -675,7 +674,7 @@ const RuleBuilder = ({
                                             <input
                                                 type="text"
                                                 placeholder="Then expect this value"
-                                                className={`w-full ${compact ? 'p-2.5 rounded-lg text-xs' : 'p-3.5 rounded-xl text-sm'} bg-[var(--panel-muted)] border border-[var(--border-soft)] font-semibold outline-none transition-all`}
+                                                className={`w-full ${compact ? 'p-2.5 rounded-lg text-xs' : 'p-3.5 rounded-xl text-sm'} bg-slate-50 border border-slate-200 font-semibold outline-none transition-all`}
                                                 value={rule.params.expected_value || ''}
                                                 onChange={(e) => updateParams(rule.id, 'expected_value', e.target.value)}
                                             />
@@ -692,10 +691,10 @@ const RuleBuilder = ({
                 {rules.length > 0 && (
                     <button
                         onClick={addRule}
-                        className="group mt-3 flex w-full items-center gap-3 rounded-xl border border-dashed border-[var(--border-soft)] bg-transparent px-4 py-3 text-left transition-all duration-200 hover:border-blue-300 hover:bg-blue-50/60"
+                        className="group mt-3 flex w-full items-center gap-3 rounded-xl border border-dashed border-slate-200 bg-transparent px-4 py-3 text-left transition-all duration-200 hover:border-blue-300 hover:bg-blue-50/60"
                     >
                         {/* "+" circle */}
-                        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-[var(--border-strong)] bg-[var(--panel)] text-[var(--text-muted)] shadow-sm transition-all duration-200 group-hover:border-blue-400 group-hover:bg-blue-600 group-hover:text-white group-hover:shadow-md">
+                        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-slate-300 bg-white text-slate-400 shadow-sm transition-all duration-200 group-hover:border-blue-400 group-hover:bg-blue-600 group-hover:text-white group-hover:shadow-md">
                             <Plus size={14} />
                         </span>
 
@@ -705,7 +704,7 @@ const RuleBuilder = ({
                         </span>
 
                         {/* faint hint always visible */}
-                        <span className="ml-auto text-[11px] font-medium text-[var(--text-muted)] transition-opacity duration-200 group-hover:opacity-0">
+                        <span className="ml-auto text-[11px] font-medium text-slate-400 transition-opacity duration-200 group-hover:opacity-0">
                             Rule {rules.length + 1}
                         </span>
                     </button>
@@ -713,11 +712,11 @@ const RuleBuilder = ({
 
                 {rules.length === 0 && (
                     <div className={emptyStateClass}>
-                        <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full border border-[var(--border-soft)] bg-[var(--panel)] shadow-sm">
-                            <AlertCircle className="text-[var(--text-muted)]" size={32} />
+                        <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full border border-slate-200 bg-white shadow-sm">
+                            <AlertCircle className="text-slate-400" size={32} />
                         </div>
-                        <h4 className="text-lg font-bold text-[var(--text-primary)] mb-1">No execution rules defined</h4>
-                        <p className="text-[var(--text-secondary)] font-medium max-w-sm mx-auto mb-6">Build a robust rule set by adding conditions to validate your dataset columns.</p>
+                        <h4 className="text-lg font-bold text-slate-800 mb-1">No execution rules defined</h4>
+                        <p className="text-slate-500 font-medium max-w-sm mx-auto mb-6">Build a robust rule set by adding conditions to validate your dataset columns.</p>
                         <button onClick={addRule} className="rounded-lg bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-slate-800">
                             + Add Data Rule
                         </button>
@@ -726,7 +725,7 @@ const RuleBuilder = ({
             </div>
 
             {/* Submit Button Area - always visible, just disabled if empty */}
-            <div className="mt-8 flex justify-end gap-3 border-t border-[var(--border-soft)] pt-5">
+            <div className="mt-8 flex justify-end gap-3 border-t border-slate-100 pt-5">
                 {isEmbedded && (
                     <button
                         onClick={() => {
@@ -746,7 +745,7 @@ const RuleBuilder = ({
                         className={`
                             ${compact ? 'px-5 py-3 rounded-xl text-sm' : 'px-6 py-3 rounded-xl'} flex items-center gap-3 text-sm font-semibold transition-all tracking-wide
                             ${rules.length === 0
-                                ? 'bg-[var(--panel-muted)] text-[var(--text-muted)] cursor-not-allowed border border-[var(--border-soft)]'
+                                ? 'bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200'
                                 : 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-600/25 hover:from-blue-700 hover:to-indigo-700'
                             }
                         `}

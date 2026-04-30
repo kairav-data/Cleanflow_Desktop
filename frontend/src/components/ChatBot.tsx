@@ -3,8 +3,7 @@ import { MessageCircle, X, Send, Loader2, User, Bot, Minimize2 } from 'lucide-re
 import { motion, AnimatePresence } from 'framer-motion';
 import Markdown from 'react-markdown';
 import { cn } from '../lib/utils';
-
-const API_BASE = (import.meta as any).env.VITE_API_BASE_URL || 'http://localhost:8000';
+import { API_BASE } from '../lib/runtimeConfig';
 
 interface Message {
   role: 'user' | 'bot';

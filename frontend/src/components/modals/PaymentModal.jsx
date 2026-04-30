@@ -2,9 +2,7 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import { X, Check, CreditCard, ShieldCheck } from 'lucide-react';
 import { motion } from 'framer-motion';
-
-// Pulling the URL from the .env file
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'import.meta.env.VITE_API_URL';
+import { API_BASE } from '../../lib/runtimeConfig';
 
 const PaymentModal = ({ isOpen, onClose, onPaymentSuccess }) => {
     const [loading, setLoading] = useState(false);

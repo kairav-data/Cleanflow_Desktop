@@ -21,8 +21,7 @@ import {
     templateNeedsFieldMapping,
     VALIDATION_OPERATOR_OPTIONS,
 } from '../lib/repositoryTemplates';
-
-const API_BASE = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || 'http://localhost:8000';
+import { API_BASE } from '../lib/runtimeConfig';
 
 const LIBRARY_CONFIG = {
     validation: {
@@ -80,9 +79,9 @@ const renderValue = (value) => {
 
 function DetailRow({ label, value }) {
     return (
-        <div className="grid gap-1.5 rounded-2xl border border-[var(--border-soft)] bg-[var(--panel-muted)] px-4 py-3">
-            <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--text-muted)]">{label}</span>
-            <span className="text-sm font-medium text-[var(--text-primary)] whitespace-pre-wrap break-words">{renderValue(value)}</span>
+        <div className="grid gap-1.5 rounded-2xl border border-slate-100 bg-slate-50 px-4 py-3">
+            <span className="text-[11px] font-black uppercase tracking-[0.16em] text-slate-400">{label}</span>
+            <span className="text-sm font-medium text-slate-700 whitespace-pre-wrap break-words">{renderValue(value)}</span>
         </div>
     );
 }
@@ -223,23 +222,23 @@ export default function RepoSidebar({
                         animate={{ x: 0, opacity: 1 }}
                         exit={{ x: '100%', opacity: 0.7 }}
                         transition={{ type: 'spring', damping: 28, stiffness: 220 }}
-                        className="fixed right-0 top-0 bottom-0 z-50 flex w-full max-w-[540px] flex-col border-l border-[var(--border-soft)] bg-[var(--panel)] shadow-2xl"
+                        className="fixed right-0 top-0 bottom-0 z-50 flex w-full max-w-[540px] flex-col border-l border-slate-200 bg-white shadow-2xl"
                     >
-                        <div className="border-b border-[var(--border-soft)] px-5 py-5">
+                        <div className="border-b border-slate-100 px-5 py-5">
                             <div className="flex items-start justify-between gap-4">
                                 <div className="flex items-center gap-3">
-                                    <div className={`flex h-11 w-11 items-center justify-center rounded-2xl border border-[var(--border-soft)] bg-[var(--panel-muted)] ${config.accentClass}`}>
+                                    <div className={`flex h-11 w-11 items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 ${config.accentClass}`}>
                                         <Icon size={20} />
                                     </div>
                                     <div>
-                                        <h2 className="text-lg font-semibold text-[var(--text-primary)]">{config.title}</h2>
-                                        <p className="mt-0.5 text-sm font-medium text-[var(--text-secondary)]">{config.subtitle}</p>
+                                        <h2 className="text-lg font-black text-slate-900">{config.title}</h2>
+                                        <p className="mt-0.5 text-sm font-medium text-slate-500">{config.subtitle}</p>
                                     </div>
                                 </div>
                                 <button
                                     type="button"
                                     onClick={onClose}
-                                    className="rounded-xl p-2 text-[var(--text-muted)] transition-colors hover:bg-[var(--panel-muted)] hover:text-[var(--text-primary)]"
+                                    className="rounded-xl p-2 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700"
                                 >
                                     <X size={18} />
                                 </button>
@@ -247,26 +246,26 @@ export default function RepoSidebar({
 
                             <div className="mt-4 grid grid-cols-2 gap-3">
                                 <div className={`rounded-2xl border px-4 py-3 ${config.badgeClass}`}>
-                                    <p className="text-[11px] font-semibold uppercase tracking-[0.16em]">Shared</p>
-                                    <p className="mt-1 text-2xl font-semibold text-[var(--text-primary)]">{items.length}</p>
-                                    <p className="mt-1 text-xs font-semibold text-[var(--text-secondary)]">Reusable custom templates available now.</p>
+                                    <p className="text-[11px] font-black uppercase tracking-[0.16em]">Shared</p>
+                                    <p className="mt-1 text-2xl font-black text-slate-900">{items.length}</p>
+                                    <p className="mt-1 text-xs font-semibold text-slate-500">Reusable custom templates available now.</p>
                                 </div>
-                                <div className="rounded-2xl border border-[var(--border-soft)] bg-[var(--panel-muted)] px-4 py-3">
-                                    <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--text-muted)]">Dataset Fields</p>
-                                    <p className="mt-1 text-2xl font-semibold text-[var(--text-primary)]">{availableColumns.length}</p>
-                                    <p className="mt-1 text-xs font-semibold text-[var(--text-secondary)]">Current columns ready for field mapping.</p>
+                                <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+                                    <p className="text-[11px] font-black uppercase tracking-[0.16em] text-slate-400">Dataset Fields</p>
+                                    <p className="mt-1 text-2xl font-black text-slate-900">{availableColumns.length}</p>
+                                    <p className="mt-1 text-xs font-semibold text-slate-500">Current columns ready for field mapping.</p>
                                 </div>
                             </div>
                         </div>
 
                         {selectedItem ? (
-                            <div className="flex-1 overflow-y-auto bg-[var(--panel-muted)]">
-                                <div className="sticky top-0 z-10 border-b border-[var(--border-soft)] bg-[var(--panel)] px-5 py-4">
+                            <div className="flex-1 overflow-y-auto bg-slate-50">
+                                <div className="sticky top-0 z-10 border-b border-slate-100 bg-white px-5 py-4">
                                     <div className="flex items-center justify-between gap-3">
                                         <button
                                             type="button"
                                             onClick={() => setSelectedItem(null)}
-                                            className="inline-flex items-center gap-2 text-sm font-semibold text-[var(--text-secondary)] transition-colors hover:text-[var(--text-primary)]"
+                                            className="inline-flex items-center gap-2 text-sm font-semibold text-slate-500 transition-colors hover:text-slate-800"
                                         >
                                             <ChevronLeft size={16} />
                                             Back to library
@@ -275,7 +274,7 @@ export default function RepoSidebar({
                                             <button
                                                 type="button"
                                                 onClick={() => handleDelete(selectedItem.id)}
-                                                className="rounded-xl p-2 text-[var(--text-muted)] transition-colors hover:bg-rose-50 hover:text-rose-500"
+                                                className="rounded-xl p-2 text-slate-300 transition-colors hover:bg-rose-50 hover:text-rose-500"
                                                 title="Delete shared item"
                                             >
                                                 <Trash2 size={16} />
@@ -285,11 +284,11 @@ export default function RepoSidebar({
                                 </div>
 
                                 <div className="space-y-4 p-5">
-                                    <div className="rounded-3xl border border-[var(--border-soft)] bg-[var(--panel)] p-5 shadow-sm">
+                                    <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
                                         <div className="flex items-start justify-between gap-4">
                                             <div>
-                                                <h3 className="text-2xl font-semibold tracking-tight text-[var(--text-primary)]">{selectedItem.name}</h3>
-                                                <p className="mt-2 text-sm leading-relaxed text-[var(--text-secondary)]">{selectedItem.description || 'No description provided.'}</p>
+                                                <h3 className="text-2xl font-black tracking-tight text-slate-900">{selectedItem.name}</h3>
+                                                <p className="mt-2 text-sm leading-relaxed text-slate-500">{selectedItem.description || 'No description provided.'}</p>
                                             </div>
                                             <span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold ${config.badgeClass}`}>
                                                 <Layers3 size={13} />
@@ -298,20 +297,20 @@ export default function RepoSidebar({
                                         </div>
 
                                         <div className="mt-4 flex flex-wrap gap-2">
-                                            <span className="inline-flex items-center gap-1.5 rounded-full border border-[var(--border-soft)] bg-[var(--panel-muted)] px-3 py-1 text-xs font-semibold text-[var(--text-secondary)]">
+                                            <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-600">
                                                 {selectedItem.severity || 'Standard'}
                                             </span>
-                                            <span className="inline-flex items-center gap-1.5 rounded-full border border-[var(--border-soft)] bg-[var(--panel-muted)] px-3 py-1 text-xs font-semibold text-[var(--text-secondary)]">
+                                            <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-600">
                                                 {selectedItem.category || (context === 'validation' ? 'Validity' : 'Standardization')}
                                             </span>
-                                            <span className="inline-flex items-center gap-1.5 rounded-full border border-[var(--border-soft)] bg-[var(--panel-muted)] px-3 py-1 text-xs font-semibold text-[var(--text-secondary)]">
+                                            <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-600">
                                                 {selectedItem.space || 'Global Repository'}
                                             </span>
                                         </div>
                                     </div>
 
-                                    <div className="grid gap-4 rounded-3xl border border-[var(--border-soft)] bg-[var(--panel)] p-5 shadow-sm">
-                                        <h4 className="text-lg font-semibold text-[var(--text-primary)]">Configuration</h4>
+                                    <div className="grid gap-4 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+                                        <h4 className="text-lg font-black text-slate-900">Configuration</h4>
                                         {context === 'validation' ? (
                                             <>
                                                 <DetailRow label="Type" value={formatLabel(selectedItem.logic_type || 'condition')} />
@@ -334,8 +333,8 @@ export default function RepoSidebar({
                                         )}
                                     </div>
 
-                                    <div className="grid gap-4 rounded-3xl border border-[var(--border-soft)] bg-[var(--panel)] p-5 shadow-sm">
-                                        <h4 className="text-lg font-semibold text-[var(--text-primary)]">Details</h4>
+                                    <div className="grid gap-4 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+                                        <h4 className="text-lg font-black text-slate-900">Details</h4>
                                         <DetailRow label="Modified On" value={formatDate(selectedItem.updated_at || selectedItem.created_at)} />
                                         <DetailRow label="Created On" value={formatDate(selectedItem.created_at)} />
                                         <DetailRow label="Creator" value={selectedItem.author_name || selectedItem.author_email || 'Community'} />
@@ -352,32 +351,32 @@ export default function RepoSidebar({
                                 </div>
                             </div>
                         ) : (
-                            <div className="flex-1 overflow-y-auto bg-[var(--panel-muted)]">
-                                <div className="sticky top-0 z-10 border-b border-[var(--border-soft)] bg-[var(--panel)] px-5 py-4">
+                            <div className="flex-1 overflow-y-auto bg-slate-50">
+                                <div className="sticky top-0 z-10 border-b border-slate-100 bg-white px-5 py-4">
                                     <div className="relative">
-                                        <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" />
+                                        <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                                         <input
                                             type="text"
                                             value={search}
                                             onChange={(event) => setSearch(event.target.value)}
                                             placeholder={`Search shared ${config.plural}...`}
-                                            className={`w-full rounded-2xl border border-[var(--border-soft)] bg-[var(--panel-muted)] py-3 pl-10 pr-4 text-sm font-medium text-[var(--text-primary)] outline-none transition-all focus:ring-2 ${config.focusClass}`}
+                                            className={`w-full rounded-2xl border border-slate-200 bg-slate-50 py-3 pl-10 pr-4 text-sm font-medium text-slate-700 outline-none transition-all focus:ring-2 ${config.focusClass}`}
                                         />
                                     </div>
                                 </div>
 
                                 <div className="space-y-3 p-5">
                                     {loading ? (
-                                        <div className="rounded-3xl border border-dashed border-[var(--border-soft)] bg-[var(--panel)] px-6 py-14 text-center shadow-sm">
-                                            <div className={`mx-auto mb-4 h-10 w-10 animate-spin rounded-full border-4 border-[var(--border-soft)] border-t-current ${config.accentClass}`} />
-                                            <h3 className="text-base font-semibold text-[var(--text-primary)]">Loading shared templates</h3>
-                                            <p className="mt-2 text-sm font-medium text-[var(--text-secondary)]">Pulling the latest repository items for this workspace.</p>
+                                        <div className="rounded-3xl border border-dashed border-slate-200 bg-white px-6 py-14 text-center shadow-sm">
+                                            <div className={`mx-auto mb-4 h-10 w-10 animate-spin rounded-full border-4 border-slate-200 border-t-current ${config.accentClass}`} />
+                                            <h3 className="text-base font-black text-slate-800">Loading shared templates</h3>
+                                            <p className="mt-2 text-sm font-medium text-slate-500">Pulling the latest repository items for this workspace.</p>
                                         </div>
                                     ) : filteredItems.length === 0 ? (
-                                        <div className="rounded-3xl border border-dashed border-[var(--border-soft)] bg-[var(--panel)] px-6 py-14 text-center shadow-sm">
-                                            <AlertCircle className="mx-auto mb-4 text-[var(--text-muted)]" size={34} />
-                                            <h3 className="text-base font-semibold text-[var(--text-primary)]">{config.emptyTitle}</h3>
-                                            <p className="mx-auto mt-2 max-w-sm text-sm font-medium leading-relaxed text-[var(--text-secondary)]">{config.emptyDescription}</p>
+                                        <div className="rounded-3xl border border-dashed border-slate-200 bg-white px-6 py-14 text-center shadow-sm">
+                                            <AlertCircle className="mx-auto mb-4 text-slate-300" size={34} />
+                                            <h3 className="text-base font-black text-slate-800">{config.emptyTitle}</h3>
+                                            <p className="mx-auto mt-2 max-w-sm text-sm font-medium leading-relaxed text-slate-500">{config.emptyDescription}</p>
                                         </div>
                                     ) : (
                                         filteredItems.map((item) => (
@@ -385,12 +384,12 @@ export default function RepoSidebar({
                                                 key={item.id}
                                                 type="button"
                                                 onClick={() => setSelectedItem(item)}
-                                                className="w-full rounded-3xl border border-[var(--border-soft)] bg-[var(--panel)] p-4 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md"
+                                                className="w-full rounded-3xl border border-slate-200 bg-white p-4 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md"
                                             >
                                                 <div className="flex items-start justify-between gap-3">
                                                     <div>
-                                                        <h3 className="text-base font-semibold text-[var(--text-primary)]">{item.name}</h3>
-                                                        <p className="mt-2 text-sm leading-relaxed text-[var(--text-secondary)]">
+                                                        <h3 className="text-base font-black text-slate-900">{item.name}</h3>
+                                                        <p className="mt-2 text-sm leading-relaxed text-slate-500">
                                                             {item.description || `Reusable custom ${config.singular} for shared dataset workflows.`}
                                                         </p>
                                                     </div>
@@ -400,15 +399,15 @@ export default function RepoSidebar({
                                                 </div>
 
                                                 <div className="mt-4 flex flex-wrap gap-2">
-                                                    <span className="inline-flex items-center gap-1.5 rounded-full border border-[var(--border-soft)] bg-[var(--panel-muted)] px-3 py-1 text-xs font-semibold text-[var(--text-secondary)]">
+                                                    <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-500">
                                                         <BookOpen size={13} />
                                                         {item.category || (context === 'validation' ? 'Validity' : 'Standardization')}
                                                     </span>
-                                                    <span className="inline-flex items-center gap-1.5 rounded-full border border-[var(--border-soft)] bg-[var(--panel-muted)] px-3 py-1 text-xs font-semibold text-[var(--text-secondary)]">
+                                                    <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-500">
                                                         <User size={13} />
                                                         {item.author_name || item.author_email || 'Community'}
                                                     </span>
-                                                    <span className="inline-flex items-center gap-1.5 rounded-full border border-[var(--border-soft)] bg-[var(--panel-muted)] px-3 py-1 text-xs font-semibold text-[var(--text-secondary)]">
+                                                    <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-500">
                                                         <Calendar size={13} />
                                                         {formatDate(item.created_at)}
                                                     </span>
@@ -435,19 +434,19 @@ export default function RepoSidebar({
                                     initial={{ opacity: 0, scale: 0.96, y: 12 }}
                                     animate={{ opacity: 1, scale: 1, y: 0 }}
                                     exit={{ opacity: 0, scale: 0.96, y: 12 }}
-                                    className="relative w-full max-w-lg rounded-3xl border border-[var(--border-soft)] bg-[var(--panel)] p-6 shadow-2xl"
+                                    className="relative w-full max-w-lg rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl"
                                 >
                                     <div className="mb-5 flex items-start justify-between gap-4">
                                         <div>
-                                            <h3 className="text-xl font-semibold text-[var(--text-primary)]">Map Template To Dataset Field</h3>
-                                            <p className="mt-1 text-sm text-[var(--text-secondary)]">
+                                            <h3 className="text-xl font-black text-slate-900">Map Template To Dataset Field</h3>
+                                            <p className="mt-1 text-sm text-slate-500">
                                                 Choose which dataset field should receive this shared {config.singular}.
                                             </p>
                                         </div>
                                         <button
                                             type="button"
                                             onClick={() => setMappingDraft(null)}
-                                            className="rounded-xl p-2 text-[var(--text-muted)] transition-colors hover:bg-[var(--panel-muted)] hover:text-[var(--text-primary)]"
+                                            className="rounded-xl p-2 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700"
                                         >
                                             <X size={18} />
                                         </button>
@@ -456,7 +455,7 @@ export default function RepoSidebar({
                                     <div className="space-y-4">
                                         {mappingDraft.prompts.map((prompt) => (
                                             <div key={prompt.key}>
-                                                <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--text-muted)]">
+                                                <label className="mb-1.5 block text-[11px] font-black uppercase tracking-[0.16em] text-slate-400">
                                                     {prompt.label}
                                                 </label>
                                                 <select
@@ -470,7 +469,7 @@ export default function RepoSidebar({
                                                             },
                                                         }))
                                                     }
-                                                    className={`w-full rounded-2xl border border-[var(--border-soft)] bg-[var(--panel-muted)] px-3.5 py-3 text-sm font-medium text-[var(--text-primary)] outline-none transition-all focus:ring-2 ${config.focusClass}`}
+                                                    className={`w-full rounded-2xl border border-slate-200 bg-slate-50 px-3.5 py-3 text-sm font-medium text-slate-700 outline-none transition-all focus:ring-2 ${config.focusClass}`}
                                                 >
                                                     <option value="" disabled>Select dataset column...</option>
                                                     {availableColumns.map((column) => (
@@ -485,7 +484,7 @@ export default function RepoSidebar({
                                         <button
                                             type="button"
                                             onClick={() => setMappingDraft(null)}
-                                            className="rounded-2xl border border-[var(--border-soft)] px-4 py-2.5 text-sm font-semibold text-[var(--text-secondary)] transition-colors hover:bg-[var(--panel-muted)]"
+                                            className="rounded-2xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-600 transition-colors hover:bg-slate-50"
                                         >
                                             Cancel
                                         </button>

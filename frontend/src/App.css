@@ -196,3 +196,20 @@ input:focus, textarea:focus, select:focus {
 .sidebar-scrollbar::-webkit-scrollbar-corner {
   background: transparent;
 }
+
+/* ── VSCode-style Title Bar ── */
+.vscode-titlebar {
+  -webkit-app-region: drag;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+.vscode-titlebar button {
+  -webkit-app-region: no-drag;
+}
+
+/* Activity bar icon buttons */
+nav[class*="bg-[#333333]"] button {
+  cursor: pointer;
+}
+

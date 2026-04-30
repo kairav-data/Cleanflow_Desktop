@@ -5,9 +5,7 @@ import {
     Clock, ChevronRight, Trash2, RefreshCw, Server, Plus, Link2, Check, Crown
 } from 'lucide-react';
 import axios from 'axios';
-
-// Pulling the URL from the .env file
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'import.meta.env.VITE_API_URL';
+import { API_BASE } from '../../lib/runtimeConfig';
 
 const UserSidebar = ({ isOpen, onClose, user }) => {
     const [activeTab, setActiveTab] = useState('profile');
@@ -44,6 +42,13 @@ const UserSidebar = ({ isOpen, onClose, user }) => {
     }, [isOpen, activeTab]);
 
     const fetchData = async () => {
+        if (!token) {
+            setJobs([]);
+            setConnections([]);
+            setLoading(false);
+            return;
+        }
+
         setLoading(true);
         try {
             if (activeTab === 'history') {

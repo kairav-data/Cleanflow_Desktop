@@ -19,8 +19,7 @@ import {
     TrendingUp,
     Upload,
 } from 'lucide-react';
-
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+import { API_BASE } from '../lib/runtimeConfig';
 const Motion = motion;
 const STEPS = ['Upload', 'Match Setup', 'Review', 'Pricing', 'Results'];
 const PRESET_SEPARATORS = [',', ';', '|'];
@@ -721,7 +720,7 @@ export default function PricingIntelligenceBuilder() {
     };
 
     const summaryCards = [
-        { label: 'Products Analyzed', value: summary?.analyzed_products || 0, tone: 'text-[var(--text-primary)]' },
+        { label: 'Products Analyzed', value: summary?.analyzed_products || 0, tone: 'text-slate-900' },
         { label: 'Competitor Coverage', value: `${summary?.coverage_pct || 0}%`, tone: 'text-violet-700' },
         { label: 'Competitor Sources', value: summary?.competitor_source_count || 0, tone: 'text-amber-600' },
         { label: 'Review Pairs', value: summary?.review_pair_count || 0, tone: 'text-emerald-600' },
@@ -767,40 +766,14 @@ export default function PricingIntelligenceBuilder() {
 
     return (
         <div className="w-full h-full flex flex-col">
-            <div className="shrink-0 border-b border-[var(--border-soft)] bg-[var(--panel)] px-5 py-3">
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                    <div className="flex flex-wrap items-center gap-1">
-                        {STEPS.map((label, index) => {
-                            const current = index + 1;
-                            return (
-                                <div key={label} className="flex items-center">
-                                    <div className={`flex items-center gap-2 px-2.5 py-1 rounded-full text-[11px] font-bold transition-all ${step === current ? 'bg-amber-600 text-white' : step > current ? 'bg-amber-100 text-amber-700' : 'bg-[var(--panel-muted)] text-[var(--text-muted)]'}`}>
-                                        <span className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-black ${step === current ? 'bg-[var(--panel)] text-amber-600' : step > current ? 'bg-amber-500 text-white' : 'bg-slate-300 text-[var(--text-secondary)]'}`}>{step > current ? '✓' : current}</span>
-                                        {label}
-                                    </div>
-                                    {current < STEPS.length ? <div className={`w-6 h-px mx-1 ${step > current ? 'bg-amber-300' : 'bg-[var(--panel-muted)]'}`} /> : null}
-                                </div>
-                            );
-                        })}
-                    </div>
-                    {step === 1 ? (
-                        <div className="flex flex-wrap items-center gap-2">
-                            <span className={`rounded-full px-3 py-1 text-xs font-bold ${ourDataset.loaded ? 'bg-emerald-100 text-emerald-700' : 'bg-[var(--panel-muted)] text-[var(--text-secondary)]'}`}>
-                                Client {ourDataset.loaded ? 'ready' : 'pending'}
-                            </span>
-                            <span className={`rounded-full px-3 py-1 text-xs font-bold ${loadedCompetitors.length > 0 ? 'bg-amber-100 text-amber-700' : 'bg-[var(--panel-muted)] text-[var(--text-secondary)]'}`}>
-                                {loadedCompetitors.length} competitor{loadedCompetitors.length === 1 ? '' : 's'}
-                            </span>
-                        </div>
-                    ) : null}
-                </div>
-            </div>
-            <div className="flex-1 overflow-y-auto px-4 py-4 md:px-5">
+            <Header step={step} />
+            <div className="flex-1 overflow-y-auto px-6 py-5">
                 {loading ? <LoadingState progress={progress} elapsedTime={elapsedTime} /> : null}
                 {!loading && step === 1 ? (
-                    <Motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="grid gap-4 xl:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)]">
+                    <Motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
+                        <IntroCards />
                         <DatasetCard
-                            title="Client Catalog"
+                            title="Client Product Catalog"
                             subtitle="Internal products, current prices, and cost structure."
                             label={ourDataset.label}
                             onLabelChange={(label) => setOurDataset((prev) => ({ ...prev, label }))}
@@ -820,17 +793,17 @@ export default function PricingIntelligenceBuilder() {
                             onDatabaseLoad={handleOurDatabaseIngest}
                         />
 
-                        <div className="bg-[var(--panel)] border border-[var(--border-soft)] rounded-2xl p-4 shadow-sm">
-                            <div className="flex items-center justify-between gap-4 mb-4">
+                        <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
+                            <div className="flex items-center justify-between gap-4 mb-5">
                                 <div>
-                                    <h3 className="text-base font-bold text-[var(--text-primary)]">Competitor Datasets</h3>
-                                    <p className="text-xs text-[var(--text-secondary)] mt-1">Add the competitor feeds you want included in pricing comparisons.</p>
+                                    <h3 className="text-lg font-bold text-slate-900">Competitor Datasets</h3>
+                                    <p className="text-sm text-slate-500 mt-1">Add as many competitor price feeds as you need for pricing comparison.</p>
                                 </div>
                                 <button onClick={addCompetitorSource} className="inline-flex items-center gap-2 px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-bold text-sm transition-colors">
                                     <Plus size={15} /> Add Competitor
                                 </button>
                             </div>
-                            <div className="max-h-[calc(100vh-290px)] space-y-3 overflow-y-auto pr-1">
+                            <div className="space-y-4">
                                 {competitorSources.map((source, index) => (
                                     <CompetitorSourceCard
                                         key={source.id}
@@ -847,11 +820,11 @@ export default function PricingIntelligenceBuilder() {
                             </div>
                         </div>
 
-                        <div className="xl:col-span-2 flex items-center justify-end">
+                        <div className="flex items-center justify-end">
                             <button
                                 onClick={() => setStep(2)}
                                 disabled={!ourDataset.loaded || loadedCompetitors.length === 0}
-                                className="px-6 py-3 rounded-xl bg-amber-600 hover:bg-amber-700 disabled:bg-[var(--panel-muted)] disabled:text-[var(--text-muted)] text-white font-bold text-sm transition-all shadow-md shadow-amber-600/20"
+                                className="px-6 py-3 rounded-xl bg-amber-600 hover:bg-amber-700 disabled:bg-slate-200 disabled:text-slate-400 text-white font-bold text-sm transition-all shadow-md shadow-amber-600/20"
                             >
                                 Continue to Match Setup
                             </button>
@@ -861,7 +834,7 @@ export default function PricingIntelligenceBuilder() {
                 {!loading && step === 2 ? (
                     <Motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="space-y-5">
                         <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
-                            <div className="bg-[var(--panel)] border border-[var(--border-soft)] rounded-2xl p-5 shadow-sm">
+                            <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
                                 <div className="flex items-center justify-between gap-4 mb-4">
                                     <SectionTitle icon={Target} iconClass="text-violet-600" iconBg="bg-violet-50 border-violet-100" title="Matching Strategy" description="Add multiple match criteria just like Data Matching. Each rule compares one client column against one mapped competitor column per source." />
                                     <button onClick={addMatchRule} className="inline-flex items-center gap-2 px-4 py-2.5 bg-violet-600 hover:bg-violet-700 text-white rounded-xl font-bold text-sm transition-colors shadow-sm shadow-violet-600/20">
@@ -870,10 +843,10 @@ export default function PricingIntelligenceBuilder() {
                                 </div>
                                 <div className="space-y-3">
                                     {matchRules.map((rule, index) => (
-                                        <div key={rule.id} className="rounded-2xl border border-[var(--border-soft)] bg-[var(--panel-muted)] p-4 relative">
-                                            <div className="absolute top-4 left-4 text-[11px] font-black uppercase tracking-wider text-[var(--text-muted)]">Rule {index + 1}</div>
+                                        <div key={rule.id} className="rounded-2xl border border-slate-200 bg-slate-50 p-4 relative">
+                                            <div className="absolute top-4 left-4 text-[11px] font-black uppercase tracking-wider text-slate-400">Rule {index + 1}</div>
                                             {matchRules.length > 1 ? (
-                                                <button onClick={() => removeMatchRule(rule.id)} className="absolute top-3.5 right-4 p-1.5 text-[var(--text-muted)] hover:text-red-600 hover:bg-red-50 rounded-lg transition-all">
+                                                <button onClick={() => removeMatchRule(rule.id)} className="absolute top-3.5 right-4 p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all">
                                                     <Trash2 size={15} />
                                                 </button>
                                             ) : null}
@@ -886,14 +859,14 @@ export default function PricingIntelligenceBuilder() {
                                                     required
                                                 />
                                                 <div>
-                                                    <label className="block text-xs font-bold text-[var(--text-secondary)] mb-1.5">Matching algorithm</label>
-                                                    <select value={rule.algorithm} onChange={(event) => updateMatchRule(rule.id, 'algorithm', event.target.value)} className="w-full px-3 py-2.5 bg-[var(--panel)] border border-[var(--border-soft)] rounded-xl text-sm font-medium focus:border-violet-400 outline-none">
+                                                    <label className="block text-xs font-bold text-slate-500 mb-1.5">Matching algorithm</label>
+                                                    <select value={rule.algorithm} onChange={(event) => updateMatchRule(rule.id, 'algorithm', event.target.value)} className="w-full px-3 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-medium focus:border-violet-400 outline-none">
                                                         {algorithms.map((algorithm) => <option key={algorithm.id} value={algorithm.id}>{algorithm.name}</option>)}
                                                     </select>
                                                 </div>
                                             </div>
                                             <div>
-                                                <label className="block text-xs font-bold text-[var(--text-secondary)] mb-1.5">Threshold <span className="text-[var(--text-primary)]">{Math.round(Number(rule.threshold) * 100)}%</span></label>
+                                                <label className="block text-xs font-bold text-slate-500 mb-1.5">Threshold <span className="text-slate-700">{Math.round(Number(rule.threshold) * 100)}%</span></label>
                                                 <input type="range" min="0.5" max="1" step="0.01" value={rule.threshold} onChange={(event) => updateMatchRule(rule.id, 'threshold', Number(event.target.value))} className="w-full mt-2 accent-violet-600" />
                                             </div>
                                         </div>
@@ -901,7 +874,7 @@ export default function PricingIntelligenceBuilder() {
                                 </div>
                             </div>
 
-                            <div className="bg-[var(--panel)] border border-[var(--border-soft)] rounded-2xl p-5 shadow-sm">
+                            <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
                                 <SectionTitle icon={Settings} iconClass="text-sky-600" iconBg="bg-sky-50 border-sky-100" title="Client Fields for Review" description="Choose the client columns that should appear in the match report before pricing begins." />
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <SelectField label="Product name" value={ourColumns.productName} onChange={(value) => setOurColumns((prev) => ({ ...prev, productName: value }))} options={ourDataset.columns} required />
@@ -913,31 +886,31 @@ export default function PricingIntelligenceBuilder() {
                                     <SelectField label="Product URL" value={ourColumns.productUrl} onChange={(value) => setOurColumns((prev) => ({ ...prev, productUrl: value }))} options={ourDataset.columns} />
                                     <SelectField label="Image URL" value={ourColumns.imageUrl} onChange={(value) => setOurColumns((prev) => ({ ...prev, imageUrl: value }))} options={ourDataset.columns} />
                                 </div>
-                                <div className="mt-4 rounded-xl bg-[var(--panel-muted)] border border-[var(--border-soft)] px-4 py-3 text-sm text-[var(--text-secondary)]">
+                                <div className="mt-4 rounded-xl bg-slate-50 border border-slate-200 px-4 py-3 text-sm text-slate-600">
                                     Product URLs will be clickable in the review report, and image URLs will render product thumbnails when they can be loaded.
                                 </div>
                             </div>
                         </div>
 
                         <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
-                            <div className="bg-[var(--panel)] border border-[var(--border-soft)] rounded-2xl p-5 shadow-sm">
+                            <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
                                 <SectionTitle icon={Eye} iconClass="text-amber-600" iconBg="bg-amber-50 border-amber-100" title="Review Workflow" description="Pricing setup comes later. This page only prepares the matching report." />
-                                <div className="space-y-3 text-sm text-[var(--text-secondary)]">
-                                    <div className="rounded-xl border border-[var(--border-soft)] bg-[var(--panel-muted)] px-4 py-3">1. Choose client attributes and match types.</div>
-                                    <div className="rounded-xl border border-[var(--border-soft)] bg-[var(--panel-muted)] px-4 py-3">2. Map the competitor attribute name for each rule in every competitor source.</div>
-                                    <div className="rounded-xl border border-[var(--border-soft)] bg-[var(--panel-muted)] px-4 py-3">3. Generate the matching report and validate links, images, and side-by-side values.</div>
-                                    <div className="rounded-xl border border-[var(--border-soft)] bg-[var(--panel-muted)] px-4 py-3">4. Only after the review looks correct, continue to Pricing Setup.</div>
+                                <div className="space-y-3 text-sm text-slate-600">
+                                    <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">1. Choose client attributes and match types.</div>
+                                    <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">2. Map the competitor attribute name for each rule in every competitor source.</div>
+                                    <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">3. Generate the matching report and validate links, images, and side-by-side values.</div>
+                                    <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">4. Only after the review looks correct, continue to Pricing Setup.</div>
                                 </div>
                             </div>
 
-                            <div className="bg-[var(--panel)] border border-[var(--border-soft)] rounded-2xl p-5 shadow-sm">
+                            <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
                                 <SectionTitle icon={Database} iconClass="text-emerald-600" iconBg="bg-emerald-50 border-emerald-100" title="Competitor Source Mapping" description="Map the competitor fields to display in the report and the competitor attribute name for every client rule." />
                                 <div className="space-y-4 max-h-[420px] overflow-y-auto pr-1">
                                     {loadedCompetitors.map((source) => (
-                                        <div key={source.id} className="rounded-2xl border border-[var(--border-soft)] p-4 bg-[var(--panel-muted)]">
+                                        <div key={source.id} className="rounded-2xl border border-slate-200 p-4 bg-slate-50">
                                             <div className="flex items-center justify-between gap-3 mb-3">
-                                                <p className="font-bold text-[var(--text-primary)]">{source.label}</p>
-                                                <span className="text-xs font-semibold text-[var(--text-secondary)]">{source.rows} rows</span>
+                                                <p className="font-bold text-slate-900">{source.label}</p>
+                                                <span className="text-xs font-semibold text-slate-500">{source.rows} rows</span>
                                             </div>
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
                                                 <SelectField label="Competitor product name" value={source.columnsMap.productName} onChange={(value) => updateCompetitorSource(source.id, (current) => ({ columnsMap: { ...current.columnsMap, productName: value } }))} options={source.columns} required />
@@ -948,10 +921,10 @@ export default function PricingIntelligenceBuilder() {
                                                 <SelectField label="Competitor product URL" value={source.columnsMap.productUrl} onChange={(value) => updateCompetitorSource(source.id, (current) => ({ columnsMap: { ...current.columnsMap, productUrl: value } }))} options={source.columns} />
                                                 <SelectField label="Competitor image URL" value={source.columnsMap.imageUrl} onChange={(value) => updateCompetitorSource(source.id, (current) => ({ columnsMap: { ...current.columnsMap, imageUrl: value } }))} options={source.columns} />
                                             </div>
-                                            <div className="rounded-2xl border border-[var(--border-soft)] bg-[var(--panel)] p-4">
+                                            <div className="rounded-2xl border border-slate-200 bg-white p-4">
                                                 <div className="flex items-center justify-between gap-3 mb-3">
-                                                    <p className="text-sm font-bold text-[var(--text-primary)]">Competitor Attribute Names for Matching</p>
-                                                    <span className="text-xs text-[var(--text-secondary)]">Map every rule for this source</span>
+                                                    <p className="text-sm font-bold text-slate-900">Competitor Attribute Names for Matching</p>
+                                                    <span className="text-xs text-slate-500">Map every rule for this source</span>
                                                 </div>
                                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                                     {matchRules.map((rule, index) => (
@@ -978,13 +951,13 @@ export default function PricingIntelligenceBuilder() {
                             </div>
                         </div>
 
-                        <div className="rounded-2xl border border-dashed border-[var(--border-strong)] bg-[var(--panel-muted)] px-5 py-4 text-sm text-[var(--text-secondary)]">
+                        <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-5 py-4 text-sm text-slate-600">
                             Pricing strategy, cost structure, elasticity, and repricing guardrails will appear after you review the matching report.
                         </div>
 
                         <div className="flex items-center justify-between">
-                            <button onClick={() => setStep(1)} className="px-4 py-2 border border-[var(--border-soft)] rounded-xl text-sm font-semibold text-[var(--text-secondary)] hover:bg-[var(--panel-muted)] transition-colors">Back to Upload</button>
-                            <button onClick={handleGenerateReview} disabled={!canGenerateReview} className="flex items-center gap-2 px-6 py-3 bg-amber-600 hover:bg-amber-700 disabled:bg-[var(--panel-muted)] disabled:text-[var(--text-muted)] text-white rounded-xl font-bold text-sm transition-all shadow-md shadow-amber-600/20">
+                            <button onClick={() => setStep(1)} className="px-4 py-2 border border-slate-200 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-colors">Back to Upload</button>
+                            <button onClick={handleGenerateReview} disabled={!canGenerateReview} className="flex items-center gap-2 px-6 py-3 bg-amber-600 hover:bg-amber-700 disabled:bg-slate-200 disabled:text-slate-400 text-white rounded-xl font-bold text-sm transition-all shadow-md shadow-amber-600/20">
                                 <Eye size={16} /> Generate Matching Report
                             </button>
                         </div>
@@ -995,31 +968,31 @@ export default function PricingIntelligenceBuilder() {
                     <Motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
                         <div className="flex flex-wrap items-center justify-between gap-4">
                             <div>
-                                <h3 className="text-xl font-black text-[var(--text-primary)] tracking-tight">Matching Report</h3>
-                                <p className="text-sm text-[var(--text-secondary)] mt-1">Review client and competitor fields side by side, click any competitor card to inspect the full raw rows, and exclude outliers before moving on to pricing.</p>
+                                <h3 className="text-xl font-black text-slate-900 tracking-tight">Matching Report</h3>
+                                <p className="text-sm text-slate-500 mt-1">Review client and competitor fields side by side, click any competitor card to inspect the full raw rows, and exclude outliers before moving on to pricing.</p>
                             </div>
                             <div className="flex flex-wrap items-center gap-2">
-                                <button onClick={() => setStep(2)} className="px-4 py-2.5 border border-[var(--border-soft)] hover:border-[var(--border-strong)] hover:bg-[var(--panel-muted)] text-[var(--text-primary)] rounded-xl font-bold text-sm transition-all">Refine Matching</button>
-                                <button onClick={() => setStep(4)} disabled={reviewRows.length === 0} className="flex items-center gap-2 px-4 py-2.5 bg-slate-900 hover:bg-slate-800 disabled:bg-[var(--panel-muted)] disabled:text-[var(--text-muted)] text-white rounded-xl font-bold text-sm transition-all">
+                                <button onClick={() => setStep(2)} className="px-4 py-2.5 border border-slate-200 hover:border-slate-300 hover:bg-slate-50 text-slate-700 rounded-xl font-bold text-sm transition-all">Refine Matching</button>
+                                <button onClick={() => setStep(4)} disabled={reviewRows.length === 0} className="flex items-center gap-2 px-4 py-2.5 bg-slate-900 hover:bg-slate-800 disabled:bg-slate-200 disabled:text-slate-400 text-white rounded-xl font-bold text-sm transition-all">
                                     <Play size={15} fill="currentColor" /> Continue to Pricing Setup
                                 </button>
                             </div>
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
                             {summaryCards.map((card) => (
-                                <div key={card.label} className="bg-[var(--panel)] border border-[var(--border-soft)] rounded-2xl p-5 shadow-sm">
-                                    <p className="text-sm font-semibold text-[var(--text-secondary)]">{card.label}</p>
+                                <div key={card.label} className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
+                                    <p className="text-sm font-semibold text-slate-500">{card.label}</p>
                                     <p className={`text-3xl font-black mt-2 ${card.tone}`}>{card.value}</p>
                                 </div>
                             ))}
                         </div>
-                        <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[var(--border-soft)] bg-[var(--panel)] px-4 py-3 shadow-sm">
+                        <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
                             <div>
-                                <p className="text-sm font-bold text-[var(--text-primary)]">Interactive Match Review</p>
-                                <p className="text-xs text-[var(--text-secondary)] mt-1">Click a competitor card to inspect the full client and competitor records before pricing uses that match.</p>
+                                <p className="text-sm font-bold text-slate-900">Interactive Match Review</p>
+                                <p className="text-xs text-slate-500 mt-1">Click a competitor card to inspect the full client and competitor records before pricing uses that match.</p>
                             </div>
                             <div className="flex flex-wrap items-center gap-2">
-                                <span className="inline-flex items-center rounded-full bg-[var(--panel-muted)] px-3 py-1 text-xs font-bold text-[var(--text-secondary)]">
+                                <span className="inline-flex items-center rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-600">
                                     {reviewRows.length} total matched row{reviewRows.length === 1 ? '' : 's'}
                                 </span>
                                 <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-bold ${excludedMatchIds.length ? 'bg-rose-100 text-rose-700' : 'bg-emerald-100 text-emerald-700'}`}>
@@ -1058,19 +1031,19 @@ export default function PricingIntelligenceBuilder() {
                     <Motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
                         <div className="flex flex-wrap items-center justify-between gap-4">
                             <div>
-                                <h3 className="text-xl font-black text-[var(--text-primary)] tracking-tight">Pricing Setup</h3>
-                                <p className="text-sm text-[var(--text-secondary)] mt-1">Add pricing fields, market position, and guardrails. The engine will reuse the reviewed matches from the matching report.</p>
+                                <h3 className="text-xl font-black text-slate-900 tracking-tight">Pricing Setup</h3>
+                                <p className="text-sm text-slate-500 mt-1">Add pricing fields, market position, and guardrails. The engine will reuse the reviewed matches from the matching report.</p>
                             </div>
                         </div>
 
                         <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
-                            <div className="bg-[var(--panel)] border border-[var(--border-soft)] rounded-2xl p-5 shadow-sm">
+                            <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
                                 <SectionTitle icon={TrendingUp} iconClass="text-amber-600" iconBg="bg-amber-50 border-amber-100" title="Market Position Strategy" description="Choose how your final price should sit relative to the reviewed competitor market." />
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
                                     {(strategies.length ? strategies : []).map((item) => (
-                                        <button key={item.id} onClick={() => setStrategy((prev) => ({ ...prev, position: item.id }))} className={`text-left rounded-2xl border p-4 transition-all ${strategy.position === item.id ? 'border-amber-500 bg-amber-50 shadow-sm' : 'border-[var(--border-soft)] bg-[var(--panel)] hover:border-amber-300'}`}>
-                                            <p className="font-bold text-sm text-[var(--text-primary)]">{item.name}</p>
-                                            <p className="text-xs text-[var(--text-secondary)] mt-2 leading-relaxed">{item.description}</p>
+                                        <button key={item.id} onClick={() => setStrategy((prev) => ({ ...prev, position: item.id }))} className={`text-left rounded-2xl border p-4 transition-all ${strategy.position === item.id ? 'border-amber-500 bg-amber-50 shadow-sm' : 'border-slate-200 bg-white hover:border-amber-300'}`}>
+                                            <p className="font-bold text-sm text-slate-900">{item.name}</p>
+                                            <p className="text-xs text-slate-500 mt-2 leading-relaxed">{item.description}</p>
                                         </button>
                                     ))}
                                 </div>
@@ -1079,10 +1052,10 @@ export default function PricingIntelligenceBuilder() {
                                     <NumericField label="Minimum margin %" value={strategy.minMarginPct} onChange={(value) => setStrategy((prev) => ({ ...prev, minMarginPct: value }))} />
                                     <NumericField label="Rounding step" value={strategy.roundingStep} onChange={(value) => setStrategy((prev) => ({ ...prev, roundingStep: value }))} />
                                 </div>
-                                {currentStrategy ? <div className="mt-4 rounded-xl bg-[var(--panel-muted)] border border-[var(--border-soft)] px-4 py-3 text-sm text-[var(--text-secondary)]"><span className="font-bold text-[var(--text-primary)]">{currentStrategy.name}: </span>{currentStrategy.description}</div> : null}
+                                {currentStrategy ? <div className="mt-4 rounded-xl bg-slate-50 border border-slate-200 px-4 py-3 text-sm text-slate-600"><span className="font-bold text-slate-900">{currentStrategy.name}: </span>{currentStrategy.description}</div> : null}
                             </div>
 
-                            <div className="bg-[var(--panel)] border border-[var(--border-soft)] rounded-2xl p-5 shadow-sm">
+                            <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
                                 <SectionTitle icon={Settings} iconClass="text-sky-600" iconBg="bg-sky-50 border-sky-100" title="Client Pricing Fields" description="Map the internal cost and pricing columns used by the engine." />
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <SelectField label="Current price" value={ourColumns.currentPrice} onChange={(value) => setOurColumns((prev) => ({ ...prev, currentPrice: value }))} options={ourDataset.columns} required />
@@ -1098,7 +1071,7 @@ export default function PricingIntelligenceBuilder() {
                         </div>
 
                         <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
-                            <div className="bg-[var(--panel)] border border-[var(--border-soft)] rounded-2xl p-5 shadow-sm">
+                            <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
                                 <SectionTitle icon={Activity} iconClass="text-rose-600" iconBg="bg-rose-50 border-rose-100" title="Dynamic Repricing Signals" description="Model demand, stock, and rating shifts before final pricing." />
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                                     <SignalField label="Demand mode" value={signals.demandMode} options={SIGNAL_OPTIONS.demand} onChange={(value) => setSignals((prev) => ({ ...prev, demandMode: value }))} />
@@ -1114,18 +1087,18 @@ export default function PricingIntelligenceBuilder() {
                                 </div>
                             </div>
 
-                            <div className="bg-[var(--panel)] border border-[var(--border-soft)] rounded-2xl p-5 shadow-sm">
+                            <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
                                 <SectionTitle icon={Sparkles} iconClass="text-indigo-600" iconBg="bg-indigo-50 border-indigo-100" title="Elasticity and Guardrails" description="Test price sensitivity and enforce allowed price limits." />
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                                    <label className="flex items-center gap-3 px-4 py-3 rounded-xl border border-[var(--border-soft)] bg-[var(--panel-muted)]">
+                                    <label className="flex items-center gap-3 px-4 py-3 rounded-xl border border-slate-200 bg-slate-50">
                                         <input type="checkbox" checked={elasticity.enabled} onChange={(event) => setElasticity((prev) => ({ ...prev, enabled: event.target.checked }))} className="w-4 h-4 accent-indigo-600" />
                                         <div>
-                                            <p className="text-sm font-bold text-[var(--text-primary)]">Enable elasticity testing</p>
-                                            <p className="text-xs text-[var(--text-secondary)]">Compare multiple price points before the final recommendation.</p>
+                                            <p className="text-sm font-bold text-slate-900">Enable elasticity testing</p>
+                                            <p className="text-xs text-slate-500">Compare multiple price points before the final recommendation.</p>
                                         </div>
                                     </label>
                                     <NumericField label="Elasticity coefficient" value={elasticity.coefficient} step="0.1" onChange={(value) => setElasticity((prev) => ({ ...prev, coefficient: value }))} />
-                                    <div className="rounded-xl border border-[var(--border-soft)] bg-[var(--panel-muted)] px-4 py-3 text-sm text-[var(--text-secondary)]">CleanFlow tests five price points around the market-adjusted price and keeps the most profitable candidate.</div>
+                                    <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">CleanFlow tests five price points around the market-adjusted price and keeps the most profitable candidate.</div>
                                 </div>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <NumericField label="Minimum price guardrail" value={pricingLimits.minPrice} onChange={(value) => setPricingLimits((prev) => ({ ...prev, minPrice: value }))} />
@@ -1135,8 +1108,8 @@ export default function PricingIntelligenceBuilder() {
                         </div>
 
                         <div className="flex items-center justify-between">
-                            <button onClick={() => setStep(3)} className="px-4 py-2 border border-[var(--border-soft)] rounded-xl text-sm font-semibold text-[var(--text-secondary)] hover:bg-[var(--panel-muted)] transition-colors">Back to Review</button>
-                            <button onClick={handleExecute} disabled={!canRunPricing} className="flex items-center gap-2 px-6 py-3 bg-amber-600 hover:bg-amber-700 disabled:bg-[var(--panel-muted)] disabled:text-[var(--text-muted)] text-white rounded-xl font-bold text-sm transition-all shadow-md shadow-amber-600/20">
+                            <button onClick={() => setStep(3)} className="px-4 py-2 border border-slate-200 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-colors">Back to Review</button>
+                            <button onClick={handleExecute} disabled={!canRunPricing} className="flex items-center gap-2 px-6 py-3 bg-amber-600 hover:bg-amber-700 disabled:bg-slate-200 disabled:text-slate-400 text-white rounded-xl font-bold text-sm transition-all shadow-md shadow-amber-600/20">
                                 <Play size={16} fill="currentColor" /> Run Pricing Engine
                             </button>
                         </div>
@@ -1147,20 +1120,20 @@ export default function PricingIntelligenceBuilder() {
                     <Motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
                         <div className="flex flex-wrap items-center justify-between gap-4">
                             <div>
-                                <h3 className="text-xl font-black text-[var(--text-primary)] tracking-tight">Pricing Recommendations Ready</h3>
-                                <p className="text-sm text-[var(--text-secondary)] mt-1">CleanFlow used the reviewed matches and all loaded competitor datasets to generate a market-backed price recommendation.</p>
+                                <h3 className="text-xl font-black text-slate-900 tracking-tight">Pricing Recommendations Ready</h3>
+                                <p className="text-sm text-slate-500 mt-1">CleanFlow used the reviewed matches and all loaded competitor datasets to generate a market-backed price recommendation.</p>
                             </div>
                             <div className="flex flex-wrap items-center gap-2">
                                 <DownloadButton sessionId={sessionId} format="csv" label="Download CSV" icon={FileText} />
                                 <DownloadButton sessionId={sessionId} format="excel" label="Download Excel" icon={FileSpreadsheet} />
-                                <button onClick={() => setStep(4)} className="px-4 py-2.5 border border-[var(--border-soft)] hover:border-[var(--border-strong)] hover:bg-[var(--panel-muted)] text-[var(--text-primary)] rounded-xl font-bold text-sm transition-all">Back to Pricing Setup</button>
+                                <button onClick={() => setStep(4)} className="px-4 py-2.5 border border-slate-200 hover:border-slate-300 hover:bg-slate-50 text-slate-700 rounded-xl font-bold text-sm transition-all">Back to Pricing Setup</button>
                                 <button onClick={resetBuilder} className="px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-bold text-sm transition-all">New Pricing Run</button>
                             </div>
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
                             {summaryCards.map((card) => (
-                                <div key={card.label} className="bg-[var(--panel)] border border-[var(--border-soft)] rounded-2xl p-5 shadow-sm">
-                                    <p className="text-sm font-semibold text-[var(--text-secondary)]">{card.label}</p>
+                                <div key={card.label} className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
+                                    <p className="text-sm font-semibold text-slate-500">{card.label}</p>
                                     <p className={`text-3xl font-black mt-2 ${card.tone}`}>{card.value}</p>
                                 </div>
                             ))}
@@ -1175,14 +1148,14 @@ export default function PricingIntelligenceBuilder() {
 
 function Header({ step }) {
     return (
-        <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--border-soft)] bg-[var(--panel)] shrink-0">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 bg-white shrink-0">
             <div className="flex items-center gap-4">
                 <div className="w-9 h-9 rounded-xl bg-amber-50 border border-amber-100 flex items-center justify-center">
                     <TrendingUp size={18} className="text-amber-600" />
                 </div>
                 <div>
-                    <h2 className="text-xl font-black text-[var(--text-primary)] tracking-tight">Pricing Intelligence</h2>
-                    <p className="text-xs text-[var(--text-secondary)] mt-0.5">Load one client dataset, compare with multiple competitors, review matches, then price confidently.</p>
+                    <h2 className="text-xl font-black text-slate-900 tracking-tight">Pricing Intelligence</h2>
+                    <p className="text-xs text-slate-500 mt-0.5">Load one client dataset, compare with multiple competitors, review matches, then price confidently.</p>
                 </div>
             </div>
             <div className="flex items-center gap-1">
@@ -1190,11 +1163,11 @@ function Header({ step }) {
                     const current = index + 1;
                     return (
                         <div key={label} className="flex items-center">
-                            <div className={`flex items-center gap-2 px-2.5 py-1 rounded-full text-[11px] font-bold transition-all ${step === current ? 'bg-amber-600 text-white' : step > current ? 'bg-amber-100 text-amber-700' : 'bg-[var(--panel-muted)] text-[var(--text-muted)]'}`}>
-                                <span className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-black ${step === current ? 'bg-[var(--panel)] text-amber-600' : step > current ? 'bg-amber-500 text-white' : 'bg-slate-300 text-[var(--text-secondary)]'}`}>{step > current ? 'v' : current}</span>
+                            <div className={`flex items-center gap-2 px-2.5 py-1 rounded-full text-[11px] font-bold transition-all ${step === current ? 'bg-amber-600 text-white' : step > current ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-400'}`}>
+                                <span className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-black ${step === current ? 'bg-white text-amber-600' : step > current ? 'bg-amber-500 text-white' : 'bg-slate-300 text-slate-500'}`}>{step > current ? 'v' : current}</span>
                                 {label}
                             </div>
-                            {current < STEPS.length ? <div className={`w-6 h-px mx-1 ${step > current ? 'bg-amber-300' : 'bg-[var(--panel-muted)]'}`} /> : null}
+                            {current < STEPS.length ? <div className={`w-6 h-px mx-1 ${step > current ? 'bg-amber-300' : 'bg-slate-200'}`} /> : null}
                         </div>
                     );
                 })}
@@ -1207,15 +1180,15 @@ function LoadingState({ progress, elapsedTime }) {
     return (
         <div className="flex flex-col items-center justify-center h-72 gap-5">
             <div className="w-full max-w-xl">
-                <div className="flex items-center justify-between text-sm font-semibold text-[var(--text-secondary)] mb-2">
+                <div className="flex items-center justify-between text-sm font-semibold text-slate-600 mb-2">
                     <span>{progress.message || 'Analyzing competitor markets...'}</span>
                     <span>{progress.percent}%</span>
                 </div>
-                <div className="w-full bg-[var(--panel-muted)] rounded-full h-2.5 overflow-hidden">
+                <div className="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden">
                     <Motion.div className="bg-amber-500 h-full rounded-full" initial={{ width: 0 }} animate={{ width: `${progress.percent}%` }} transition={{ duration: 0.4 }} />
                 </div>
             </div>
-            <p className="text-[var(--text-muted)] text-sm">Elapsed: <span className="font-mono font-bold">{Math.floor(elapsedTime / 60)}:{String(elapsedTime % 60).padStart(2, '0')}</span></p>
+            <p className="text-slate-400 text-sm">Elapsed: <span className="font-mono font-bold">{Math.floor(elapsedTime / 60)}:{String(elapsedTime % 60).padStart(2, '0')}</span></p>
         </div>
     );
 }
@@ -1229,12 +1202,12 @@ function IntroCards() {
     return (
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-5">
             {cards.map((item) => (
-                <div key={item.title} className="bg-[var(--panel)] border border-[var(--border-soft)] rounded-2xl p-4 shadow-sm">
+                <div key={item.title} className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
                     <div className="w-10 h-10 rounded-xl bg-amber-50 border border-amber-100 flex items-center justify-center mb-3">
                         <item.icon size={18} className="text-amber-600" />
                     </div>
-                    <h3 className="text-sm font-bold text-[var(--text-primary)] mb-1.5">{item.title}</h3>
-                    <p className="text-xs text-[var(--text-secondary)] leading-relaxed">{item.text}</p>
+                    <h3 className="text-sm font-bold text-slate-900 mb-1.5">{item.title}</h3>
+                    <p className="text-xs text-slate-500 leading-relaxed">{item.text}</p>
                 </div>
             ))}
         </div>
@@ -1250,8 +1223,8 @@ function SectionTitle({ icon, iconClass, iconBg, title, description }) {
                 <IconComponent size={16} className={iconClass} />
             </div>
             <div>
-                <h3 className="text-base font-bold text-[var(--text-primary)]">{title}</h3>
-                <p className="text-xs text-[var(--text-secondary)]">{description}</p>
+                <h3 className="text-base font-bold text-slate-900">{title}</h3>
+                <p className="text-xs text-slate-500">{description}</p>
             </div>
         </div>
     );
@@ -1278,59 +1251,59 @@ function DatasetCard({
     onDatabaseLoad,
 }) {
     return (
-        <div className="bg-[var(--panel)] border border-[var(--border-soft)] rounded-2xl p-4 shadow-sm">
-            <div className="flex items-start justify-between gap-4 mb-3">
+        <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
+            <div className="flex items-start justify-between gap-4 mb-4">
                 <div className="flex-1">
                     <div className="flex items-start justify-between gap-4">
                         <div>
-                            <h3 className="text-base font-bold text-[var(--text-primary)]">{title}</h3>
-                            <p className="text-xs text-[var(--text-secondary)] mt-1">{subtitle}</p>
+                            <h3 className="text-base font-bold text-slate-900">{title}</h3>
+                            <p className="text-xs text-slate-500 mt-1">{subtitle}</p>
                         </div>
                         {onLabelChange ? (
                             <div className="w-full max-w-[220px]">
-                                <label className="block text-[11px] font-bold text-[var(--text-secondary)] mb-1.5">Client label</label>
-                                <input value={label || ''} onChange={(event) => onLabelChange(event.target.value)} className="w-full px-3 py-2 bg-[var(--panel-muted)] border border-[var(--border-soft)] rounded-xl text-sm font-medium focus:border-amber-400 outline-none" />
+                                <label className="block text-[11px] font-bold text-slate-500 mb-1.5">Client label</label>
+                                <input value={label || ''} onChange={(event) => onLabelChange(event.target.value)} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:border-amber-400 outline-none" />
                             </div>
                         ) : null}
                     </div>
                 </div>
-                <div className={`px-3 py-1 rounded-full text-xs font-bold ${loaded ? 'bg-emerald-100 text-emerald-700' : 'bg-[var(--panel-muted)] text-[var(--text-secondary)]'}`}>{loaded ? 'Loaded' : 'Pending'}</div>
+                <div className={`px-3 py-1 rounded-full text-xs font-bold ${loaded ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'}`}>{loaded ? 'Loaded' : 'Pending'}</div>
             </div>
-            <div className="flex bg-[var(--panel-muted)] rounded-lg p-0.5 mb-3 w-fit">
+            <div className="flex bg-slate-100 rounded-lg p-0.5 mb-4 w-fit">
                 {['file', 'database'].map((item) => (
-                    <button key={item} onClick={() => onModeChange(item)} className={`px-3 py-1 text-xs font-bold rounded-md transition-all ${mode === item ? 'bg-[var(--panel)] text-amber-600 shadow-sm' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}>{item === 'file' ? 'File Upload' : 'Database'}</button>
+                    <button key={item} onClick={() => onModeChange(item)} className={`px-3 py-1 text-xs font-bold rounded-md transition-all ${mode === item ? 'bg-white text-amber-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>{item === 'file' ? 'File Upload' : 'Database'}</button>
                 ))}
             </div>
             {mode === 'file' ? (
-                <div className="space-y-3">
+                <div className="space-y-4">
                     <SeparatorInput value={separator} onChange={onSeparatorChange} />
                     <input type="file" accept=".csv,.txt,.xlsx,.xls" className="hidden" id={`upload-${title.replace(/\s+/g, '-').toLowerCase()}`} onChange={(event) => event.target.files?.[0] && onUpload(event.target.files[0])} />
-                    <label htmlFor={`upload-${title.replace(/\s+/g, '-').toLowerCase()}`} className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-xl font-bold text-sm cursor-pointer transition-all ${loaded ? 'bg-emerald-50 border-2 border-emerald-200 text-emerald-700' : 'bg-amber-600 hover:bg-amber-700 text-white shadow-sm shadow-amber-600/20'}`}>
+                    <label htmlFor={`upload-${title.replace(/\s+/g, '-').toLowerCase()}`} className={`w-full flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-sm cursor-pointer transition-all ${loaded ? 'bg-emerald-50 border-2 border-emerald-200 text-emerald-700' : 'bg-amber-600 hover:bg-amber-700 text-white shadow-sm shadow-amber-600/20'}`}>
                         {loaded ? <><CheckCircle size={15} /> Replace Dataset</> : <><Upload size={15} /> Upload CSV or Excel</>}
                     </label>
                 </div>
             ) : (
                 <div className="space-y-3">
                     {connections.length === 0 ? (
-                        <div className="text-sm text-[var(--text-secondary)] bg-[var(--panel-muted)] rounded-xl border border-[var(--border-soft)] px-4 py-5">Save a database connection in CleanFlow first, then return here to query pricing inputs directly.</div>
+                        <div className="text-sm text-slate-500 bg-slate-50 rounded-xl border border-slate-200 px-4 py-5">Save a database connection in CleanFlow first, then return here to query pricing inputs directly.</div>
                     ) : (
                         <>
                             <div>
-                                <label className="block text-xs font-bold text-[var(--text-secondary)] mb-1.5">Connection</label>
-                                <select value={connectionId} onChange={(event) => onConnectionChange(event.target.value)} className="w-full px-3 py-2.5 bg-[var(--panel-muted)] border border-[var(--border-soft)] rounded-xl text-sm font-medium focus:border-amber-400 outline-none">
+                                <label className="block text-xs font-bold text-slate-500 mb-1.5">Connection</label>
+                                <select value={connectionId} onChange={(event) => onConnectionChange(event.target.value)} className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:border-amber-400 outline-none">
                                     {connections.map((connection) => <option key={connection.id} value={connection.id}>{connection.name}</option>)}
                                 </select>
                             </div>
                             <div>
-                                <label className="block text-xs font-bold text-[var(--text-secondary)] mb-1.5">SQL Query</label>
-                            <textarea rows={3} value={query} onChange={(event) => onQueryChange(event.target.value)} className="w-full px-3 py-2.5 bg-[var(--panel-muted)] border border-[var(--border-soft)] rounded-xl text-sm font-medium focus:border-amber-400 outline-none resize-none" />
+                                <label className="block text-xs font-bold text-slate-500 mb-1.5">SQL Query</label>
+                                <textarea rows={4} value={query} onChange={(event) => onQueryChange(event.target.value)} className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:border-amber-400 outline-none resize-none" />
                             </div>
-                            <button onClick={onDatabaseLoad} className="w-full py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-sm transition-colors">Load Dataset from Database</button>
+                            <button onClick={onDatabaseLoad} className="w-full py-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-sm transition-colors">Load Dataset from Database</button>
                         </>
                     )}
                 </div>
             )}
-            <div className="mt-4 flex items-center justify-between text-xs text-[var(--text-secondary)]">
+            <div className="mt-4 flex items-center justify-between text-xs text-slate-500">
                 <span>{columns.length} columns detected</span>
                 <span>{rows} rows loaded</span>
             </div>
@@ -1340,46 +1313,46 @@ function DatasetCard({
 
 function CompetitorSourceCard({ source, index, connections, onChange, onUpload, onDatabaseLoad, onRemove, canRemove }) {
     return (
-        <div className="rounded-2xl border border-[var(--border-soft)] p-3.5 bg-[var(--panel-muted)]">
-            <div className="flex items-start justify-between gap-4 mb-3">
+        <div className="rounded-2xl border border-slate-200 p-4 bg-slate-50">
+            <div className="flex items-start justify-between gap-4 mb-4">
                 <div className="flex-1">
-                    <label className="block text-[11px] font-bold text-[var(--text-secondary)] mb-1.5">Competitor label</label>
-                    <input value={source.label} onChange={(event) => onChange({ label: event.target.value })} className="w-full px-3 py-2.5 bg-[var(--panel)] border border-[var(--border-soft)] rounded-xl text-sm font-medium focus:border-amber-400 outline-none" />
+                    <label className="block text-[11px] font-bold text-slate-500 mb-1.5">Competitor label</label>
+                    <input value={source.label} onChange={(event) => onChange({ label: event.target.value })} className="w-full px-3 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-medium focus:border-amber-400 outline-none" />
                 </div>
                 <div className="flex items-center gap-2">
-                    <div className={`px-3 py-1 rounded-full text-xs font-bold ${source.loaded ? 'bg-emerald-100 text-emerald-700' : 'bg-[var(--panel)] text-[var(--text-secondary)] border border-[var(--border-soft)]'}`}>{source.loaded ? 'Loaded' : `Competitor ${index + 1}`}</div>
-                    {canRemove ? <button onClick={onRemove} className="p-2 text-[var(--text-muted)] hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"><Trash2 size={16} /></button> : null}
+                    <div className={`px-3 py-1 rounded-full text-xs font-bold ${source.loaded ? 'bg-emerald-100 text-emerald-700' : 'bg-white text-slate-500 border border-slate-200'}`}>{source.loaded ? 'Loaded' : `Competitor ${index + 1}`}</div>
+                    {canRemove ? <button onClick={onRemove} className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"><Trash2 size={16} /></button> : null}
                 </div>
             </div>
-            <div className="flex bg-[var(--panel)] rounded-lg p-0.5 mb-3 w-fit border border-[var(--border-soft)]">
+            <div className="flex bg-white rounded-lg p-0.5 mb-4 w-fit border border-slate-200">
                 {['file', 'database'].map((item) => (
-                    <button key={item} onClick={() => onChange({ mode: item })} className={`px-3 py-1 text-xs font-bold rounded-md transition-all ${source.mode === item ? 'bg-slate-900 text-white shadow-sm' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}>{item === 'file' ? 'File Upload' : 'Database'}</button>
+                    <button key={item} onClick={() => onChange({ mode: item })} className={`px-3 py-1 text-xs font-bold rounded-md transition-all ${source.mode === item ? 'bg-slate-900 text-white shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>{item === 'file' ? 'File Upload' : 'Database'}</button>
                 ))}
             </div>
             {source.mode === 'file' ? (
-                <div className="space-y-3">
+                <div className="space-y-4">
                     <SeparatorInput value={source.separator} onChange={(separator) => onChange({ separator })} />
                     <input type="file" accept=".csv,.txt,.xlsx,.xls" className="hidden" id={`upload-${source.id}`} onChange={(event) => event.target.files?.[0] && onUpload(event.target.files[0])} />
-                    <label htmlFor={`upload-${source.id}`} className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-xl font-bold text-sm cursor-pointer transition-all ${source.loaded ? 'bg-emerald-50 border-2 border-emerald-200 text-emerald-700' : 'bg-slate-900 hover:bg-slate-800 text-white'}`}>
+                    <label htmlFor={`upload-${source.id}`} className={`w-full flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-sm cursor-pointer transition-all ${source.loaded ? 'bg-emerald-50 border-2 border-emerald-200 text-emerald-700' : 'bg-slate-900 hover:bg-slate-800 text-white'}`}>
                         {source.loaded ? <><CheckCircle size={15} /> Replace Dataset</> : <><Upload size={15} /> Upload Competitor Feed</>}
                     </label>
                 </div>
             ) : (
                 <div className="space-y-3">
                     {connections.length === 0 ? (
-                        <div className="text-sm text-[var(--text-secondary)] bg-[var(--panel)] rounded-xl border border-[var(--border-soft)] px-4 py-5">Save a database connection in CleanFlow first, then return here to query competitor feeds directly.</div>
+                        <div className="text-sm text-slate-500 bg-white rounded-xl border border-slate-200 px-4 py-5">Save a database connection in CleanFlow first, then return here to query competitor feeds directly.</div>
                     ) : (
                         <>
-                            <select value={source.connectionId} onChange={(event) => onChange({ connectionId: event.target.value })} className="w-full px-3 py-2.5 bg-[var(--panel)] border border-[var(--border-soft)] rounded-xl text-sm font-medium focus:border-amber-400 outline-none">
+                            <select value={source.connectionId} onChange={(event) => onChange({ connectionId: event.target.value })} className="w-full px-3 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-medium focus:border-amber-400 outline-none">
                                 {connections.map((connection) => <option key={connection.id} value={connection.id}>{connection.name}</option>)}
                             </select>
-                            <textarea rows={3} value={source.query} onChange={(event) => onChange({ query: event.target.value })} className="w-full px-3 py-2.5 bg-[var(--panel)] border border-[var(--border-soft)] rounded-xl text-sm font-medium focus:border-amber-400 outline-none resize-none" />
-                            <button onClick={onDatabaseLoad} className="w-full py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-sm transition-colors">Load Competitor Dataset</button>
+                            <textarea rows={4} value={source.query} onChange={(event) => onChange({ query: event.target.value })} className="w-full px-3 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-medium focus:border-amber-400 outline-none resize-none" />
+                            <button onClick={onDatabaseLoad} className="w-full py-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-sm transition-colors">Load Competitor Dataset</button>
                         </>
                     )}
                 </div>
             )}
-            <div className="mt-4 flex items-center justify-between text-xs text-[var(--text-secondary)]">
+            <div className="mt-4 flex items-center justify-between text-xs text-slate-500">
                 <span>{source.columns.length} columns detected</span>
                 <span>{source.rows} rows loaded</span>
             </div>
@@ -1390,34 +1363,34 @@ function CompetitorSourceCard({ source, index, connections, onChange, onUpload, 
 function SeparatorInput({ value, onChange }) {
     return (
         <div className="flex flex-col gap-2">
-            <span className="text-xs font-semibold text-[var(--text-secondary)]">Separator</span>
+            <span className="text-xs font-semibold text-slate-500">Separator</span>
             <div className="flex flex-wrap items-center gap-1.5">
                 {PRESET_SEPARATORS.map((delimiter) => (
-                    <button key={delimiter} onClick={() => onChange(delimiter)} className={`w-8 h-8 rounded-lg border font-mono text-xs transition-all ${value === delimiter ? 'bg-amber-600 text-white border-amber-600' : 'bg-[var(--panel)] text-[var(--text-secondary)] border-[var(--border-soft)] hover:border-amber-400'}`}>{delimiter}</button>
+                    <button key={delimiter} onClick={() => onChange(delimiter)} className={`w-8 h-8 rounded-lg border font-mono text-xs transition-all ${value === delimiter ? 'bg-amber-600 text-white border-amber-600' : 'bg-white text-slate-500 border-slate-200 hover:border-amber-400'}`}>{delimiter}</button>
                 ))}
-                <input type="text" maxLength={4} placeholder="Custom" value={!PRESET_SEPARATORS.includes(value) ? value : ''} onChange={(event) => onChange(event.target.value)} className={`w-20 h-8 px-2 py-1 border rounded-lg text-xs font-mono focus:outline-none transition-all ${!PRESET_SEPARATORS.includes(value) && value ? 'border-amber-600 bg-amber-50 text-amber-700' : 'border-[var(--border-soft)] text-[var(--text-secondary)] focus:border-amber-400'}`} />
+                <input type="text" maxLength={4} placeholder="Custom" value={!PRESET_SEPARATORS.includes(value) ? value : ''} onChange={(event) => onChange(event.target.value)} className={`w-20 h-8 px-2 py-1 border rounded-lg text-xs font-mono focus:outline-none transition-all ${!PRESET_SEPARATORS.includes(value) && value ? 'border-amber-600 bg-amber-50 text-amber-700' : 'border-slate-200 text-slate-600 focus:border-amber-400'}`} />
             </div>
-            <p className="text-[11px] text-[var(--text-muted)]">Use one character like `^`, `:`, `|`, or type `\t` for tab-separated files.</p>
+            <p className="text-[11px] text-slate-400">Use one character like `^`, `:`, `|`, or type `\t` for tab-separated files.</p>
         </div>
     );
 }
 
 function ReviewGroupCard({ group, clientLabel, onOpenMatch, onToggleExclude, excludedMatchIds }) {
     return (
-        <div className="bg-[var(--panel)] border border-[var(--border-soft)] rounded-2xl p-4 shadow-sm">
+        <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
             <div className="grid grid-cols-1 xl:grid-cols-[300px_1fr] gap-4 items-start">
-                <div className="rounded-2xl border border-[var(--border-soft)] bg-[var(--panel-muted)] p-4">
+                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
                     <div className="flex items-center justify-between gap-3 mb-3">
-                        <p className="text-[11px] font-black uppercase tracking-wider text-[var(--text-muted)]">{clientLabel || 'Client'}</p>
-                        <span className="px-2 py-1 rounded-full bg-[var(--panel)] border border-[var(--border-soft)] text-[11px] font-bold text-[var(--text-secondary)]">{group.competitors.length} match{group.competitors.length === 1 ? '' : 'es'}</span>
+                        <p className="text-[11px] font-black uppercase tracking-wider text-slate-400">{clientLabel || 'Client'}</p>
+                        <span className="px-2 py-1 rounded-full bg-white border border-slate-200 text-[11px] font-bold text-slate-600">{group.competitors.length} match{group.competitors.length === 1 ? '' : 'es'}</span>
                     </div>
                     <div className="flex gap-3">
                         <ProductThumbnail key={`${group.client_product_url || ''}-${group.client_image_url || ''}`} src={group.client_image_url} alt={group.client_product_name} baseHref={group.client_product_url} />
                         <div className="min-w-0 flex-1">
-                            <p className="text-sm font-bold text-[var(--text-primary)] break-words">{group.client_product_name}</p>
-                            <p className="text-xs text-[var(--text-secondary)] mt-1">{group.client_sku || 'No SKU provided'}</p>
-                            <p className="text-xs text-[var(--text-secondary)] mt-2">Primary match value: <span className="font-semibold text-[var(--text-primary)] break-all">{group.client_match_value}</span></p>
-                            <p className="text-xs text-[var(--text-secondary)] mt-1.5">Current price: <span className="font-semibold text-[var(--text-primary)]">{group.client_price ? formatCurrency(group.client_price) : 'Not mapped'}</span></p>
+                            <p className="text-sm font-bold text-slate-900 break-words">{group.client_product_name}</p>
+                            <p className="text-xs text-slate-500 mt-1">{group.client_sku || 'No SKU provided'}</p>
+                            <p className="text-xs text-slate-600 mt-2">Primary match value: <span className="font-semibold text-slate-900 break-all">{group.client_match_value}</span></p>
+                            <p className="text-xs text-slate-600 mt-1.5">Current price: <span className="font-semibold text-slate-900">{group.client_price ? formatCurrency(group.client_price) : 'Not mapped'}</span></p>
                             <div className="mt-2">
                                 <ExternalProductLink href={group.client_product_url} emptyLabel="No client product URL" />
                             </div>
@@ -1426,11 +1399,11 @@ function ReviewGroupCard({ group, clientLabel, onOpenMatch, onToggleExclude, exc
                     <CompactFieldList title="Client Selected Fields" fields={group.client_fields || []} tone="slate" />
                 </div>
 
-                <div className="rounded-2xl border border-[var(--border-soft)] bg-[var(--panel)] p-3">
+                <div className="rounded-2xl border border-slate-200 bg-white p-3">
                     <div className="flex items-center justify-between gap-3 mb-3">
                         <div>
-                            <p className="text-[11px] font-black uppercase tracking-wider text-[var(--text-muted)]">Matched Competitors</p>
-                            <p className="text-xs text-[var(--text-secondary)] mt-1">Click a competitor card to inspect the full matched dataset and exclude any outlier before pricing runs.</p>
+                            <p className="text-[11px] font-black uppercase tracking-wider text-slate-400">Matched Competitors</p>
+                            <p className="text-xs text-slate-500 mt-1">Click a competitor card to inspect the full matched dataset and exclude any outlier before pricing runs.</p>
                         </div>
                     </div>
                     <div className="flex gap-3 overflow-x-auto pb-1">
@@ -1462,10 +1435,10 @@ function CompetitorReviewPanel({ row, excluded, onOpen, onToggleExclude }) {
                     onOpen();
                 }
             }}
-            className={`min-w-[320px] max-w-[360px] rounded-2xl border p-4 transition-all cursor-pointer ${excluded ? 'border-rose-200 bg-rose-50/70 opacity-80' : 'border-[var(--border-soft)] bg-amber-50/40 hover:border-amber-300 hover:shadow-sm'}`}
+            className={`min-w-[320px] max-w-[360px] rounded-2xl border p-4 transition-all cursor-pointer ${excluded ? 'border-rose-200 bg-rose-50/70 opacity-80' : 'border-slate-200 bg-amber-50/40 hover:border-amber-300 hover:shadow-sm'}`}
         >
             <div className="flex items-center justify-between gap-3 mb-3">
-                <span className={`px-2 py-1 rounded-full bg-[var(--panel)] border text-[11px] font-bold ${excluded ? 'border-rose-200 text-rose-700' : 'border-amber-200 text-amber-700'}`}>{row.competitor_source}</span>
+                <span className={`px-2 py-1 rounded-full bg-white border text-[11px] font-bold ${excluded ? 'border-rose-200 text-rose-700' : 'border-amber-200 text-amber-700'}`}>{row.competitor_source}</span>
                 <div className="flex items-center gap-2">
                     {excluded ? <span className="inline-flex px-2 py-1 rounded-full text-[11px] font-bold bg-rose-100 text-rose-700">Excluded</span> : null}
                     <span className={`inline-flex px-2 py-1 rounded-full text-[11px] font-bold ${row.match_quality === 'High' ? 'bg-emerald-100 text-emerald-700' : row.match_quality === 'Medium' ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-600'}`}>{row.match_quality}</span>
@@ -1474,11 +1447,11 @@ function CompetitorReviewPanel({ row, excluded, onOpen, onToggleExclude }) {
             <div className="flex gap-3">
                 <ProductThumbnail key={`${row.competitor_product_url || ''}-${row.competitor_image_url || ''}`} src={row.competitor_image_url} alt={row.competitor_product_name} baseHref={row.competitor_product_url} />
                 <div className="min-w-0 flex-1">
-                    <p className="text-sm font-bold text-[var(--text-primary)] break-words">{row.competitor_product_name}</p>
-                    <p className="text-xs text-[var(--text-secondary)] mt-1">{row.competitor_seller || 'Seller not provided'}</p>
-                    <p className="text-xs text-[var(--text-secondary)] mt-2">Price: <span className="font-semibold text-[var(--text-primary)]">{row.competitor_price ? formatCurrency(row.competitor_price) : 'Not mapped'}</span></p>
-                    <p className="text-xs text-[var(--text-secondary)] mt-1.5">Similarity: <span className="font-semibold text-violet-700">{(Number(row.similarity_score || 0) * 100).toFixed(1)}%</span></p>
-                    <p className="text-xs text-[var(--text-secondary)] mt-1.5">Rules matched: <span className="font-semibold text-[var(--text-primary)]">{row.matched_rule_count || 0}/{row.total_rule_count || 0}</span></p>
+                    <p className="text-sm font-bold text-slate-900 break-words">{row.competitor_product_name}</p>
+                    <p className="text-xs text-slate-500 mt-1">{row.competitor_seller || 'Seller not provided'}</p>
+                    <p className="text-xs text-slate-600 mt-2">Price: <span className="font-semibold text-slate-900">{row.competitor_price ? formatCurrency(row.competitor_price) : 'Not mapped'}</span></p>
+                    <p className="text-xs text-slate-600 mt-1.5">Similarity: <span className="font-semibold text-violet-700">{(Number(row.similarity_score || 0) * 100).toFixed(1)}%</span></p>
+                    <p className="text-xs text-slate-600 mt-1.5">Rules matched: <span className="font-semibold text-slate-900">{row.matched_rule_count || 0}/{row.total_rule_count || 0}</span></p>
                     <div className="mt-2">
                         <ExternalProductLink href={row.competitor_product_url} emptyLabel="No competitor product URL" />
                     </div>
@@ -1493,7 +1466,7 @@ function CompetitorReviewPanel({ row, excluded, onOpen, onToggleExclude }) {
                         event.stopPropagation();
                         onOpen();
                     }}
-                    className="inline-flex items-center gap-1.5 rounded-xl border border-[var(--border-soft)] bg-[var(--panel)] px-3 py-2 text-xs font-bold text-[var(--text-primary)] hover:bg-[var(--panel-muted)]"
+                    className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50"
                 >
                     <Eye size={14} /> View full match data
                 </button>
@@ -1518,17 +1491,17 @@ function CompactFieldList({ title, fields, tone = 'slate' }) {
     }
 
     const toneClasses = tone === 'amber'
-        ? 'bg-[var(--panel)]/80 border-amber-200'
-        : 'bg-[var(--panel)] border-[var(--border-soft)]';
+        ? 'bg-white/80 border-amber-200'
+        : 'bg-white border-slate-200';
 
     return (
         <div className={`mt-3 rounded-2xl border p-3 ${toneClasses}`}>
-            <p className="text-[11px] font-black uppercase tracking-wider text-[var(--text-muted)] mb-2">{title}</p>
+            <p className="text-[11px] font-black uppercase tracking-wider text-slate-400 mb-2">{title}</p>
             <div className="space-y-1.5">
                 {fields.map((field, index) => (
                     <div key={`${field.key || field.label}-${index}`} className="grid grid-cols-[120px_1fr] gap-2 text-xs">
-                        <span className="font-semibold text-[var(--text-secondary)]">{field.label}</span>
-                        <span className="text-[var(--text-primary)] break-words">{field.value}</span>
+                        <span className="font-semibold text-slate-500">{field.label}</span>
+                        <span className="text-slate-800 break-words">{field.value}</span>
                     </div>
                 ))}
             </div>
@@ -1542,18 +1515,18 @@ function CompactMatchAttributeList({ attributes }) {
     }
 
     return (
-        <div className="mt-3 rounded-2xl border border-[var(--border-soft)] bg-[var(--panel)]/90 p-3">
-            <p className="text-[11px] font-black uppercase tracking-wider text-[var(--text-muted)] mb-2">Matched Attributes</p>
+        <div className="mt-3 rounded-2xl border border-slate-200 bg-white/90 p-3">
+            <p className="text-[11px] font-black uppercase tracking-wider text-slate-400 mb-2">Matched Attributes</p>
             <div className="space-y-2">
                 {attributes.map((attribute, index) => (
-                    <div key={`${attribute.client_column}-${attribute.competitor_column}-${index}`} className="rounded-xl border border-[var(--border-soft)] bg-[var(--panel-muted)] px-3 py-2">
+                    <div key={`${attribute.client_column}-${attribute.competitor_column}-${index}`} className="rounded-xl border border-slate-100 bg-slate-50 px-3 py-2">
                         <div className="flex items-center justify-between gap-3 text-xs">
-                            <span className="font-semibold text-[var(--text-primary)]">{attribute.label || humanizeColumn(attribute.client_column)}</span>
+                            <span className="font-semibold text-slate-900">{attribute.label || humanizeColumn(attribute.client_column)}</span>
                             <span className="font-bold text-violet-700">{(Number(attribute.score || 0) * 100).toFixed(1)}%</span>
                         </div>
-                        <div className="mt-1.5 grid grid-cols-2 gap-2 text-[11px] text-[var(--text-secondary)]">
-                            <div className="break-words"><span className="font-semibold text-[var(--text-secondary)]">Client:</span> {attribute.client_value || '—'}</div>
-                            <div className="break-words"><span className="font-semibold text-[var(--text-secondary)]">Competitor:</span> {attribute.competitor_value || '—'}</div>
+                        <div className="mt-1.5 grid grid-cols-2 gap-2 text-[11px] text-slate-600">
+                            <div className="break-words"><span className="font-semibold text-slate-500">Client:</span> {attribute.client_value || '—'}</div>
+                            <div className="break-words"><span className="font-semibold text-slate-500">Competitor:</span> {attribute.competitor_value || '—'}</div>
                         </div>
                     </div>
                 ))}
@@ -1572,15 +1545,15 @@ function MatchDetailDialog({ selection, excluded, excludedMatchIds, onClose, onT
     return (
         <div className="fixed inset-y-0 left-0 right-0 z-[70] bg-slate-950/45 p-3 overflow-y-auto lg:left-[260px] lg:p-6" onClick={onClose}>
             <div className="min-h-full flex items-start lg:items-center justify-center">
-                <div className="w-full max-w-7xl max-h-[94vh] overflow-hidden rounded-3xl border border-[var(--border-soft)] bg-[var(--panel)] shadow-2xl" onClick={(event) => event.stopPropagation()}>
-                <div className="flex flex-wrap items-start justify-between gap-4 border-b border-[var(--border-soft)] px-5 py-4">
+                <div className="w-full max-w-7xl max-h-[94vh] overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl" onClick={(event) => event.stopPropagation()}>
+                <div className="flex flex-wrap items-start justify-between gap-4 border-b border-slate-200 px-5 py-4">
                     <div>
-                        <p className="text-[11px] font-black uppercase tracking-wider text-[var(--text-muted)]">Matched Dataset Inspection</p>
-                        <h4 className="mt-1 text-lg font-black text-[var(--text-primary)]">Validate the full client and competitor rows</h4>
-                        <p className="mt-1 text-sm text-[var(--text-secondary)]">Use this view to verify the matched records and remove any outlier before pricing uses it.</p>
+                        <p className="text-[11px] font-black uppercase tracking-wider text-slate-400">Matched Dataset Inspection</p>
+                        <h4 className="mt-1 text-lg font-black text-slate-900">Validate the full client and competitor rows</h4>
+                        <p className="mt-1 text-sm text-slate-500">Use this view to verify the matched records and remove any outlier before pricing uses it.</p>
                     </div>
                     <div className="flex flex-wrap items-center gap-2">
-                        <span className="inline-flex rounded-full bg-[var(--panel-muted)] px-3 py-1 text-xs font-bold text-[var(--text-secondary)]">{match.competitor_source}</span>
+                        <span className="inline-flex rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-600">{match.competitor_source}</span>
                         <span className={`inline-flex rounded-full px-3 py-1 text-xs font-bold ${excluded ? 'bg-rose-100 text-rose-700' : 'bg-emerald-100 text-emerald-700'}`}>
                             {excluded ? 'Excluded from pricing' : 'Included in pricing'}
                         </span>
@@ -1591,7 +1564,7 @@ function MatchDetailDialog({ selection, excluded, excludedMatchIds, onClose, onT
                         >
                             {excluded ? 'Restore match' : 'Exclude match'}
                         </button>
-                        <button type="button" onClick={onClose} className="rounded-xl border border-[var(--border-soft)] px-3 py-2 text-xs font-bold text-[var(--text-secondary)] hover:bg-[var(--panel-muted)]">
+                        <button type="button" onClick={onClose} className="rounded-xl border border-slate-200 px-3 py-2 text-xs font-bold text-slate-600 hover:bg-slate-50">
                             Close
                         </button>
                     </div>
@@ -1599,20 +1572,20 @@ function MatchDetailDialog({ selection, excluded, excludedMatchIds, onClose, onT
 
                 <div className="max-h-[calc(92vh-88px)] overflow-y-auto px-5 py-5">
                     <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
-                        <div className="rounded-3xl border border-[var(--border-soft)] bg-[var(--panel-muted)] p-5">
+                        <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5">
                             <div className="flex items-start justify-between gap-3 mb-4">
                                 <div>
-                                    <p className="text-[11px] font-black uppercase tracking-wider text-[var(--text-muted)]">{clientLabel || 'Client'}</p>
-                                    <p className="mt-1 text-lg font-bold text-[var(--text-primary)] break-words">{match.client_product_name}</p>
-                                    <p className="mt-1 text-xs text-[var(--text-secondary)]">{match.client_sku || 'No SKU provided'}</p>
+                                    <p className="text-[11px] font-black uppercase tracking-wider text-slate-400">{clientLabel || 'Client'}</p>
+                                    <p className="mt-1 text-lg font-bold text-slate-900 break-words">{match.client_product_name}</p>
+                                    <p className="mt-1 text-xs text-slate-500">{match.client_sku || 'No SKU provided'}</p>
                                 </div>
-                                <span className="inline-flex rounded-full bg-[var(--panel)] px-3 py-1 text-xs font-bold text-[var(--text-secondary)] border border-[var(--border-soft)]">Client row #{Number(match.client_index ?? 0) + 1}</span>
+                                <span className="inline-flex rounded-full bg-white px-3 py-1 text-xs font-bold text-slate-600 border border-slate-200">Client row #{Number(match.client_index ?? 0) + 1}</span>
                             </div>
                             <div className="flex gap-4">
                                 <ProductThumbnail src={match.client_image_url} alt={match.client_product_name} baseHref={match.client_product_url} />
                                 <div className="min-w-0 flex-1">
-                                    <p className="text-sm text-[var(--text-secondary)]">Primary match value: <span className="font-semibold text-[var(--text-primary)] break-all">{match.client_match_value || 'Not provided'}</span></p>
-                                    <p className="mt-2 text-sm text-[var(--text-secondary)]">Current price: <span className="font-semibold text-[var(--text-primary)]">{match.client_price ? formatCurrency(match.client_price) : 'Not mapped'}</span></p>
+                                    <p className="text-sm text-slate-600">Primary match value: <span className="font-semibold text-slate-900 break-all">{match.client_match_value || 'Not provided'}</span></p>
+                                    <p className="mt-2 text-sm text-slate-600">Current price: <span className="font-semibold text-slate-900">{match.client_price ? formatCurrency(match.client_price) : 'Not mapped'}</span></p>
                                     <div className="mt-3">
                                         <ExternalProductLink href={match.client_product_url} emptyLabel="No client product URL" />
                                     </div>
@@ -1626,16 +1599,16 @@ function MatchDetailDialog({ selection, excluded, excludedMatchIds, onClose, onT
                             <div className="flex items-start justify-between gap-3 mb-4">
                                 <div>
                                     <p className="text-[11px] font-black uppercase tracking-wider text-amber-700/80">Competitor</p>
-                                    <p className="mt-1 text-lg font-bold text-[var(--text-primary)] break-words">{match.competitor_product_name}</p>
-                                    <p className="mt-1 text-xs text-[var(--text-secondary)]">{match.competitor_seller || 'Seller not provided'}</p>
+                                    <p className="mt-1 text-lg font-bold text-slate-900 break-words">{match.competitor_product_name}</p>
+                                    <p className="mt-1 text-xs text-slate-500">{match.competitor_seller || 'Seller not provided'}</p>
                                 </div>
-                                <span className="inline-flex rounded-full bg-[var(--panel)] px-3 py-1 text-xs font-bold text-[var(--text-secondary)] border border-amber-200">Competitor row #{Number(match.competitor_index ?? 0) + 1}</span>
+                                <span className="inline-flex rounded-full bg-white px-3 py-1 text-xs font-bold text-slate-600 border border-amber-200">Competitor row #{Number(match.competitor_index ?? 0) + 1}</span>
                             </div>
                             <div className="flex gap-4">
                                 <ProductThumbnail src={match.competitor_image_url} alt={match.competitor_product_name} baseHref={match.competitor_product_url} />
                                 <div className="min-w-0 flex-1">
-                                    <p className="text-sm text-[var(--text-secondary)]">Similarity: <span className="font-semibold text-violet-700">{(Number(match.similarity_score || 0) * 100).toFixed(1)}%</span></p>
-                                    <p className="mt-2 text-sm text-[var(--text-secondary)]">Competitor price: <span className="font-semibold text-[var(--text-primary)]">{match.competitor_price ? formatCurrency(match.competitor_price) : 'Not mapped'}</span></p>
+                                    <p className="text-sm text-slate-600">Similarity: <span className="font-semibold text-violet-700">{(Number(match.similarity_score || 0) * 100).toFixed(1)}%</span></p>
+                                    <p className="mt-2 text-sm text-slate-600">Competitor price: <span className="font-semibold text-slate-900">{match.competitor_price ? formatCurrency(match.competitor_price) : 'Not mapped'}</span></p>
                                     <div className="mt-3">
                                         <ExternalProductLink href={match.competitor_product_url} emptyLabel="No competitor product URL" />
                                     </div>
@@ -1646,13 +1619,13 @@ function MatchDetailDialog({ selection, excluded, excludedMatchIds, onClose, onT
                         </div>
                     </div>
 
-                    <div className="mt-5 rounded-3xl border border-[var(--border-soft)] bg-[var(--panel)] p-5">
+                    <div className="mt-5 rounded-3xl border border-slate-200 bg-white p-5">
                         <div className="flex flex-wrap items-center justify-between gap-3">
                             <div>
-                                <p className="text-[11px] font-black uppercase tracking-wider text-[var(--text-muted)]">Matched Attributes</p>
-                                <p className="mt-1 text-sm text-[var(--text-secondary)]">These are the compared attributes that produced this client-to-competitor match.</p>
+                                <p className="text-[11px] font-black uppercase tracking-wider text-slate-400">Matched Attributes</p>
+                                <p className="mt-1 text-sm text-slate-500">These are the compared attributes that produced this client-to-competitor match.</p>
                             </div>
-                            <span className="inline-flex rounded-full bg-[var(--panel-muted)] px-3 py-1 text-xs font-bold text-[var(--text-secondary)]">
+                            <span className="inline-flex rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-600">
                                 {match.matched_rule_count || 0}/{match.total_rule_count || 0} rules matched
                             </span>
                         </div>
@@ -1660,13 +1633,13 @@ function MatchDetailDialog({ selection, excluded, excludedMatchIds, onClose, onT
                     </div>
 
                     {group?.competitors?.length > 1 ? (
-                        <div className="mt-5 rounded-3xl border border-[var(--border-soft)] bg-[var(--panel)] p-5">
+                        <div className="mt-5 rounded-3xl border border-slate-200 bg-white p-5">
                             <div className="flex flex-wrap items-center justify-between gap-3">
                                 <div>
-                                    <p className="text-[11px] font-black uppercase tracking-wider text-[var(--text-muted)]">Other Matched Competitors</p>
-                                    <p className="mt-1 text-sm text-[var(--text-secondary)]">These additional competitor rows were matched against the same client product.</p>
+                                    <p className="text-[11px] font-black uppercase tracking-wider text-slate-400">Other Matched Competitors</p>
+                                    <p className="mt-1 text-sm text-slate-500">These additional competitor rows were matched against the same client product.</p>
                                 </div>
-                                <span className="inline-flex rounded-full bg-[var(--panel-muted)] px-3 py-1 text-xs font-bold text-[var(--text-secondary)]">
+                                <span className="inline-flex rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-600">
                                     {group.competitors.length} competitor match{group.competitors.length === 1 ? '' : 'es'}
                                 </span>
                             </div>
@@ -1676,14 +1649,14 @@ function MatchDetailDialog({ selection, excluded, excludedMatchIds, onClose, onT
                                     return (
                                         <div
                                             key={candidate.match_id || `${candidate.competitor_source}-${index}`}
-                                            className={`min-w-[240px] rounded-2xl border p-3 ${candidate.match_id === match.match_id ? 'border-violet-300 bg-violet-50' : candidateExcluded ? 'border-rose-200 bg-rose-50/70' : 'border-[var(--border-soft)] bg-[var(--panel-muted)]'}`}
+                                            className={`min-w-[240px] rounded-2xl border p-3 ${candidate.match_id === match.match_id ? 'border-violet-300 bg-violet-50' : candidateExcluded ? 'border-rose-200 bg-rose-50/70' : 'border-slate-200 bg-slate-50'}`}
                                         >
                                             <div className="flex items-center justify-between gap-2">
-                                                <span className="text-xs font-bold text-[var(--text-primary)]">{candidate.competitor_source}</span>
+                                                <span className="text-xs font-bold text-slate-700">{candidate.competitor_source}</span>
                                                 <span className="text-xs font-bold text-violet-700">{(Number(candidate.similarity_score || 0) * 100).toFixed(1)}%</span>
                                             </div>
-                                            <p className="mt-2 text-sm font-bold text-[var(--text-primary)] break-words">{candidate.competitor_product_name}</p>
-                                            <p className="mt-1 text-xs text-[var(--text-secondary)]">{candidateExcluded ? 'Excluded from pricing' : 'Included in pricing'}</p>
+                                            <p className="mt-2 text-sm font-bold text-slate-900 break-words">{candidate.competitor_product_name}</p>
+                                            <p className="mt-1 text-xs text-slate-500">{candidateExcluded ? 'Excluded from pricing' : 'Included in pricing'}</p>
                                         </div>
                                     );
                                 })}
@@ -1700,27 +1673,27 @@ function MatchDetailDialog({ selection, excluded, excludedMatchIds, onClose, onT
 function RecordFieldGrid({ title, fields, tone = 'slate' }) {
     if (!fields.length) {
         return (
-            <div className="mt-3 rounded-2xl border border-dashed border-[var(--border-strong)] bg-[var(--panel)]/80 px-4 py-3 text-xs text-[var(--text-secondary)]">
+            <div className="mt-3 rounded-2xl border border-dashed border-slate-300 bg-white/80 px-4 py-3 text-xs text-slate-500">
                 No dataset values were returned for this row.
             </div>
         );
     }
 
     const toneClasses = tone === 'amber'
-        ? 'border-amber-200 bg-[var(--panel)]/85'
-        : 'border-[var(--border-soft)] bg-[var(--panel)]';
+        ? 'border-amber-200 bg-white/85'
+        : 'border-slate-200 bg-white';
 
     return (
         <div className={`mt-3 rounded-2xl border ${toneClasses}`}>
-            <div className="border-b border-[var(--border-soft)] px-4 py-3">
-                <p className="text-[11px] font-black uppercase tracking-wider text-[var(--text-muted)]">{title}</p>
+            <div className="border-b border-slate-100 px-4 py-3">
+                <p className="text-[11px] font-black uppercase tracking-wider text-slate-400">{title}</p>
             </div>
             <div className="max-h-[320px] overflow-y-auto">
-                <div className="divide-y divide-[var(--border-soft)]">
+                <div className="divide-y divide-slate-100">
                     {fields.map((field, index) => (
                         <div key={`${field.column}-${index}`} className="grid grid-cols-[170px_1fr] gap-3 px-4 py-2.5 text-xs">
-                            <span className="font-semibold text-[var(--text-secondary)] break-words">{field.label || humanizeColumn(field.column)}</span>
-                            <span className="text-[var(--text-primary)] break-words">{field.value || '—'}</span>
+                            <span className="font-semibold text-slate-500 break-words">{field.label || humanizeColumn(field.column)}</span>
+                            <span className="text-slate-800 break-words">{field.value || '—'}</span>
                         </div>
                     ))}
                 </div>
@@ -1731,17 +1704,17 @@ function RecordFieldGrid({ title, fields, tone = 'slate' }) {
 
 function ReviewCard({ row }) {
     return (
-        <div className="bg-[var(--panel)] border border-[var(--border-soft)] rounded-2xl p-5 shadow-sm">
+        <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
             <div className="grid grid-cols-1 xl:grid-cols-[1fr_auto_1fr_auto] gap-4 items-stretch">
-                <div className="rounded-2xl border border-[var(--border-soft)] bg-[var(--panel-muted)] p-4">
-                    <p className="text-xs font-black uppercase tracking-wider text-[var(--text-muted)] mb-3">Client Product</p>
+                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                    <p className="text-xs font-black uppercase tracking-wider text-slate-400 mb-3">Client Product</p>
                     <div className="flex gap-4">
                         <ProductThumbnail key={`${row.client_product_url || ''}-${row.client_image_url || ''}`} src={row.client_image_url} alt={row.client_product_name} baseHref={row.client_product_url} />
                         <div className="min-w-0 flex-1">
-                            <p className="font-bold text-[var(--text-primary)] break-words">{row.client_product_name}</p>
-                            <p className="text-sm text-[var(--text-secondary)] mt-1">{row.client_sku || 'No SKU provided'}</p>
-                            <p className="text-sm text-[var(--text-secondary)] mt-3">Primary match value: <span className="font-semibold text-[var(--text-primary)] break-all">{row.client_match_value}</span></p>
-                            <p className="text-sm text-[var(--text-secondary)] mt-2">Current price: <span className="font-semibold text-[var(--text-primary)]">{row.client_price ? formatCurrency(row.client_price) : 'Not mapped'}</span></p>
+                            <p className="font-bold text-slate-900 break-words">{row.client_product_name}</p>
+                            <p className="text-sm text-slate-500 mt-1">{row.client_sku || 'No SKU provided'}</p>
+                            <p className="text-sm text-slate-600 mt-3">Primary match value: <span className="font-semibold text-slate-900 break-all">{row.client_match_value}</span></p>
+                            <p className="text-sm text-slate-600 mt-2">Current price: <span className="font-semibold text-slate-900">{row.client_price ? formatCurrency(row.client_price) : 'Not mapped'}</span></p>
                             <div className="mt-3">
                                 <ExternalProductLink href={row.client_product_url} emptyLabel="No client product URL" />
                             </div>
@@ -1749,33 +1722,33 @@ function ReviewCard({ row }) {
                     </div>
                 </div>
                 <div className="flex items-center justify-center text-amber-500 font-black text-xl">vs</div>
-                <div className="rounded-2xl border border-[var(--border-soft)] bg-amber-50/50 p-4">
-                    <p className="text-xs font-black uppercase tracking-wider text-[var(--text-muted)] mb-3">Competitor Product</p>
+                <div className="rounded-2xl border border-slate-200 bg-amber-50/50 p-4">
+                    <p className="text-xs font-black uppercase tracking-wider text-slate-400 mb-3">Competitor Product</p>
                     <div className="flex gap-4">
                         <ProductThumbnail key={`${row.competitor_product_url || ''}-${row.competitor_image_url || ''}`} src={row.competitor_image_url} alt={row.competitor_product_name} baseHref={row.competitor_product_url} />
                         <div className="min-w-0 flex-1">
                             <div className="flex items-center justify-between gap-3">
-                                <p className="font-bold text-[var(--text-primary)] break-words">{row.competitor_product_name}</p>
-                                <span className="px-2.5 py-1 rounded-full bg-[var(--panel)] border border-amber-200 text-amber-700 text-xs font-bold shrink-0">{row.competitor_source}</span>
+                                <p className="font-bold text-slate-900 break-words">{row.competitor_product_name}</p>
+                                <span className="px-2.5 py-1 rounded-full bg-white border border-amber-200 text-amber-700 text-xs font-bold shrink-0">{row.competitor_source}</span>
                             </div>
-                            <p className="text-sm text-[var(--text-secondary)] mt-1">{row.competitor_seller || 'Seller not provided'}</p>
-                            <p className="text-sm text-[var(--text-secondary)] mt-3">Competitor price: <span className="font-semibold text-[var(--text-primary)]">{row.competitor_price ? formatCurrency(row.competitor_price) : 'Not mapped'}</span></p>
-                            <p className="text-sm text-[var(--text-secondary)] mt-2">Rating: <span className="font-semibold text-[var(--text-primary)]">{row.competitor_rating || 'N/A'}</span></p>
+                            <p className="text-sm text-slate-500 mt-1">{row.competitor_seller || 'Seller not provided'}</p>
+                            <p className="text-sm text-slate-600 mt-3">Competitor price: <span className="font-semibold text-slate-900">{row.competitor_price ? formatCurrency(row.competitor_price) : 'Not mapped'}</span></p>
+                            <p className="text-sm text-slate-600 mt-2">Rating: <span className="font-semibold text-slate-900">{row.competitor_rating || 'N/A'}</span></p>
                             <div className="mt-3">
                                 <ExternalProductLink href={row.competitor_product_url} emptyLabel="No competitor product URL" />
                             </div>
                         </div>
                     </div>
                 </div>
-                <div className="flex flex-col justify-between rounded-2xl border border-[var(--border-soft)] bg-[var(--panel)] p-4 min-w-[150px]">
+                <div className="flex flex-col justify-between rounded-2xl border border-slate-200 bg-white p-4 min-w-[150px]">
                     <div>
-                        <p className="text-xs font-black uppercase tracking-wider text-[var(--text-muted)]">Similarity</p>
+                        <p className="text-xs font-black uppercase tracking-wider text-slate-400">Similarity</p>
                         <p className="text-2xl font-black text-violet-700 mt-2">{(Number(row.similarity_score) * 100).toFixed(1)}%</p>
                     </div>
                     <div className="space-y-2">
                         <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-bold ${row.match_quality === 'High' ? 'bg-emerald-100 text-emerald-700' : row.match_quality === 'Medium' ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-600'}`}>{row.match_quality}</span>
-                        <p className="text-xs text-[var(--text-secondary)]">Rules matched: <span className="font-semibold text-[var(--text-primary)]">{row.matched_rule_count || 0}/{row.total_rule_count || 0}</span></p>
-                        <p className="text-xs text-[var(--text-secondary)]">Price gap: <span className="font-semibold text-[var(--text-primary)]">{row.price_gap_pct > 0 ? '+' : ''}{row.price_gap_pct}%</span></p>
+                        <p className="text-xs text-slate-500">Rules matched: <span className="font-semibold text-slate-900">{row.matched_rule_count || 0}/{row.total_rule_count || 0}</span></p>
+                        <p className="text-xs text-slate-500">Price gap: <span className="font-semibold text-slate-900">{row.price_gap_pct > 0 ? '+' : ''}{row.price_gap_pct}%</span></p>
                     </div>
                 </div>
             </div>
@@ -1791,7 +1764,7 @@ function ProductThumbnail({ src, alt, baseHref = '' }) {
 
     if (!normalizedSrc || failed) {
         return (
-            <div aria-label="No image available" className="w-24 h-24 rounded-2xl border border-dashed border-[var(--border-strong)] bg-[var(--panel-muted)]/80 shrink-0" />
+            <div aria-label="No image available" className="w-24 h-24 rounded-2xl border border-dashed border-slate-300 bg-slate-100/80 shrink-0" />
         );
     }
 
@@ -1799,7 +1772,7 @@ function ProductThumbnail({ src, alt, baseHref = '' }) {
         <img
             src={normalizedSrc}
             alt={alt || 'Product'}
-            className="w-24 h-24 rounded-2xl object-cover border border-[var(--border-soft)] bg-[var(--panel)] shrink-0"
+            className="w-24 h-24 rounded-2xl object-cover border border-slate-200 bg-white shrink-0"
             loading="lazy"
             onError={() => setFailed(true)}
         />
@@ -1810,7 +1783,7 @@ function ExternalProductLink({ href, emptyLabel }) {
     const normalizedHref = normalizeExternalUrl(href);
 
     if (!normalizedHref) {
-        return <span className="text-xs text-[var(--text-muted)]">{emptyLabel}</span>;
+        return <span className="text-xs text-slate-400">{emptyLabel}</span>;
     }
 
     return (
@@ -1823,32 +1796,32 @@ function ExternalProductLink({ href, emptyLabel }) {
 function MatchAttributeTable({ attributes }) {
     if (!attributes.length) {
         return (
-            <div className="mt-4 rounded-2xl border border-[var(--border-soft)] bg-[var(--panel-muted)] px-4 py-3 text-sm text-[var(--text-secondary)]">
+            <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-500">
                 No matched attributes were returned for this pair.
             </div>
         );
     }
 
     return (
-        <div className="mt-4 rounded-2xl border border-[var(--border-soft)] overflow-hidden">
+        <div className="mt-4 rounded-2xl border border-slate-200 overflow-hidden">
             <div className="overflow-x-auto">
                 <div className="min-w-[720px]">
-                    <div className="grid grid-cols-[180px_minmax(0,1fr)_minmax(0,1fr)_96px] bg-[var(--panel-muted)] border-b border-[var(--border-soft)] text-[11px] font-black uppercase tracking-wider text-[var(--text-secondary)]">
+                    <div className="grid grid-cols-[180px_minmax(0,1fr)_minmax(0,1fr)_96px] bg-slate-50 border-b border-slate-200 text-[11px] font-black uppercase tracking-wider text-slate-500">
                         <div className="px-4 py-3">Attribute</div>
                         <div className="px-4 py-3">Client</div>
                         <div className="px-4 py-3">Competitor</div>
                         <div className="px-4 py-3 text-right">Score</div>
                     </div>
-                    <div className="divide-y divide-[var(--border-soft)]">
+                    <div className="divide-y divide-slate-100">
                         {attributes.map((attribute, index) => (
                             <div key={`${attribute.client_column}-${attribute.competitor_column}-${index}`} className="grid grid-cols-[180px_minmax(0,1fr)_minmax(0,1fr)_96px] text-sm">
-                                <div className="px-4 py-3 bg-[var(--panel)]">
-                                    <p className="font-semibold text-[var(--text-primary)]">{attribute.label || humanizeColumn(attribute.client_column)}</p>
-                                    <p className="text-xs text-[var(--text-muted)] mt-1">{attribute.algorithm} • {Math.round(Number(attribute.threshold || 0) * 100)}%</p>
+                                <div className="px-4 py-3 bg-white">
+                                    <p className="font-semibold text-slate-900">{attribute.label || humanizeColumn(attribute.client_column)}</p>
+                                    <p className="text-xs text-slate-400 mt-1">{attribute.algorithm} • {Math.round(Number(attribute.threshold || 0) * 100)}%</p>
                                 </div>
-                                <div className="px-4 py-3 bg-[var(--panel)] text-[var(--text-primary)] break-words">{attribute.client_value || '—'}</div>
-                                <div className="px-4 py-3 bg-[var(--panel)] text-[var(--text-primary)] break-words">{attribute.competitor_value || '—'}</div>
-                                <div className="px-4 py-3 bg-[var(--panel)] text-right font-bold text-violet-700">{(Number(attribute.score || 0) * 100).toFixed(1)}%</div>
+                                <div className="px-4 py-3 bg-white text-slate-700 break-words">{attribute.client_value || '—'}</div>
+                                <div className="px-4 py-3 bg-white text-slate-700 break-words">{attribute.competitor_value || '—'}</div>
+                                <div className="px-4 py-3 bg-white text-right font-bold text-violet-700">{(Number(attribute.score || 0) * 100).toFixed(1)}%</div>
                             </div>
                         ))}
                     </div>
@@ -1869,22 +1842,22 @@ function SelectedFieldTable({ clientFields, competitorFields }) {
     }
 
     return (
-        <div className="mt-4 rounded-2xl border border-[var(--border-soft)] overflow-hidden">
+        <div className="mt-4 rounded-2xl border border-slate-200 overflow-hidden">
             <div className="overflow-x-auto">
                 <div className="min-w-[760px]">
-                    <div className="grid grid-cols-[180px_minmax(0,1fr)_180px_minmax(0,1fr)] bg-[var(--panel-muted)] border-b border-[var(--border-soft)] text-[11px] font-black uppercase tracking-wider text-[var(--text-secondary)]">
+                    <div className="grid grid-cols-[180px_minmax(0,1fr)_180px_minmax(0,1fr)] bg-slate-50 border-b border-slate-200 text-[11px] font-black uppercase tracking-wider text-slate-500">
                         <div className="px-4 py-3">Client Field</div>
                         <div className="px-4 py-3">Client Value</div>
                         <div className="px-4 py-3">Competitor Field</div>
                         <div className="px-4 py-3">Competitor Value</div>
                     </div>
-                    <div className="divide-y divide-[var(--border-soft)]">
+                    <div className="divide-y divide-slate-100">
                         {rows.map((row, index) => (
                             <div key={`selected-field-${index}`} className="grid grid-cols-[180px_minmax(0,1fr)_180px_minmax(0,1fr)] text-sm">
-                                <div className="px-4 py-3 bg-[var(--panel)] font-semibold text-[var(--text-primary)]">{row.client?.label || '—'}</div>
-                                <div className="px-4 py-3 bg-[var(--panel)] text-[var(--text-primary)] break-words">{row.client?.value || '—'}</div>
-                                <div className="px-4 py-3 bg-[var(--panel)] font-semibold text-[var(--text-primary)]">{row.competitor?.label || '—'}</div>
-                                <div className="px-4 py-3 bg-[var(--panel)] text-[var(--text-primary)] break-words">{row.competitor?.value || '—'}</div>
+                                <div className="px-4 py-3 bg-white font-semibold text-slate-900">{row.client?.label || '—'}</div>
+                                <div className="px-4 py-3 bg-white text-slate-700 break-words">{row.client?.value || '—'}</div>
+                                <div className="px-4 py-3 bg-white font-semibold text-slate-900">{row.competitor?.label || '—'}</div>
+                                <div className="px-4 py-3 bg-white text-slate-700 break-words">{row.competitor?.value || '—'}</div>
                             </div>
                         ))}
                     </div>
@@ -1896,31 +1869,31 @@ function SelectedFieldTable({ clientFields, competitorFields }) {
 
 function ResultsTable({ rows }) {
     return (
-        <div className="bg-[var(--panel)] border border-[var(--border-soft)] rounded-2xl overflow-hidden shadow-sm">
-            <div className="px-5 py-4 border-b border-[var(--border-soft)]">
-                <h4 className="font-bold text-[var(--text-primary)]">Recommendation Table</h4>
-                <p className="text-sm text-[var(--text-secondary)] mt-1">Showing up to {rows.length} pricing recommendations from the current run.</p>
+        <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
+            <div className="px-5 py-4 border-b border-slate-100">
+                <h4 className="font-bold text-slate-900">Recommendation Table</h4>
+                <p className="text-sm text-slate-500 mt-1">Showing up to {rows.length} pricing recommendations from the current run.</p>
             </div>
             <div className="overflow-x-auto max-h-[560px]">
                 <table className="w-full text-sm text-left">
-                    <thead className="bg-[var(--panel-muted)] text-xs text-[var(--text-secondary)] uppercase sticky top-0 border-b border-[var(--border-soft)]">
+                    <thead className="bg-slate-50 text-xs text-slate-500 uppercase sticky top-0 border-b border-slate-200">
                         <tr>
                             {['Product', 'Current', 'Recommended', 'Competitor Min', 'Competitor Avg', 'Competitor Max', 'Margin', 'Action', 'Signals', 'Note'].map((header) => <th key={header} className="px-5 py-3 whitespace-nowrap font-bold tracking-wider">{header}</th>)}
                         </tr>
                     </thead>
-                    <tbody className="divide-y divide-[var(--border-soft)]">
+                    <tbody className="divide-y divide-slate-100">
                         {rows.map((row, index) => (
-                            <tr key={`${row.product_name}-${index}`} className={index % 2 === 0 ? 'bg-[var(--panel)]' : 'bg-[var(--panel-muted)]/40'}>
-                                <td className="px-5 py-4 min-w-[280px]"><p className="font-bold text-[var(--text-primary)]">{row.product_name}</p><p className="text-xs text-[var(--text-secondary)] mt-1">{row.sku || 'No SKU provided'}</p><p className="text-xs text-[var(--text-muted)] mt-1">Sources: {row.matched_competitors || 'None'}</p></td>
-                                <td className="px-5 py-4 whitespace-nowrap text-[var(--text-primary)] font-semibold">{formatCurrency(row.current_price)}</td>
+                            <tr key={`${row.product_name}-${index}`} className={index % 2 === 0 ? 'bg-white' : 'bg-slate-50/40'}>
+                                <td className="px-5 py-4 min-w-[280px]"><p className="font-bold text-slate-900">{row.product_name}</p><p className="text-xs text-slate-500 mt-1">{row.sku || 'No SKU provided'}</p><p className="text-xs text-slate-400 mt-1">Sources: {row.matched_competitors || 'None'}</p></td>
+                                <td className="px-5 py-4 whitespace-nowrap text-slate-700 font-semibold">{formatCurrency(row.current_price)}</td>
                                 <td className="px-5 py-4 whitespace-nowrap"><div className="inline-flex flex-col"><span className="font-black text-emerald-700">{formatCurrency(row.recommended_price)}</span><span className={`text-xs font-semibold ${Number(row.recommended_vs_current_pct) >= 0 ? 'text-amber-600' : 'text-emerald-600'}`}>{Number(row.recommended_vs_current_pct) > 0 ? '+' : ''}{row.recommended_vs_current_pct}%</span></div></td>
-                                <td className="px-5 py-4 whitespace-nowrap text-[var(--text-primary)]">{formatCurrency(row.competitor_min_price)}</td>
-                                <td className="px-5 py-4 whitespace-nowrap text-[var(--text-primary)]">{formatCurrency(row.competitor_avg_price)}</td>
-                                <td className="px-5 py-4 whitespace-nowrap text-[var(--text-primary)]">{formatCurrency(row.competitor_max_price)}</td>
-                                <td className="px-5 py-4 whitespace-nowrap"><div className="inline-flex flex-col"><span className="font-bold text-[var(--text-primary)]">{row.margin_pct}%</span><span className="text-xs text-[var(--text-muted)]">Floor {formatCurrency(row.floor_price)}</span></div></td>
-                                <td className="px-5 py-4 min-w-[170px]"><span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-bold ${String(row.pricing_action || '').startsWith('Increase') ? 'bg-amber-100 text-amber-700' : String(row.pricing_action || '').startsWith('Decrease') ? 'bg-emerald-100 text-emerald-700' : 'bg-[var(--panel-muted)] text-[var(--text-primary)]'}`}>{row.pricing_action}</span></td>
-                                <td className="px-5 py-4 min-w-[220px] text-[var(--text-secondary)]"><div className="space-y-1 text-xs"><p>Demand: <span className="font-bold capitalize text-[var(--text-primary)]">{row.demand_signal}</span></p><p>Stock: <span className="font-bold capitalize text-[var(--text-primary)]">{row.stock_signal}</span></p><p>Review: <span className="font-bold capitalize text-[var(--text-primary)]">{row.review_signal}</span></p><p>Dynamic adj: <span className="font-bold text-[var(--text-primary)]">{row.dynamic_adjustment_pct}%</span></p></div></td>
-                                <td className="px-5 py-4 min-w-[280px] text-[var(--text-secondary)] leading-relaxed">{row.note}</td>
+                                <td className="px-5 py-4 whitespace-nowrap text-slate-700">{formatCurrency(row.competitor_min_price)}</td>
+                                <td className="px-5 py-4 whitespace-nowrap text-slate-700">{formatCurrency(row.competitor_avg_price)}</td>
+                                <td className="px-5 py-4 whitespace-nowrap text-slate-700">{formatCurrency(row.competitor_max_price)}</td>
+                                <td className="px-5 py-4 whitespace-nowrap"><div className="inline-flex flex-col"><span className="font-bold text-slate-900">{row.margin_pct}%</span><span className="text-xs text-slate-400">Floor {formatCurrency(row.floor_price)}</span></div></td>
+                                <td className="px-5 py-4 min-w-[170px]"><span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-bold ${String(row.pricing_action || '').startsWith('Increase') ? 'bg-amber-100 text-amber-700' : String(row.pricing_action || '').startsWith('Decrease') ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-700'}`}>{row.pricing_action}</span></td>
+                                <td className="px-5 py-4 min-w-[220px] text-slate-600"><div className="space-y-1 text-xs"><p>Demand: <span className="font-bold capitalize text-slate-900">{row.demand_signal}</span></p><p>Stock: <span className="font-bold capitalize text-slate-900">{row.stock_signal}</span></p><p>Review: <span className="font-bold capitalize text-slate-900">{row.review_signal}</span></p><p>Dynamic adj: <span className="font-bold text-slate-900">{row.dynamic_adjustment_pct}%</span></p></div></td>
+                                <td className="px-5 py-4 min-w-[280px] text-slate-600 leading-relaxed">{row.note}</td>
                             </tr>
                         ))}
                     </tbody>
@@ -1932,12 +1905,12 @@ function ResultsTable({ rows }) {
 
 function EmptyState({ title, text }) {
     return (
-        <div className="flex flex-col items-center justify-center py-20 text-center bg-[var(--panel)] border border-[var(--border-soft)] rounded-2xl">
-            <div className="w-14 h-14 rounded-2xl bg-[var(--panel-muted)] flex items-center justify-center mb-4">
-                <AlertCircle size={26} className="text-[var(--text-muted)]" />
+        <div className="flex flex-col items-center justify-center py-20 text-center bg-white border border-slate-200 rounded-2xl">
+            <div className="w-14 h-14 rounded-2xl bg-slate-100 flex items-center justify-center mb-4">
+                <AlertCircle size={26} className="text-slate-300" />
             </div>
-            <p className="font-bold text-[var(--text-primary)] mb-1">{title}</p>
-            <p className="text-sm text-[var(--text-muted)] max-w-md">{text}</p>
+            <p className="font-bold text-slate-700 mb-1">{title}</p>
+            <p className="text-sm text-slate-400 max-w-md">{text}</p>
         </div>
     );
 }
@@ -1945,8 +1918,8 @@ function EmptyState({ title, text }) {
 function SelectField({ label, value, onChange, options, required = false }) {
     return (
         <div>
-            <label className="block text-xs font-bold text-[var(--text-secondary)] mb-1.5">{label} {required ? <span className="text-rose-500">*</span> : null}</label>
-            <select value={value} onChange={(event) => onChange(event.target.value)} className="w-full px-3 py-2.5 bg-[var(--panel-muted)] border border-[var(--border-soft)] rounded-xl text-sm font-medium focus:border-slate-400 outline-none">
+            <label className="block text-xs font-bold text-slate-500 mb-1.5">{label} {required ? <span className="text-rose-500">*</span> : null}</label>
+            <select value={value} onChange={(event) => onChange(event.target.value)} className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:border-slate-400 outline-none">
                 <option value="">Select column...</option>
                 {options.map((option) => <option key={option} value={option}>{option}</option>)}
             </select>
@@ -1957,8 +1930,8 @@ function SelectField({ label, value, onChange, options, required = false }) {
 function SignalField({ label, value, options, onChange }) {
     return (
         <div>
-            <label className="block text-xs font-bold text-[var(--text-secondary)] mb-1.5">{label}</label>
-            <select value={value} onChange={(event) => onChange(event.target.value)} className="w-full px-3 py-2.5 bg-[var(--panel-muted)] border border-[var(--border-soft)] rounded-xl text-sm font-medium focus:border-slate-400 outline-none">
+            <label className="block text-xs font-bold text-slate-500 mb-1.5">{label}</label>
+            <select value={value} onChange={(event) => onChange(event.target.value)} className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:border-slate-400 outline-none">
                 {options.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
             </select>
         </div>
@@ -1968,8 +1941,8 @@ function SignalField({ label, value, options, onChange }) {
 function NumericField({ label, value, onChange, step = '1' }) {
     return (
         <div>
-            <label className="block text-xs font-bold text-[var(--text-secondary)] mb-1.5">{label}</label>
-            <input type="number" step={step} value={value} onChange={(event) => onChange(event.target.value)} className="w-full px-3 py-2.5 bg-[var(--panel-muted)] border border-[var(--border-soft)] rounded-xl text-sm font-medium focus:border-slate-400 outline-none" />
+            <label className="block text-xs font-bold text-slate-500 mb-1.5">{label}</label>
+            <input type="number" step={step} value={value} onChange={(event) => onChange(event.target.value)} className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:border-slate-400 outline-none" />
         </div>
     );
 }

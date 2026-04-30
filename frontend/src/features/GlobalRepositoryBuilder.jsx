@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import axios from 'axios';
 import { motion } from 'framer-motion';
-import FeatureLayout from './FeatureLayout';
 import {
     AlertCircle,
     BadgeCheck,
@@ -25,8 +24,7 @@ import {
     VALIDATION_LIBRARY_CATEGORIES,
     VALIDATION_OPERATOR_OPTIONS,
 } from '../lib/repositoryTemplates';
-
-const API_BASE = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || 'http://localhost:8000';
+import { API_BASE } from '../lib/runtimeConfig';
 
 const COLLECTION_CONFIG = {
     validation: {
@@ -105,9 +103,9 @@ const renderValue = (value) => {
 
 function FieldLabel({ children, info }) {
     return (
-        <label className="mb-1.5 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--text-muted)]">
+        <label className="mb-1.5 flex items-center gap-1.5 text-[11px] font-black uppercase tracking-[0.16em] text-slate-400">
             <span>{children}</span>
-            {info ? <Info size={13} className="text-[var(--text-muted)]" /> : null}
+            {info ? <Info size={13} className="text-slate-300" /> : null}
         </label>
     );
 }
@@ -122,9 +120,9 @@ function SummaryPill({ children, className = '' }) {
 
 function DetailRow({ label, value }) {
     return (
-        <div className="rounded-2xl border border-[var(--border-soft)] bg-[var(--panel-muted)] px-4 py-3">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--text-muted)]">{label}</p>
-            <p className="mt-1 text-sm font-medium whitespace-pre-wrap break-words text-[var(--text-primary)]">{renderValue(value)}</p>
+        <div className="rounded-2xl border border-slate-100 bg-slate-50 px-4 py-3">
+            <p className="text-[11px] font-black uppercase tracking-[0.16em] text-slate-400">{label}</p>
+            <p className="mt-1 text-sm font-medium whitespace-pre-wrap break-words text-slate-700">{renderValue(value)}</p>
         </div>
     );
 }
@@ -137,8 +135,8 @@ function LibraryCard({ item, config, onSelect, active }) {
             onClick={() => onSelect(item)}
             className={`w-full rounded-3xl border p-4 text-left shadow-sm transition-all ${
                 active
-                    ? 'border-[var(--border-strong)] bg-[var(--panel)] shadow-md'
-                    : 'border-[var(--border-soft)] bg-[var(--panel)] hover:-translate-y-0.5 hover:shadow-md'
+                    ? 'border-slate-300 bg-white shadow-md'
+                    : 'border-slate-200 bg-white hover:-translate-y-0.5 hover:shadow-md'
             }`}
         >
             <div className="flex items-start justify-between gap-3">
@@ -147,8 +145,8 @@ function LibraryCard({ item, config, onSelect, active }) {
                         <Icon size={18} className={config.iconClass} />
                     </div>
                     <div>
-                        <h3 className="text-base font-semibold text-[var(--text-primary)]">{item.name}</h3>
-                        <p className="mt-1 text-sm leading-relaxed text-[var(--text-secondary)]">
+                        <h3 className="text-base font-black text-slate-900">{item.name}</h3>
+                        <p className="mt-1 text-sm leading-relaxed text-slate-500">
                             {item.description || `Reusable shared ${config.singular} for other users.`}
                         </p>
                     </div>
@@ -157,15 +155,15 @@ function LibraryCard({ item, config, onSelect, active }) {
             </div>
 
             <div className="mt-4 flex flex-wrap gap-2">
-                <SummaryPill className="border-[var(--border-soft)] bg-[var(--panel-muted)] text-[var(--text-secondary)]">{item.category || 'Shared'}</SummaryPill>
-                <SummaryPill className="border-[var(--border-soft)] bg-[var(--panel-muted)] text-[var(--text-secondary)]">{item.space || 'Global Repository'}</SummaryPill>
+                <SummaryPill className="border-slate-200 bg-slate-50 text-slate-600">{item.category || 'Shared'}</SummaryPill>
+                <SummaryPill className="border-slate-200 bg-slate-50 text-slate-600">{item.space || 'Global Repository'}</SummaryPill>
             </div>
         </button>
     );
 }
 
 function ValidationEditor({ form, onChange, config, publishing, onPublish }) {
-    const inputClass = `w-full rounded-2xl border border-[var(--border-soft)] bg-[var(--panel)] px-4 py-3 text-sm font-medium text-[var(--text-primary)] outline-none transition-all focus:ring-2 ${config.focusClass}`;
+    const inputClass = `w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 outline-none transition-all focus:ring-2 ${config.focusClass}`;
     const operatorMeta = VALIDATION_OPERATOR_OPTIONS.find((option) => option.id === form.operator);
     const preview = buildValidationTemplatePayload(form);
 
@@ -213,11 +211,11 @@ function ValidationEditor({ form, onChange, config, publishing, onPublish }) {
                 />
             </div>
 
-            <div className="rounded-[28px] border border-[var(--border-soft)] bg-[var(--panel-muted)] p-5">
+            <div className="rounded-[28px] border border-slate-200 bg-slate-50 p-5">
                 <div className="mb-4 flex items-start justify-between gap-4">
                     <div>
-                        <h3 className="text-xl font-semibold text-[var(--text-primary)]">Validation Logic</h3>
-                        <p className="mt-1 text-sm text-[var(--text-secondary)]">Create a field-agnostic rule that any user can apply to their own dataset column.</p>
+                        <h3 className="text-xl font-black text-slate-900">Validation Logic</h3>
+                        <p className="mt-1 text-sm text-slate-500">Create a field-agnostic rule that any user can apply to their own dataset column.</p>
                     </div>
                     <button
                         type="button"
@@ -225,7 +223,7 @@ function ValidationEditor({ form, onChange, config, publishing, onPublish }) {
                         className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm font-semibold transition-colors ${
                             form.use_for_validation
                                 ? 'border-blue-200 bg-blue-50 text-blue-700'
-                                : 'border-[var(--border-soft)] bg-[var(--panel)] text-[var(--text-secondary)]'
+                                : 'border-slate-200 bg-white text-slate-500'
                         }`}
                     >
                         <BadgeCheck size={15} />
@@ -233,18 +231,18 @@ function ValidationEditor({ form, onChange, config, publishing, onPublish }) {
                     </button>
                 </div>
 
-                <label className="mb-4 flex items-center gap-3 rounded-2xl border border-[var(--border-soft)] bg-[var(--panel)] px-4 py-3">
+                <label className="mb-4 flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3">
                     <input
                         type="checkbox"
                         checked={form.define_conditions}
                         onChange={(event) => onChange('define_conditions', event.target.checked)}
-                        className="h-4 w-4 rounded border-[var(--border-strong)] text-blue-600"
+                        className="h-4 w-4 rounded border-slate-300 text-blue-600"
                     />
-                    <span className="text-sm font-semibold text-[var(--text-primary)]">Define conditions</span>
+                    <span className="text-sm font-semibold text-slate-700">Define conditions</span>
                 </label>
 
                 {form.define_conditions && (
-                    <div className="space-y-4 rounded-2xl border border-[var(--border-soft)] bg-[var(--panel)] p-4">
+                    <div className="space-y-4 rounded-2xl border border-slate-200 bg-white p-4">
                         <div className="grid gap-4 md:grid-cols-[1.2fr,0.7fr,1fr]">
                             <div>
                                 <FieldLabel>Variable Name</FieldLabel>
@@ -294,7 +292,7 @@ function ValidationEditor({ form, onChange, config, publishing, onPublish }) {
                                 </div>
                             </div>
                         ) : form.operator === 'not_null' ? (
-                            <div className="rounded-2xl border border-dashed border-[var(--border-soft)] bg-[var(--panel-muted)] px-4 py-3 text-sm font-medium text-[var(--text-secondary)]">
+                            <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium text-slate-500">
                                 This rule only checks whether the selected field contains a value.
                             </div>
                         ) : (
@@ -311,22 +309,22 @@ function ValidationEditor({ form, onChange, config, publishing, onPublish }) {
                         )}
 
                         <div className={`rounded-2xl border ${config.softSurfaceClass} p-4`}>
-                            <div className="flex items-center gap-2 text-sm font-bold text-[var(--text-primary)]">
+                            <div className="flex items-center gap-2 text-sm font-bold text-slate-900">
                                 <Eye size={16} className={config.iconClass} />
                                 Rule Preview
                             </div>
-                            <p className="mt-2 text-sm text-[var(--text-secondary)]">
-                                Variable <span className="font-semibold text-[var(--text-primary)]">{form.variable_name || 'field_value'}</span> will use
+                            <p className="mt-2 text-sm text-slate-600">
+                                Variable <span className="font-semibold text-slate-900">{form.variable_name || 'field_value'}</span> will use
                                 {' '}
-                                <span className="font-semibold text-[var(--text-primary)]">{operatorMeta?.label || form.operator}</span>
-                                {' '}logic and compile to <span className="font-semibold text-[var(--text-primary)]">{preview.rules[0]?.rule_type}</span>.
+                                <span className="font-semibold text-slate-900">{operatorMeta?.label || form.operator}</span>
+                                {' '}logic and compile to <span className="font-semibold text-slate-900">{preview.rules[0]?.rule_type}</span>.
                             </p>
                         </div>
                     </div>
                 )}
             </div>
 
-            <div className="flex justify-end gap-3 border-t border-[var(--border-soft)] pt-5">
+            <div className="flex justify-end gap-3 border-t border-slate-100 pt-5">
                 <button
                     type="button"
                     onClick={onPublish}
@@ -366,7 +364,7 @@ function CleaningParameterFields({ operationId, params, onParamChange, inputClas
                         />
                     </div>
                 ) : (
-                    <div className="rounded-2xl border border-dashed border-[var(--border-soft)] bg-[var(--panel-muted)] px-4 py-3 text-sm font-medium text-[var(--text-secondary)]">
+                    <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium text-slate-500">
                         The shared template will keep this fill strategy when another user imports it.
                     </div>
                 )}
@@ -411,14 +409,14 @@ function CleaningParameterFields({ operationId, params, onParamChange, inputClas
     }
 
     return (
-        <div className="rounded-2xl border border-dashed border-[var(--border-soft)] bg-[var(--panel-muted)] px-4 py-3 text-sm font-medium text-[var(--text-secondary)]">
+        <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium text-slate-500">
             This operation uses the selected action with no extra parameters.
         </div>
     );
 }
 
 function CleaningEditor({ form, operations, onChange, onParamChange, config, publishing, onPublish }) {
-    const inputClass = `w-full rounded-2xl border border-[var(--border-soft)] bg-[var(--panel)] px-4 py-3 text-sm font-medium text-[var(--text-primary)] outline-none transition-all focus:ring-2 ${config.focusClass}`;
+    const inputClass = `w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 outline-none transition-all focus:ring-2 ${config.focusClass}`;
     const operationMeta = operations.find((operation) => operation.id === form.operation) || null;
     const preview = buildCleaningTemplatePayload(form);
 
@@ -466,13 +464,13 @@ function CleaningEditor({ form, operations, onChange, onParamChange, config, pub
                 />
             </div>
 
-            <div className="rounded-[28px] border border-[var(--border-soft)] bg-[var(--panel-muted)] p-5">
+            <div className="rounded-[28px] border border-slate-200 bg-slate-50 p-5">
                 <div className="mb-4">
-                    <h3 className="text-xl font-semibold text-[var(--text-primary)]">Operation Logic</h3>
-                    <p className="mt-1 text-sm text-[var(--text-secondary)]">Package a reusable transformation so another user can map it to one of their own fields.</p>
+                    <h3 className="text-xl font-black text-slate-900">Operation Logic</h3>
+                    <p className="mt-1 text-sm text-slate-500">Package a reusable transformation so another user can map it to one of their own fields.</p>
                 </div>
 
-                <div className="space-y-4 rounded-2xl border border-[var(--border-soft)] bg-[var(--panel)] p-4">
+                <div className="space-y-4 rounded-2xl border border-slate-200 bg-white p-4">
                     <div className="grid gap-4 md:grid-cols-[1fr,1.3fr]">
                         <div>
                             <FieldLabel>Variable Name</FieldLabel>
@@ -489,7 +487,7 @@ function CleaningEditor({ form, operations, onChange, onParamChange, config, pub
                             <select value={form.operation} onChange={(event) => onChange('operation', event.target.value)} className={inputClass}>
                                 {operations.map((operation) => <option key={operation.id} value={operation.id}>{operation.name}</option>)}
                             </select>
-                            {operationMeta?.description ? <p className="mt-2 text-sm text-[var(--text-secondary)]">{operationMeta.description}</p> : null}
+                            {operationMeta?.description ? <p className="mt-2 text-sm text-slate-500">{operationMeta.description}</p> : null}
                         </div>
                     </div>
 
@@ -501,18 +499,18 @@ function CleaningEditor({ form, operations, onChange, onParamChange, config, pub
                     />
 
                     <div className={`rounded-2xl border ${config.softSurfaceClass} p-4`}>
-                        <div className="flex items-center gap-2 text-sm font-bold text-[var(--text-primary)]">
+                        <div className="flex items-center gap-2 text-sm font-bold text-slate-900">
                             <Eye size={16} className={config.iconClass} />
                             Operation Preview
                         </div>
-                        <p className="mt-2 text-sm text-[var(--text-secondary)]">
-                            This shared operation will import as <span className="font-semibold text-[var(--text-primary)]">{preview.operations[0]?.operation}</span> and ask the user to map it onto one of their dataset fields.
+                        <p className="mt-2 text-sm text-slate-600">
+                            This shared operation will import as <span className="font-semibold text-slate-900">{preview.operations[0]?.operation}</span> and ask the user to map it onto one of their dataset fields.
                         </p>
                     </div>
                 </div>
             </div>
 
-            <div className="flex justify-end gap-3 border-t border-[var(--border-soft)] pt-5">
+            <div className="flex justify-end gap-3 border-t border-slate-100 pt-5">
                 <button
                     type="button"
                     onClick={onPublish}
@@ -529,10 +527,10 @@ function CleaningEditor({ form, operations, onChange, onParamChange, config, pub
 function RepositoryDetails({ item, config, context }) {
     if (!item) {
         return (
-            <div className="rounded-[28px] border border-dashed border-[var(--border-soft)] bg-[var(--panel)] px-6 py-14 text-center shadow-sm">
-                <AlertCircle className="mx-auto mb-4 text-[var(--text-muted)]" size={36} />
-                <h3 className="text-lg font-semibold text-[var(--text-primary)]">Select a shared item</h3>
-                <p className="mx-auto mt-2 max-w-sm text-sm font-medium leading-relaxed text-[var(--text-secondary)]">
+            <div className="rounded-[28px] border border-dashed border-slate-200 bg-white px-6 py-14 text-center shadow-sm">
+                <AlertCircle className="mx-auto mb-4 text-slate-300" size={36} />
+                <h3 className="text-lg font-black text-slate-800">Select a shared item</h3>
+                <p className="mx-auto mt-2 max-w-sm text-sm font-medium leading-relaxed text-slate-500">
                     Pick a {config.singular} from the library to inspect its configuration and metadata.
                 </p>
             </div>
@@ -540,26 +538,26 @@ function RepositoryDetails({ item, config, context }) {
     }
 
     return (
-        <div className="space-y-4 rounded-[28px] border border-[var(--border-soft)] bg-[var(--panel)] p-5 shadow-sm">
-            <div className="border-b border-[var(--border-soft)] pb-4">
+        <div className="space-y-4 rounded-[28px] border border-slate-200 bg-white p-5 shadow-sm">
+            <div className="border-b border-slate-100 pb-4">
                 <div className="flex items-start justify-between gap-4">
                     <div>
-                        <h3 className="text-2xl font-semibold tracking-tight text-[var(--text-primary)]">{item.name}</h3>
-                        <p className="mt-2 text-sm leading-relaxed text-[var(--text-secondary)]">{item.description || 'No description provided.'}</p>
+                        <h3 className="text-2xl font-black tracking-tight text-slate-900">{item.name}</h3>
+                        <p className="mt-2 text-sm leading-relaxed text-slate-500">{item.description || 'No description provided.'}</p>
                     </div>
                     <SummaryPill className={config.badgeClass}>{item.severity || 'Standard'}</SummaryPill>
                 </div>
 
                 <div className="mt-4 flex flex-wrap gap-2">
-                    <SummaryPill className="border-[var(--border-soft)] bg-[var(--panel-muted)] text-[var(--text-secondary)]">{item.category || 'Shared'}</SummaryPill>
-                    <SummaryPill className="border-[var(--border-soft)] bg-[var(--panel-muted)] text-[var(--text-secondary)]">{item.space || 'Global Repository'}</SummaryPill>
+                    <SummaryPill className="border-slate-200 bg-slate-50 text-slate-600">{item.category || 'Shared'}</SummaryPill>
+                    <SummaryPill className="border-slate-200 bg-slate-50 text-slate-600">{item.space || 'Global Repository'}</SummaryPill>
                 </div>
             </div>
 
             <div className="grid gap-4 lg:grid-cols-[1.3fr,0.8fr]">
                 <div className="space-y-4">
                     <div>
-                        <h4 className="text-lg font-semibold text-[var(--text-primary)]">Configuration</h4>
+                        <h4 className="text-lg font-black text-slate-900">Configuration</h4>
                         <div className="mt-3 grid gap-3">
                             {context === 'validation' ? (
                                 <>
@@ -583,7 +581,7 @@ function RepositoryDetails({ item, config, context }) {
                 </div>
 
                 <div className="space-y-4">
-                    <h4 className="text-lg font-semibold text-[var(--text-primary)]">Details</h4>
+                    <h4 className="text-lg font-black text-slate-900">Details</h4>
                     <DetailRow label="Modified On" value={formatDate(item.updated_at || item.created_at)} />
                     <DetailRow label="Created On" value={formatDate(item.created_at)} />
                     <DetailRow label="Creator" value={item.author_name || item.author_email || 'Community'} />
@@ -752,31 +750,31 @@ export default function GlobalRepositoryBuilder({ user = null }) {
                     <div className={`absolute inset-0 bg-gradient-to-r ${config.panelGlowClass} opacity-50`} />
                     <div className="relative grid gap-6 xl:grid-cols-[1.6fr,1fr] xl:items-end">
                         <div>
-                            <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-[var(--panel)]/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-200">
+                            <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[11px] font-black uppercase tracking-[0.18em] text-slate-200">
                                 <BookOpen size={13} />
                                 Shared Repository Workspace
                             </div>
-                            <h1 className="mt-4 text-2xl font-semibold tracking-tight text-white md:text-4xl">Global Repository</h1>
-                            <p className="mt-3 max-w-2xl text-sm leading-relaxed text-[var(--text-muted)] md:text-[15px]">
+                            <h1 className="mt-4 text-3xl font-black tracking-tight text-white md:text-4xl">Global Repository</h1>
+                            <p className="mt-3 max-w-2xl text-sm leading-relaxed text-slate-300 md:text-[15px]">
                                 Create custom validation rules and reusable cleaning operations once, then let every CleanFlow user apply them to their own dataset fields.
                             </p>
                         </div>
 
                         <div className="grid gap-3 sm:grid-cols-3">
-                            <div className="rounded-3xl border border-white/15 bg-[var(--panel)]/10 p-4 backdrop-blur-sm">
-                                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--text-muted)]">Validation</p>
-                                <p className="mt-2 text-2xl font-semibold text-white">{validationTemplates.length}</p>
-                                <p className="mt-1 text-sm font-medium text-[var(--text-muted)]">Shared custom rules</p>
+                            <div className="rounded-3xl border border-white/15 bg-white/10 p-4 backdrop-blur-sm">
+                                <p className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-300">Validation</p>
+                                <p className="mt-2 text-3xl font-black text-white">{validationTemplates.length}</p>
+                                <p className="mt-1 text-sm font-medium text-slate-300">Shared custom rules</p>
                             </div>
-                            <div className="rounded-3xl border border-white/15 bg-[var(--panel)]/10 p-4 backdrop-blur-sm">
-                                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--text-muted)]">Cleaning</p>
-                                <p className="mt-2 text-2xl font-semibold text-white">{cleaningTemplates.length}</p>
-                                <p className="mt-1 text-sm font-medium text-[var(--text-muted)]">Shared operations</p>
+                            <div className="rounded-3xl border border-white/15 bg-white/10 p-4 backdrop-blur-sm">
+                                <p className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-300">Cleaning</p>
+                                <p className="mt-2 text-3xl font-black text-white">{cleaningTemplates.length}</p>
+                                <p className="mt-1 text-sm font-medium text-slate-300">Shared operations</p>
                             </div>
-                            <div className="rounded-3xl border border-white/15 bg-[var(--panel)]/10 p-4 backdrop-blur-sm">
-                                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--text-muted)]">Scope</p>
-                                <p className="mt-2 text-2xl font-semibold text-white">Global</p>
-                                <p className="mt-1 text-sm font-medium text-[var(--text-muted)]">Available to all users</p>
+                            <div className="rounded-3xl border border-white/15 bg-white/10 p-4 backdrop-blur-sm">
+                                <p className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-300">Scope</p>
+                                <p className="mt-2 text-3xl font-black text-white">Global</p>
+                                <p className="mt-1 text-sm font-medium text-slate-300">Available to all users</p>
                             </div>
                         </div>
                     </div>
@@ -786,16 +784,16 @@ export default function GlobalRepositoryBuilder({ user = null }) {
                     <motion.section
                         initial={{ opacity: 0, y: 12 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="rounded-[30px] border border-[var(--border-soft)] bg-[var(--panel)] p-5 shadow-lg shadow-slate-900/5"
+                        className="rounded-[30px] border border-slate-200 bg-white p-5 shadow-lg shadow-slate-900/5"
                     >
-                        <div className="mb-5 flex flex-wrap items-start justify-between gap-4 border-b border-[var(--border-soft)] pb-5">
+                        <div className="mb-5 flex flex-wrap items-start justify-between gap-4 border-b border-slate-100 pb-5">
                             <div>
-                                <div className="inline-flex items-center gap-2 rounded-full border border-[var(--border-soft)] bg-[var(--panel-muted)] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--text-secondary)]">
+                                <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-[11px] font-black uppercase tracking-[0.16em] text-slate-500">
                                     <Settings2 size={13} />
                                     Create Shared Template
                                 </div>
-                                <h2 className="mt-3 text-2xl font-semibold tracking-tight text-[var(--text-primary)]">Custom Template Builder</h2>
-                                <p className="mt-1 text-sm text-[var(--text-secondary)]">
+                                <h2 className="mt-3 text-2xl font-black tracking-tight text-slate-900">Custom Template Builder</h2>
+                                <p className="mt-1 text-sm text-slate-500">
                                     Build field-agnostic repository items that another user can map onto their own dataset fields later.
                                 </p>
                             </div>
@@ -854,13 +852,13 @@ export default function GlobalRepositoryBuilder({ user = null }) {
                     <motion.aside
                         initial={{ opacity: 0, y: 12 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="rounded-[30px] border border-[var(--border-soft)] bg-[var(--panel)] p-5 shadow-lg shadow-slate-900/5"
+                        className="rounded-[30px] border border-slate-200 bg-white p-5 shadow-lg shadow-slate-900/5"
                     >
-                        <div className="mb-5 border-b border-[var(--border-soft)] pb-5">
+                        <div className="mb-5 border-b border-slate-100 pb-5">
                             <div className="flex items-start justify-between gap-4">
                                 <div>
-                                    <h2 className="text-2xl font-semibold tracking-tight text-[var(--text-primary)]">Shared Library</h2>
-                                    <p className="mt-1 text-sm text-[var(--text-secondary)]">Inspect published repository items and review their full details.</p>
+                                    <h2 className="text-2xl font-black tracking-tight text-slate-900">Shared Library</h2>
+                                    <p className="mt-1 text-sm text-slate-500">Inspect published repository items and review their full details.</p>
                                 </div>
                                 <SummaryPill className={config.badgeClass}>
                                     <CheckCircle2 size={14} />
@@ -869,13 +867,13 @@ export default function GlobalRepositoryBuilder({ user = null }) {
                             </div>
 
                             <div className="mt-4 relative">
-                                <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" />
+                                <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                                 <input
                                     type="text"
                                     value={search}
                                     onChange={(event) => setSearch(event.target.value)}
                                     placeholder={`Search ${config.label.toLowerCase()}...`}
-                                    className={`w-full rounded-2xl border border-[var(--border-soft)] bg-[var(--panel-muted)] py-3 pl-10 pr-4 text-sm font-medium text-[var(--text-primary)] outline-none transition-all focus:ring-2 ${config.focusClass}`}
+                                    className={`w-full rounded-2xl border border-slate-200 bg-slate-50 py-3 pl-10 pr-4 text-sm font-medium text-slate-700 outline-none transition-all focus:ring-2 ${config.focusClass}`}
                                 />
                             </div>
                         </div>
@@ -885,27 +883,27 @@ export default function GlobalRepositoryBuilder({ user = null }) {
 
                             <div className="space-y-3">
                                 <div className="flex items-center justify-between">
-                                    <h3 className="text-sm font-semibold uppercase tracking-[0.16em] text-[var(--text-muted)]">Published Items</h3>
+                                    <h3 className="text-sm font-black uppercase tracking-[0.16em] text-slate-400">Published Items</h3>
                                     <button
                                         type="button"
                                         onClick={() => refreshCollection(activeCollection)}
-                                        className="text-sm font-semibold text-[var(--text-secondary)] transition-colors hover:text-[var(--text-primary)]"
+                                        className="text-sm font-semibold text-slate-500 transition-colors hover:text-slate-800"
                                     >
                                         Refresh
                                     </button>
                                 </div>
 
                                 {loading ? (
-                                    <div className="rounded-3xl border border-dashed border-[var(--border-soft)] bg-[var(--panel-muted)] px-6 py-14 text-center">
-                                        <div className={`mx-auto mb-4 h-10 w-10 animate-spin rounded-full border-4 border-[var(--border-soft)] border-t-current ${config.iconClass}`} />
-                                        <h3 className="text-base font-semibold text-[var(--text-primary)]">Loading shared templates</h3>
-                                        <p className="mt-2 text-sm font-medium text-[var(--text-secondary)]">Fetching the latest repository items.</p>
+                                    <div className="rounded-3xl border border-dashed border-slate-200 bg-slate-50 px-6 py-14 text-center">
+                                        <div className={`mx-auto mb-4 h-10 w-10 animate-spin rounded-full border-4 border-slate-200 border-t-current ${config.iconClass}`} />
+                                        <h3 className="text-base font-black text-slate-800">Loading shared templates</h3>
+                                        <p className="mt-2 text-sm font-medium text-slate-500">Fetching the latest repository items.</p>
                                     </div>
                                 ) : filteredTemplates.length === 0 ? (
-                                    <div className="rounded-3xl border border-dashed border-[var(--border-soft)] bg-[var(--panel-muted)] px-6 py-14 text-center">
-                                        <AlertCircle className="mx-auto mb-4 text-[var(--text-muted)]" size={34} />
-                                        <h3 className="text-base font-semibold text-[var(--text-primary)]">{config.emptyTitle}</h3>
-                                        <p className="mx-auto mt-2 max-w-sm text-sm font-medium leading-relaxed text-[var(--text-secondary)]">{config.emptyDescription}</p>
+                                    <div className="rounded-3xl border border-dashed border-slate-200 bg-slate-50 px-6 py-14 text-center">
+                                        <AlertCircle className="mx-auto mb-4 text-slate-300" size={34} />
+                                        <h3 className="text-base font-black text-slate-800">{config.emptyTitle}</h3>
+                                        <p className="mx-auto mt-2 max-w-sm text-sm font-medium leading-relaxed text-slate-500">{config.emptyDescription}</p>
                                     </div>
                                 ) : (
                                     filteredTemplates.map((item) => (

@@ -7,8 +7,7 @@ import {
   Server, Plus, Trash2
 } from 'lucide-react';
 import axios from 'axios';
-
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'import.meta.env.VITE_API_URL';
+import { API_BASE } from '../../lib/runtimeConfig';
 
 const UserProfilePage = ({ user, onLogout, onClose }) => {
   const [activeTab, setActiveTab] = useState('history');
@@ -57,6 +56,12 @@ const UserProfilePage = ({ user, onLogout, onClose }) => {
   }, [activeTab]);
 
   const fetchJobs = async () => {
+    if (!token) {
+      setJobs([]);
+      setLoadingJobs(false);
+      return;
+    }
+
     setLoadingJobs(true);
     try {
       const res = await axios.get(`${API_BASE}/history/jobs`, { headers });
@@ -69,6 +74,12 @@ const UserProfilePage = ({ user, onLogout, onClose }) => {
   };
 
   const fetchConnections = async () => {
+    if (!token) {
+      setConnections([]);
+      setLoadingConnections(false);
+      return;
+    }
+
     setLoadingConnections(true);
     try {
       const res = await axios.get(`${API_BASE}/connections`, { headers });

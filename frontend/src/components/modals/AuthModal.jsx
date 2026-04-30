@@ -1,37 +1,19 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import {
-    AlertCircle,
-    ArrowRight,
-    Briefcase,
-    Building2,
-    CheckCircle2,
-    ChevronDown,
-    Eye,
-    EyeOff,
-    Globe,
-    Lock,
-    Mail,
-    Monitor,
-    Phone,
-    Server,
-    ShieldCheck,
-    Sparkles,
-    User,
-    X,
+    Phone, Briefcase, Globe, Building2, Eye, EyeOff, Lock, User, AlertCircle, CheckCircle2, ChevronDown
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 import AuthImage from '../../assets/auth_platform_art.png';
-
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+import { API_BASE } from '../../lib/runtimeConfig';
 
 const COUNTRY_CODES = [
-    { code: '+1', label: 'US/CA (+1)' },
-    { code: '+44', label: 'UK (+44)' },
-    { code: '+49', label: 'DE (+49)' },
-    { code: '+61', label: 'AU (+61)' },
-    { code: '+91', label: 'IN (+91)' },
+    { code: '+1',   label: 'US/CA (+1)' },
+    { code: '+44',  label: 'UK (+44)'   },
+    { code: '+49',  label: 'DE (+49)'   },
+    { code: '+61',  label: 'AU (+61)'   },
+    { code: '+91',  label: 'IN (+91)'   },
     { code: '+971', label: 'UAE (+971)' },
 ];
 
@@ -45,117 +27,76 @@ const PROFESSIONS = [
     'Other',
 ];
 
-const SERVICE_META = {
-    checking: {
-        badge: 'Checking service',
-        badgeClass: 'border-amber-400/30 bg-amber-400/10 text-amber-100',
-        dotClass: 'bg-amber-300',
-    },
-    online: {
-        badge: 'Service online',
-        badgeClass: 'border-emerald-400/30 bg-emerald-400/10 text-emerald-100',
-        dotClass: 'bg-emerald-300',
-    },
-    degraded: {
-        badge: 'Service degraded',
-        badgeClass: 'border-amber-400/30 bg-amber-400/10 text-amber-100',
-        dotClass: 'bg-amber-300',
-    },
-    offline: {
-        badge: 'Service offline',
-        badgeClass: 'border-rose-400/30 bg-rose-400/10 text-rose-100',
-        dotClass: 'bg-rose-300',
-    },
-};
+/* ── clean white input base class ── */
+const inputCls = (hasIcon = false) =>
+    `w-full ${hasIcon ? 'pl-10' : 'px-4'} pr-4 py-3 rounded-full text-[15px] font-medium
+     bg-white border border-slate-200 text-slate-900 placeholder:text-slate-400
+     focus:outline-none focus:border-slate-300 focus:ring-4 focus:ring-slate-50
+     transition-all duration-200 appearance-none`;
 
-const INPUT_BASE =
-    'w-full rounded-2xl border border-slate-200 bg-white px-4 py-3.5 text-[15px] font-medium text-slate-900 shadow-[0_10px_30px_rgba(15,23,42,0.04)] transition-all duration-200 placeholder:text-slate-400 focus:border-sky-300 focus:outline-none focus:ring-4 focus:ring-sky-50';
+const selectCls = (hasIcon = false, hasValue = true) =>
+    `w-full ${hasIcon ? 'pl-10' : 'px-4'} pr-11 py-3.5 rounded-[1.15rem] text-[15px]
+     ${hasValue ? 'text-slate-900' : 'text-slate-400'} font-semibold
+     bg-gradient-to-b from-white to-slate-50/90 border border-slate-200
+     shadow-[0_10px_30px_rgba(15,23,42,0.04)] hover:border-slate-300
+     focus:outline-none focus:border-sky-300 focus:ring-4 focus:ring-sky-50
+     transition-all duration-200 appearance-none`;
 
-const FEATURES = [
-    {
-        icon: ShieldCheck,
-        title: 'Validation-first workflows',
-        description: 'Run quality checks, track issues, and keep every dataset audit-ready.',
-    },
-    {
-        icon: Sparkles,
-        title: 'Faster operator flow',
-        description: 'Desktop-friendly workspace with local file access and a dedicated local backend.',
-    },
-    {
-        icon: Server,
-        title: 'Local service runtime',
-        description: 'Your desktop app talks to a bundled service so imports, exports, and jobs stay close to your machine.',
-    },
-];
-
-const InputField = ({ label, icon: Icon, trailing, className = '', ...props }) => (
-    <label className="block">
-        <span className="mb-2 block text-[12px] font-semibold uppercase tracking-[0.14em] text-slate-500">
-            {label}
-        </span>
-        <div className="relative">
-            {Icon && <Icon size={17} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />}
-            <input
-                className={`${INPUT_BASE} ${Icon ? 'pl-12' : ''} ${trailing ? 'pr-12' : ''} ${className}`}
-                {...props}
+/* ── Field Wrapper ── */
+const Field = ({ icon: Icon, children }) => (
+    <div className="relative mb-4">
+        {Icon && (
+            <Icon
+                size={16}
+                className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none z-10"
             />
-            {trailing}
-        </div>
-    </label>
+        )}
+        {children}
+    </div>
 );
 
-const SelectField = ({ label, icon: Icon, children, className = '', ...props }) => (
-    <label className="block">
-        <span className="mb-2 block text-[12px] font-semibold uppercase tracking-[0.14em] text-slate-500">
-            {label}
-        </span>
-        <div className="relative">
-            {Icon && <Icon size={17} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />}
-            <select
-                className={`${INPUT_BASE} ${Icon ? 'pl-12' : ''} appearance-none pr-12 ${className}`}
-                {...props}
-            >
-                {children}
-            </select>
-            <ChevronDown size={17} className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-slate-400" />
-        </div>
-    </label>
+const SelectField = ({ icon: Icon, value, onChange, children, className = '', ...props }) => (
+    <div className="relative mb-4">
+        {Icon && (
+            <Icon
+                size={16}
+                className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none z-10"
+            />
+        )}
+        <select
+            value={value}
+            onChange={onChange}
+            className={`${selectCls(Boolean(Icon), Boolean(value))} ${className}`}
+            {...props}
+        >
+            {children}
+        </select>
+        <ChevronDown
+            size={16}
+            className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-slate-400"
+        />
+    </div>
 );
 
-const AuthModal = ({
-    isOpen,
-    onClose,
-    onLoginSuccess,
-    defaultMode = 'login',
-    allowClose = true,
-    connectionStatus = 'checking',
-    connectionMessage = 'Connecting to CleanFlow...',
-    isDesktop = false,
-    runtimeInfo = null,
-}) => {
-    const [isLogin, setIsLogin] = useState(true);
-    const [showOtp, setShowOtp] = useState(false);
-    const [otp, setOtp] = useState('');
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
-    const [showPwd, setShowPwd] = useState(false);
-    const [fullName, setFullName] = useState('');
+const AuthModal = ({ isOpen, onClose, onLoginSuccess, defaultMode = 'login' }) => {
+    const [isLogin, setIsLogin]                   = useState(true);
+    const [showOtp, setShowOtp]                   = useState(false);
+    const [otp, setOtp]                           = useState('');
+    const [email, setEmail]                       = useState('');
+    const [password, setPassword]                 = useState('');
+    const [showPwd, setShowPwd]                   = useState(false);
+    const [fullName, setFullName]                 = useState('');
     const [phoneCountryCode, setPhoneCountryCode] = useState('+91');
     const [phoneLocalNumber, setPhoneLocalNumber] = useState('');
-    const [profession, setProfession] = useState('');
-    const [country, setCountry] = useState('');
-    const [companyName, setCompanyName] = useState('');
-    const [error, setError] = useState('');
-    const [successMsg, setSuccessMsg] = useState('');
-    const [loading, setLoading] = useState(false);
-
-    const serviceMeta = SERVICE_META[connectionStatus] || SERVICE_META.checking;
-    const desktopMode = Boolean(isDesktop);
+    const [profession, setProfession]             = useState('');
+    const [country, setCountry]                   = useState('');
+    const [companyName, setCompanyName]           = useState('');
+    const [error, setError]                       = useState('');
+    const [successMsg, setSuccessMsg]             = useState('');
+    const [loading, setLoading]                   = useState(false);
 
     useEffect(() => {
         if (!isOpen) return;
-
         setIsLogin(defaultMode !== 'signup');
         setShowOtp(false);
         setOtp('');
@@ -164,48 +105,14 @@ const AuthModal = ({
         setShowPwd(false);
     }, [isOpen, defaultMode]);
 
-    const statusNote = useMemo(() => {
-        if (connectionStatus === 'offline') {
-            return 'Restart the desktop app if this status does not recover.';
-        }
-        if (connectionStatus === 'degraded') {
-            return 'The UI is reachable, but login and saved data actions may fail until the database reconnects.';
-        }
-        if (connectionStatus === 'online') {
-            return 'Your local desktop service is ready for sign-in.';
-        }
-        return 'The app is checking the local service right now.';
-    }, [connectionStatus]);
-
     if (!isOpen) return null;
 
-    const resetFeedback = () => {
-        setError('');
-        setSuccessMsg('');
-    };
-
-    const extractErrorMessage = (err) => {
-        const detail = err?.response?.data?.detail;
-        if (!err?.response) {
-            if (connectionStatus === 'offline') {
-                return 'CleanFlow Desktop cannot reach its local service. Please restart the app and try again.';
-            }
-            if (connectionStatus === 'degraded') {
-                return 'The desktop service is running, but its database connection is unavailable right now.';
-            }
-            return 'Unable to reach the CleanFlow service.';
-        }
-        if (Array.isArray(detail)) {
-            return detail[0]?.msg || 'Request failed.';
-        }
-        return detail || 'Request failed.';
-    };
+    const reset = () => { setError(''); setSuccessMsg(''); };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        resetFeedback();
+        reset();
         setLoading(true);
-
         try {
             if (showOtp) {
                 const response = await axios.post(`${API_BASE}/verify-otp`, { email, otp });
@@ -216,14 +123,11 @@ const AuthModal = ({
                 });
                 onLoginSuccess(userRes.data);
                 onClose();
-                return;
-            }
 
-            if (isLogin) {
+            } else if (isLogin) {
                 const formData = new FormData();
                 formData.append('username', email);
                 formData.append('password', password);
-
                 try {
                     const response = await axios.post(`${API_BASE}/token`, formData);
                     const token = response.data.access_token;
@@ -233,431 +137,326 @@ const AuthModal = ({
                     });
                     onLoginSuccess(userRes.data);
                     onClose();
-                    return;
                 } catch (err) {
                     if (err.response?.data?.detail === 'OTP_REQUIRED') {
                         setShowOtp(true);
                         setSuccessMsg('A verification code has been sent to your email.');
+                        setLoading(false);
+                        return;
+                    }
+                    throw err;
+                }
+
+            } else {
+                try {
+                    const phoneNumber = `${phoneCountryCode} ${phoneLocalNumber}`.trim();
+                    await axios.post(`${API_BASE}/register`, {
+                        email, password, full_name: fullName,
+                        phone_number: phoneNumber,
+                        professional_field: profession,
+                        country, company_name: companyName,
+                    });
+                } catch (err) {
+                    if (err.response?.data?.detail === 'OTP_REQUIRED') {
+                        setShowOtp(true);
+                        setSuccessMsg('A verification code has been sent to your email.');
+                        setLoading(false);
                         return;
                     }
                     throw err;
                 }
             }
-
-            const phoneNumber = `${phoneCountryCode} ${phoneLocalNumber}`.trim();
-            try {
-                await axios.post(`${API_BASE}/register`, {
-                    email,
-                    password,
-                    full_name: fullName,
-                    phone_number: phoneNumber,
-                    professional_field: profession,
-                    country,
-                    company_name: companyName,
-                });
-            } catch (err) {
-                if (err.response?.data?.detail === 'OTP_REQUIRED') {
-                    setShowOtp(true);
-                    setSuccessMsg('A verification code has been sent to your email.');
-                    return;
-                }
-                throw err;
-            }
         } catch (err) {
-            setError(extractErrorMessage(err));
+            const detail = err.response?.data?.detail;
+            setError(Array.isArray(detail) ? detail[0].msg : detail || 'Connection error.');
         } finally {
             setLoading(false);
         }
     };
 
     const handleResendOtp = async () => {
-        resetFeedback();
-        setLoading(true);
-        try {
+        try { setLoading(true); reset();
             await axios.post(`${API_BASE}/resend-otp`, { email });
             setSuccessMsg('A new code has been sent to your email.');
         } catch (err) {
-            setError(extractErrorMessage(err));
-        } finally {
-            setLoading(false);
-        }
+            setError(err.response?.data?.detail || 'Failed to resend OTP');
+        } finally { setLoading(false); }
     };
 
     return (
-        <div className="fixed inset-0 z-[200] overflow-auto bg-[#020617]">
-            <div className="min-h-full px-4 py-5 lg:px-6 lg:py-6">
-                <div className="mx-auto grid min-h-[calc(100vh-2rem)] max-w-[1460px] overflow-hidden rounded-[32px] border border-white/10 bg-white/[0.03] shadow-[0_40px_140px_rgba(15,23,42,0.55)] backdrop-blur-xl lg:grid-cols-[1.08fr_0.92fr]">
-                    {allowClose && (
-                        <button
-                            onClick={onClose}
-                            className="absolute right-8 top-8 z-20 flex h-11 w-11 items-center justify-center rounded-full border border-white/12 bg-white/6 text-white/80 transition hover:bg-white/12 hover:text-white"
-                            title="Close"
-                        >
-                            <X size={18} />
-                        </button>
-                    )}
+        <div className="fixed inset-0 z-[200] flex bg-white w-screen h-screen overflow-hidden">
 
-                    <aside className="relative hidden min-h-full overflow-hidden border-r border-white/10 lg:flex lg:flex-col lg:justify-between">
-                        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(59,130,246,0.32),transparent_34%),radial-gradient(circle_at_bottom_right,rgba(16,185,129,0.18),transparent_28%),linear-gradient(180deg,#06101e_0%,#020617_100%)]" />
-                        <img
-                            src={AuthImage}
-                            alt="CleanFlow Workspace"
-                            className="absolute inset-y-0 right-0 h-full w-full object-cover opacity-[0.13] mix-blend-screen"
-                        />
-                        <div className="relative z-10 flex h-full flex-col justify-between p-12">
-                            <div>
-                                <div className="mb-8 inline-flex items-center gap-3 rounded-full border border-white/12 bg-white/7 px-4 py-2 text-[12px] font-semibold uppercase tracking-[0.18em] text-slate-200">
-                                    <Monitor size={15} className="text-sky-300" />
-                                    Desktop Workspace
+            {/* Left Image Section */}
+            <div className="hidden lg:block lg:w-1/2 h-full relative border-r border-slate-100">
+                <img src={AuthImage} alt="Cleanflow Platform" className="absolute inset-0 w-full h-full object-cover" />
+            </div>
+
+            {/* Right Form Section */}
+            <div className="w-full lg:w-1/2 h-full overflow-y-auto">
+                <div className="min-h-full flex flex-col justify-center px-10 py-12 max-w-[480px] mx-auto relative">
+                    
+                    {/* Header */}
+                    <div className="text-center mb-8">
+                        <h2 className="text-[32px] font-medium tracking-tight text-[#1c1c1c] mb-[2px]">
+                            {showOtp ? 'Verify your email' : isLogin ? 'Login to your account' : 'Create an account'}
+                        </h2>
+                    </div>
+
+                    <form onSubmit={handleSubmit} className="w-full">
+                        {!showOtp && (
+                            <>
+                                {/* SSO Buttons */}
+                                <div className="grid grid-cols-3 gap-4 mb-6">
+                                    <button 
+                                        type="button"
+                                        onClick={() => window.location.href = `${API_BASE}/auth/google`}
+                                        className="flex items-center justify-center gap-2.5 py-2.5 rounded-full border border-slate-200 hover:bg-slate-50 hover:border-slate-300 transition-colors text-[13px] font-bold text-[#1c1c1c] whitespace-nowrap shadow-sm"
+                                    >
+                                        <svg width="18" height="18" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                            <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+                                            <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                                            <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+                                            <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+                                        </svg>
+                                        Google
+                                    </button>
+                                    <button 
+                                        type="button"
+                                        onClick={() => window.location.href = `${API_BASE}/auth/microsoft`}
+                                        className="flex items-center justify-center gap-2.5 py-2.5 rounded-full border border-slate-200 hover:bg-slate-50 hover:border-slate-300 transition-colors text-[13px] font-bold text-[#1c1c1c] whitespace-nowrap shadow-sm"
+                                    >
+                                        <svg width="18" height="18" viewBox="0 0 21 21" xmlns="http://www.w3.org/2000/svg">
+                                            <path fill="#f25022" d="M1 1h9v9H1z"/>
+                                            <path fill="#00a4ef" d="M1 11h9v9H1z"/>
+                                            <path fill="#7fba00" d="M11 1h9v9h-9z"/>
+                                            <path fill="#ffb900" d="M11 11h9v9h-9z"/>
+                                        </svg>
+                                        Microsoft
+                                    </button>
+                                    <button 
+                                        type="button"
+                                        onClick={() => window.location.href = `${API_BASE}/auth/apple`}
+                                        className="flex items-center justify-center gap-2.5 py-2.5 rounded-full border border-slate-200 hover:bg-slate-50 hover:border-slate-300 transition-colors text-[13px] font-bold text-[#1c1c1c] whitespace-nowrap shadow-sm"
+                                    >
+                                        <svg width="18" height="18" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                            <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/>
+                                        </svg>
+                                        Apple
+                                    </button>
                                 </div>
 
-                                <div className="mb-8">
-                                    <div className="uncial-antiqua-regular text-[34px] leading-none text-white">Cleanflow</div>
-                                    <h1 className="mt-8 max-w-xl text-[44px] font-semibold leading-[1.02] tracking-[-0.03em] text-white">
-                                        Data operations with a local desktop workflow.
-                                    </h1>
-                                    <p className="mt-5 max-w-xl text-[16px] leading-7 text-slate-300">
-                                        Sign in to access validation, transformation, pricing, orchestration, and export flows inside a dedicated desktop workspace.
-                                    </p>
+                                {/* Divider */}
+                                <div className="flex items-center gap-4 mb-6">
+                                    <div className="h-px bg-slate-100 flex-1"></div>
+                                    <span className="text-[11px] font-bold text-slate-400 uppercase">OR</span>
+                                    <div className="h-px bg-slate-100 flex-1"></div>
                                 </div>
+                            </>
+                        )}
 
-                                <div className="space-y-4">
-                                    {FEATURES.map(({ icon: Icon, title, description }) => (
-                                        <div
-                                            key={title}
-                                            className="rounded-[22px] border border-white/10 bg-white/[0.05] p-5 shadow-[0_16px_48px_rgba(15,23,42,0.16)]"
-                                        >
-                                            <div className="flex items-start gap-4">
-                                                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white/10 text-sky-200">
-                                                    <Icon size={19} />
-                                                </div>
-                                                <div>
-                                                    <h3 className="text-[17px] font-semibold text-white">{title}</h3>
-                                                    <p className="mt-1 text-[14px] leading-6 text-slate-300">{description}</p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-
-                            <div className="rounded-[24px] border border-white/10 bg-white/[0.06] p-6">
-                                <div className="flex items-start justify-between gap-4">
-                                    <div>
-                                        <p className="text-[12px] font-semibold uppercase tracking-[0.16em] text-slate-400">
-                                            Local runtime
-                                        </p>
-                                        <p className="mt-2 text-[20px] font-semibold text-white">{serviceMeta.badge}</p>
-                                    </div>
-                                    <div className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-[12px] font-semibold ${serviceMeta.badgeClass}`}>
-                                        <span className={`h-2.5 w-2.5 rounded-full ${serviceMeta.dotClass}`} />
-                                        {connectionStatus}
-                                    </div>
-                                </div>
-                                <p className="mt-3 text-[14px] leading-6 text-slate-300">{connectionMessage}</p>
-                                <p className="mt-2 text-[13px] leading-5 text-slate-400">{statusNote}</p>
-                                {runtimeInfo?.apiBaseUrl && (
-                                    <div className="mt-4 rounded-2xl border border-white/8 bg-slate-950/35 px-4 py-3 text-[12px] font-medium text-slate-300">
-                                        API Endpoint: <span className="text-sky-200">{runtimeInfo.apiBaseUrl}</span>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    </aside>
-
-                    <section className="relative flex min-h-full items-center justify-center px-4 py-6 sm:px-6 lg:px-10 xl:px-14">
-                        <div className="w-full max-w-[560px]">
-                            <div className="mb-6 flex items-center justify-between lg:hidden">
-                                <div>
-                                    <div className="uncial-antiqua-regular text-[28px] leading-none text-white">Cleanflow</div>
-                                    <p className="mt-2 text-sm text-slate-300">Desktop workspace sign-in</p>
-                                </div>
-                                <div className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-[12px] font-semibold ${serviceMeta.badgeClass}`}>
-                                    <span className={`h-2.5 w-2.5 rounded-full ${serviceMeta.dotClass}`} />
-                                    {serviceMeta.badge}
-                                </div>
-                            </div>
-
-                            <div className="rounded-[30px] border border-slate-200/80 bg-white/95 p-6 shadow-[0_24px_80px_rgba(15,23,42,0.16)] backdrop-blur-xl sm:p-8 lg:p-9">
-                                <div className="mb-8">
-                                    <div className="mb-4 flex flex-wrap items-center gap-3">
-                                        <div className="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1.5 text-[12px] font-semibold text-slate-600">
-                                            <Sparkles size={14} className="text-sky-500" />
-                                            {desktopMode ? 'Desktop sign-in' : 'Secure access'}
-                                        </div>
-                                        <div className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-[12px] font-semibold ${connectionStatus === 'offline' ? 'border-rose-200 bg-rose-50 text-rose-700' : connectionStatus === 'degraded' ? 'border-amber-200 bg-amber-50 text-amber-700' : 'border-emerald-200 bg-emerald-50 text-emerald-700'}`}>
-                                            <Server size={14} />
-                                            {serviceMeta.badge}
-                                        </div>
-                                    </div>
-                                    <h2 className="text-[34px] font-semibold leading-tight tracking-[-0.03em] text-slate-950">
-                                        {showOtp ? 'Verify your email' : isLogin ? 'Sign in to CleanFlow' : 'Create your workspace account'}
-                                    </h2>
-                                    <p className="mt-3 text-[15px] leading-6 text-slate-500">
-                                        {showOtp
-                                            ? `Enter the verification code sent to ${email}.`
-                                            : isLogin
-                                                ? 'Use your account credentials to open the desktop workspace.'
-                                                : 'Create an account to start working with validation, transformation, and pipeline tools.'}
-                                    </p>
-                                </div>
-
-                                {(connectionStatus === 'offline' || connectionStatus === 'degraded') && (
-                                    <div className={`mb-6 rounded-2xl border px-4 py-3 text-[13px] font-medium ${connectionStatus === 'offline' ? 'border-rose-200 bg-rose-50 text-rose-700' : 'border-amber-200 bg-amber-50 text-amber-700'}`}>
-                                        <div className="flex items-start gap-3">
-                                            <AlertCircle size={16} className="mt-0.5 shrink-0" />
-                                            <div>
-                                                <p>{connectionMessage}</p>
-                                                <p className="mt-1 opacity-80">{statusNote}</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
-
-                                {!showOtp && !desktopMode && (
+                        <AnimatePresence mode="wait">
+                            <motion.div
+                                key={showOtp ? 'otp' : isLogin ? 'login' : 'signup'}
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -10 }}
+                            >
+                                {showOtp ? (
                                     <>
-                                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                                        <p className="text-center text-sm text-slate-500 mb-6">
+                                            Enter the 6-digit code sent to {email}
+                                        </p>
+                                        <Field icon={Lock}>
+                                            <input
+                                                type="text"
+                                                value={otp}
+                                                onChange={(e) => setOtp(e.target.value)}
+                                                className={`${inputCls(true)} text-center tracking-[0.7em] text-xl font-black`}
+                                                placeholder="· · · · · ·"
+                                                maxLength={6}
+                                                required
+                                                autoFocus
+                                            />
+                                        </Field>
+                                        <div className="flex justify-between px-2 mb-4">
                                             <button
                                                 type="button"
-                                                onClick={() => { window.location.href = `${API_BASE}/auth/google`; }}
-                                                className="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-[13px] font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
+                                                onClick={() => { setShowOtp(false); reset(); setOtp(''); }}
+                                                className="text-[13px] text-slate-500 hover:text-slate-700 font-semibold transition-colors"
                                             >
-                                                Google
+                                                ← Back
                                             </button>
                                             <button
                                                 type="button"
-                                                onClick={() => { window.location.href = `${API_BASE}/auth/microsoft`; }}
-                                                className="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-[13px] font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
+                                                onClick={handleResendOtp}
+                                                disabled={loading}
+                                                className="text-[13px] text-slate-900 hover:text-black font-bold transition-colors"
                                             >
-                                                Microsoft
+                                                Resend Code
                                             </button>
-                                            <button
-                                                type="button"
-                                                onClick={() => { window.location.href = `${API_BASE}/auth/apple`; }}
-                                                className="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-[13px] font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
-                                            >
-                                                Apple
-                                            </button>
-                                        </div>
-                                        <div className="my-6 flex items-center gap-4">
-                                            <div className="h-px flex-1 bg-slate-200" />
-                                            <span className="text-[11px] font-bold uppercase tracking-[0.16em] text-slate-400">or</span>
-                                            <div className="h-px flex-1 bg-slate-200" />
                                         </div>
                                     </>
-                                )}
-
-                                {!showOtp && desktopMode && (
-                                    <div className="mb-6 rounded-2xl border border-sky-100 bg-sky-50 px-4 py-3 text-[13px] font-medium text-sky-700">
-                                        Desktop mode uses email and password sign-in. Browser-based OAuth redirects are disabled in the packaged app.
-                                    </div>
-                                )}
-
-                                <form onSubmit={handleSubmit} className="space-y-5">
-                                    <AnimatePresence mode="wait">
-                                        <motion.div
-                                            key={showOtp ? 'otp' : isLogin ? 'login' : 'signup'}
-                                            initial={{ opacity: 0, y: 10 }}
-                                            animate={{ opacity: 1, y: 0 }}
-                                            exit={{ opacity: 0, y: -10 }}
-                                            className="space-y-5"
-                                        >
-                                            {showOtp ? (
-                                                <>
-                                                    <InputField
-                                                        label="Verification code"
-                                                        icon={Lock}
-                                                        value={otp}
-                                                        onChange={(e) => setOtp(e.target.value)}
-                                                        placeholder="Enter 6-digit code"
-                                                        maxLength={6}
+                                ) : (
+                                    <>
+                                        {!isLogin && (
+                                            <>
+                                                <div className="grid grid-cols-2 gap-3">
+                                                    <Field icon={User}>
+                                                        <input
+                                                            type="text"
+                                                            value={fullName}
+                                                            onChange={(e) => setFullName(e.target.value)}
+                                                            className={inputCls(true)}
+                                                            placeholder="Full Name"
+                                                            required
+                                                        />
+                                                    </Field>
+                                                    <Field icon={Building2}>
+                                                        <input
+                                                            type="text"
+                                                            value={companyName}
+                                                            onChange={(e) => setCompanyName(e.target.value)}
+                                                            className={inputCls(true)}
+                                                            placeholder="Company"
+                                                            required
+                                                        />
+                                                    </Field>
+                                                </div>
+                                                <div className="grid grid-cols-2 gap-3">
+                                                    <SelectField
+                                                        icon={Briefcase}
+                                                        value={profession}
+                                                        onChange={(e) => setProfession(e.target.value)}
                                                         required
-                                                        autoFocus
-                                                        autoComplete="one-time-code"
-                                                        className="text-center text-lg font-black tracking-[0.45em]"
-                                                    />
-                                                    <div className="flex items-center justify-between text-[13px] font-semibold">
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => {
-                                                                setShowOtp(false);
-                                                                setOtp('');
-                                                                resetFeedback();
-                                                            }}
-                                                            className="text-slate-500 transition hover:text-slate-900"
+                                                    >
+                                                        <option value="" disabled>Select profession</option>
+                                                        {PROFESSIONS.map((item) => (
+                                                            <option key={item} value={item}>{item}</option>
+                                                        ))}
+                                                    </SelectField>
+                                                    <Field icon={Globe}>
+                                                        <input
+                                                            type="text"
+                                                            value={country}
+                                                            onChange={(e) => setCountry(e.target.value)}
+                                                            className={inputCls(true)}
+                                                            placeholder="Country"
+                                                            required
+                                                        />
+                                                    </Field>
+                                                </div>
+                                                <div className="flex gap-2">
+                                                    <div className="w-[40%]">
+                                                        <SelectField
+                                                            icon={Phone}
+                                                            value={phoneCountryCode}
+                                                            onChange={(e) => setPhoneCountryCode(e.target.value)}
+                                                            className="mb-0"
+                                                            required
                                                         >
-                                                            Back to sign-in
-                                                        </button>
-                                                        <button
-                                                            type="button"
-                                                            onClick={handleResendOtp}
-                                                            disabled={loading}
-                                                            className="text-sky-700 transition hover:text-sky-900 disabled:opacity-60"
-                                                        >
-                                                            Resend code
-                                                        </button>
+                                                            {COUNTRY_CODES.map((c) => (
+                                                                <option key={c.code} value={c.code}>{c.label}</option>
+                                                            ))}
+                                                        </SelectField>
                                                     </div>
-                                                </>
-                                            ) : (
-                                                <>
-                                                    {!isLogin && (
-                                                        <>
-                                                            <div className="grid gap-4 sm:grid-cols-2">
-                                                                <InputField
-                                                                    label="Full name"
-                                                                    icon={User}
-                                                                    value={fullName}
-                                                                    onChange={(e) => setFullName(e.target.value)}
-                                                                    placeholder="Your full name"
-                                                                    required
-                                                                    autoComplete="name"
-                                                                />
-                                                                <InputField
-                                                                    label="Company"
-                                                                    icon={Building2}
-                                                                    value={companyName}
-                                                                    onChange={(e) => setCompanyName(e.target.value)}
-                                                                    placeholder="Company name"
-                                                                    required
-                                                                    autoComplete="organization"
-                                                                />
-                                                            </div>
+                                                    <div className="flex-1">
+                                                        <Field>
+                                                            <input
+                                                                type="tel"
+                                                                value={phoneLocalNumber}
+                                                                onChange={(e) => setPhoneLocalNumber(e.target.value)}
+                                                                className={inputCls()}
+                                                                placeholder="Mobile Number"
+                                                                required
+                                                            />
+                                                        </Field>
+                                                    </div>
+                                                </div>
+                                            </>
+                                        )}
+                                        
+                                        <Field>
+                                            <input
+                                                type="email"
+                                                value={email}
+                                                onChange={(e) => setEmail(e.target.value)}
+                                                className={inputCls()}
+                                                placeholder="Email"
+                                                required
+                                            />
+                                        </Field>
 
-                                                            <div className="grid gap-4 sm:grid-cols-2">
-                                                                <SelectField
-                                                                    label="Profession"
-                                                                    icon={Briefcase}
-                                                                    value={profession}
-                                                                    onChange={(e) => setProfession(e.target.value)}
-                                                                    required
-                                                                >
-                                                                    <option value="" disabled>Select profession</option>
-                                                                    {PROFESSIONS.map((item) => (
-                                                                        <option key={item} value={item}>{item}</option>
-                                                                    ))}
-                                                                </SelectField>
-                                                                <InputField
-                                                                    label="Country"
-                                                                    icon={Globe}
-                                                                    value={country}
-                                                                    onChange={(e) => setCountry(e.target.value)}
-                                                                    placeholder="Country"
-                                                                    required
-                                                                    autoComplete="country-name"
-                                                                />
-                                                            </div>
-
-                                                            <div className="grid gap-4 sm:grid-cols-[0.42fr_0.58fr]">
-                                                                <SelectField
-                                                                    label="Country code"
-                                                                    icon={Phone}
-                                                                    value={phoneCountryCode}
-                                                                    onChange={(e) => setPhoneCountryCode(e.target.value)}
-                                                                    required
-                                                                >
-                                                                    {COUNTRY_CODES.map((item) => (
-                                                                        <option key={item.code} value={item.code}>{item.label}</option>
-                                                                    ))}
-                                                                </SelectField>
-                                                                <InputField
-                                                                    label="Mobile number"
-                                                                    icon={Phone}
-                                                                    value={phoneLocalNumber}
-                                                                    onChange={(e) => setPhoneLocalNumber(e.target.value)}
-                                                                    placeholder="Mobile number"
-                                                                    required
-                                                                    autoComplete="tel"
-                                                                />
-                                                            </div>
-                                                        </>
-                                                    )}
-
-                                                    <InputField
-                                                        label="Email"
-                                                        icon={Mail}
-                                                        type="email"
-                                                        value={email}
-                                                        onChange={(e) => setEmail(e.target.value)}
-                                                        placeholder="you@company.com"
-                                                        required
-                                                        autoComplete="email"
-                                                    />
-
-                                                    <InputField
-                                                        label={isLogin ? 'Password' : 'Create password'}
-                                                        icon={Lock}
-                                                        type={showPwd ? 'text' : 'password'}
-                                                        value={password}
-                                                        onChange={(e) => setPassword(e.target.value)}
-                                                        placeholder={isLogin ? 'Enter your password' : 'Create a secure password'}
-                                                        required
-                                                        autoComplete={isLogin ? 'current-password' : 'new-password'}
-                                                        trailing={(
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => setShowPwd((current) => !current)}
-                                                                className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 transition hover:text-slate-600"
-                                                            >
-                                                                {showPwd ? <EyeOff size={18} /> : <Eye size={18} />}
-                                                            </button>
-                                                        )}
-                                                    />
-                                                </>
-                                            )}
-                                        </motion.div>
-                                    </AnimatePresence>
-
-                                    {error && (
-                                        <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-[13px] font-semibold text-rose-700">
-                                            <div className="flex items-start gap-3">
-                                                <AlertCircle size={16} className="mt-0.5 shrink-0" />
-                                                <span>{error}</span>
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    {successMsg && (
-                                        <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-[13px] font-semibold text-emerald-700">
-                                            <div className="flex items-start gap-3">
-                                                <CheckCircle2 size={16} className="mt-0.5 shrink-0" />
-                                                <span>{successMsg}</span>
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    <button
-                                        type="submit"
-                                        disabled={loading}
-                                        className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-slate-950 px-5 py-3.5 text-[14px] font-semibold text-white shadow-[0_18px_40px_rgba(15,23,42,0.16)] transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
-                                    >
-                                        {loading ? 'Processing...' : showOtp ? 'Verify and continue' : isLogin ? 'Sign in' : 'Create account'}
-                                        {!loading && <ArrowRight size={16} />}
-                                    </button>
-
-                                    {!showOtp && (
-                                        <div className="pt-2 text-center text-[13px] font-medium text-slate-500">
-                                            {isLogin ? "Don't have an account yet?" : 'Already have an account?'}{' '}
+                                        <Field>
+                                            <input
+                                                type={showPwd ? 'text' : 'password'}
+                                                value={password}
+                                                onChange={(e) => setPassword(e.target.value)}
+                                                className={inputCls()}
+                                                placeholder={isLogin ? "Password" : "Create Password"}
+                                                required
+                                            />
                                             <button
                                                 type="button"
-                                                onClick={() => {
-                                                    setIsLogin((current) => !current);
-                                                    resetFeedback();
-                                                }}
-                                                className="font-semibold text-slate-900 transition hover:text-sky-700"
+                                                onClick={() => setShowPwd(!showPwd)}
+                                                className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
                                             >
-                                                {isLogin ? 'Create one' : 'Sign in'}
+                                                {showPwd ? <EyeOff size={16} /> : <Eye size={16} />}
                                             </button>
-                                        </div>
-                                    )}
-                                </form>
+                                        </Field>
+                                    </>
+                                )}
+                            </motion.div>
+                        </AnimatePresence>
 
-                                <div className="mt-7 flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-[12px] text-slate-500">
-                                    <Server size={15} className="text-slate-400" />
-                                    <span>{connectionMessage}</span>
-                                </div>
+                        {/* Alerts */}
+                        {error && (
+                            <div className="mb-4 flex items-start gap-2.5 text-red-600 text-[13px] font-semibold bg-red-50 border border-red-100 px-4 py-3 rounded-xl shadow-sm">
+                                <AlertCircle size={16} className="shrink-0 mt-0.5" />
+                                {error}
                             </div>
-                        </div>
-                    </section>
+                        )}
+                        {successMsg && (
+                            <div className="mb-4 flex items-start gap-2.5 text-emerald-600 text-[13px] font-semibold bg-emerald-50 border border-emerald-100 px-4 py-3 rounded-xl shadow-sm">
+                                <CheckCircle2 size={16} className="shrink-0 mt-0.5" />
+                                {successMsg}
+                            </div>
+                        )}
+
+                        {/* Submit */}
+                        <button
+                            type="submit"
+                            disabled={loading}
+                            className="w-full py-3.5 rounded-full font-bold text-[14px]
+                                       bg-[#f5f5f5] text-slate-800 border border-slate-200
+                                       hover:bg-[#ebebeb] hover:border-slate-300
+                                       transition-all duration-200
+                                       disabled:opacity-60 disabled:pointer-events-none
+                                       flex items-center justify-center gap-2 mt-4"
+                        >
+                            {loading ? 'Processing…' : 'Continue'}
+                        </button>
+                        
+                        {/* Toggle Link */}
+                        {!showOtp && (
+                            <div className="mt-8 text-center text-[13px] font-semibold text-slate-500">
+                                {isLogin ? "Don't have an account? " : "Already have an account? "}
+                                <button
+                                    type="button"
+                                    onClick={() => { setIsLogin(!isLogin); reset(); }}
+                                    className="text-slate-900 border-b border-slate-900 pb-0.5 hover:text-slate-600 transition-colors"
+                                >
+                                    {isLogin ? 'Create one' : 'Login'}
+                                </button>
+                            </div>
+                        )}
+                    </form>
+                    
+                    {/* Footer branding */}
+                    <div className="absolute bottom-6 left-0 right-0 text-center flex flex-col items-center">
+                       <span className="text-[10px] font-bold text-slate-400">
+                           <span className="text-slate-700">IN</span> Crafted with Care. For India, from India
+                       </span>
+                    </div>
                 </div>
             </div>
         </div>

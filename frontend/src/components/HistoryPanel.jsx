@@ -2,9 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { History, Clock, FileCheck, ChevronRight, Trash2, RefreshCw, Database, Server, Plus, X, Link2, Unplug } from 'lucide-react';
 import axios from 'axios';
-
-// Pulling the URL from the .env file
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'import.meta.env.VITE_API_URL';
+import { API_BASE } from '../lib/runtimeConfig';
 
 const HistoryPanel = ({ onLoadJob }) => {
     const [jobs, setJobs] = useState([]);
@@ -31,6 +29,13 @@ const HistoryPanel = ({ onLoadJob }) => {
     }, []);
 
     const fetchData = async () => {
+        if (!token) {
+            setJobs([]);
+            setConnections([]);
+            setLoading(false);
+            return;
+        }
+
         setLoading(true);
         try {
             const [jobsRes, connsRes] = await Promise.all([
@@ -84,18 +89,18 @@ const HistoryPanel = ({ onLoadJob }) => {
     };
 
     return (
-        <div className="bg-[var(--panel)] rounded-3xl shadow-xl border border-[var(--border-soft)] p-6 w-full max-w-md">
+        <div className="bg-white rounded-3xl shadow-xl border border-slate-100 p-6 w-full max-w-md">
             {/* Tabs */}
             <div className="flex gap-2 mb-6">
                 <button
                     onClick={() => setActiveTab('history')}
-                    className={`flex-1 py-2 px-4 rounded-xl font-bold transition-colors ${activeTab === 'history' ? 'bg-brand-blue text-white' : 'bg-[var(--panel-muted)] text-[var(--text-secondary)] hover:bg-[var(--panel-muted)]'}`}
+                    className={`flex-1 py-2 px-4 rounded-xl font-bold transition-colors ${activeTab === 'history' ? 'bg-brand-blue text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
                 >
                     <History size={16} className="inline mr-2" /> History
                 </button>
                 <button
                     onClick={() => setActiveTab('connections')}
-                    className={`flex-1 py-2 px-4 rounded-xl font-bold transition-colors ${activeTab === 'connections' ? 'bg-brand-blue text-white' : 'bg-[var(--panel-muted)] text-[var(--text-secondary)] hover:bg-[var(--panel-muted)]'}`}
+                    className={`flex-1 py-2 px-4 rounded-xl font-bold transition-colors ${activeTab === 'connections' ? 'bg-brand-blue text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
                 >
                     <Database size={16} className="inline mr-2" /> Connections
                 </button>
@@ -111,16 +116,16 @@ const HistoryPanel = ({ onLoadJob }) => {
                         exit={{ opacity: 0, x: 20 }}
                     >
                         <div className="flex items-center justify-between mb-4">
-                            <h3 className="font-bold text-[var(--text-primary)]">Recent Jobs</h3>
-                            <button onClick={fetchData} className="text-[var(--text-muted)] hover:text-brand-blue">
+                            <h3 className="font-bold text-slate-900">Recent Jobs</h3>
+                            <button onClick={fetchData} className="text-slate-400 hover:text-brand-blue">
                                 <RefreshCw size={16} />
                             </button>
                         </div>
 
                         {loading ? (
-                            <div className="text-center py-8 text-[var(--text-muted)]">Loading...</div>
+                            <div className="text-center py-8 text-slate-400">Loading...</div>
                         ) : jobs.length === 0 ? (
-                            <div className="text-center py-8 text-[var(--text-muted)]">
+                            <div className="text-center py-8 text-slate-400">
                                 <Clock size={32} className="mx-auto mb-2 opacity-50" />
                                 No validation history yet
                             </div>
@@ -130,16 +135,16 @@ const HistoryPanel = ({ onLoadJob }) => {
                                     <div
                                         key={job.id}
                                         onClick={() => onLoadJob && onLoadJob(job)}
-                                        className="p-4 bg-[var(--panel-muted)] hover:bg-[var(--panel-muted)] rounded-xl cursor-pointer transition-colors group"
+                                        className="p-4 bg-slate-50 hover:bg-slate-100 rounded-xl cursor-pointer transition-colors group"
                                     >
                                         <div className="flex items-center justify-between">
                                             <div>
-                                                <div className="font-medium text-[var(--text-primary)]">{job.file_name}</div>
-                                                <div className="text-xs text-[var(--text-muted)]">{formatDate(job.created_at)}</div>
+                                                <div className="font-medium text-slate-800">{job.file_name}</div>
+                                                <div className="text-xs text-slate-400">{formatDate(job.created_at)}</div>
                                             </div>
                                             <div className="flex items-center gap-2">
                                                 <span className="text-xs font-bold text-green-600">{job.valid_rows} valid</span>
-                                                <ChevronRight size={16} className="text-[var(--text-muted)] group-hover:text-brand-blue" />
+                                                <ChevronRight size={16} className="text-slate-300 group-hover:text-brand-blue" />
                                             </div>
                                         </div>
                                     </div>
@@ -157,7 +162,7 @@ const HistoryPanel = ({ onLoadJob }) => {
                         exit={{ opacity: 0, x: -20 }}
                     >
                         <div className="flex items-center justify-between mb-4">
-                            <h3 className="font-bold text-[var(--text-primary)]">Saved Connections</h3>
+                            <h3 className="font-bold text-slate-900">Saved Connections</h3>
                             <button
                                 onClick={() => setShowConnectionForm(true)}
                                 className="text-brand-blue hover:text-brand-dark font-bold text-sm flex items-center gap-1"
@@ -168,10 +173,10 @@ const HistoryPanel = ({ onLoadJob }) => {
 
                         {/* Connection Form */}
                         {showConnectionForm && (
-                            <div className="mb-4 p-4 bg-[var(--panel-muted)] rounded-xl border border-[var(--border-soft)]">
+                            <div className="mb-4 p-4 bg-slate-50 rounded-xl border border-slate-200">
                                 <div className="flex justify-between items-center mb-3">
                                     <span className="font-bold text-sm">New Connection</span>
-                                    <button onClick={() => setShowConnectionForm(false)} className="text-[var(--text-muted)] hover:text-red-500">
+                                    <button onClick={() => setShowConnectionForm(false)} className="text-slate-400 hover:text-red-500">
                                         <X size={16} />
                                     </button>
                                 </div>
@@ -236,7 +241,7 @@ const HistoryPanel = ({ onLoadJob }) => {
                                     <div className="flex gap-2">
                                         <button
                                             onClick={testConnection}
-                                            className="flex-1 py-2 bg-[var(--panel-muted)] hover:bg-slate-300 rounded-lg font-medium text-sm"
+                                            className="flex-1 py-2 bg-slate-200 hover:bg-slate-300 rounded-lg font-medium text-sm"
                                         >
                                             Test Connection
                                         </button>
@@ -253,7 +258,7 @@ const HistoryPanel = ({ onLoadJob }) => {
 
                         {/* Connections List */}
                         {connections.length === 0 && !showConnectionForm ? (
-                            <div className="text-center py-8 text-[var(--text-muted)]">
+                            <div className="text-center py-8 text-slate-400">
                                 <Server size={32} className="mx-auto mb-2 opacity-50" />
                                 No saved connections
                             </div>
@@ -262,20 +267,20 @@ const HistoryPanel = ({ onLoadJob }) => {
                                 {connections.map(conn => (
                                     <div
                                         key={conn.id}
-                                        className="p-4 bg-[var(--panel-muted)] rounded-xl flex items-center justify-between group"
+                                        className="p-4 bg-slate-50 rounded-xl flex items-center justify-between group"
                                     >
                                         <div className="flex items-center gap-3">
                                             <div className="w-10 h-10 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center">
                                                 <Database size={18} />
                                             </div>
                                             <div>
-                                                <div className="font-medium text-[var(--text-primary)]">{conn.name}</div>
-                                                <div className="text-xs text-[var(--text-muted)]">{conn.db_type.toUpperCase()} • {conn.host}</div>
+                                                <div className="font-medium text-slate-800">{conn.name}</div>
+                                                <div className="text-xs text-slate-400">{conn.db_type.toUpperCase()} • {conn.host}</div>
                                             </div>
                                         </div>
                                         <button
                                             onClick={() => deleteConnection(conn.id)}
-                                            className="text-[var(--text-muted)] hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                                            className="text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
                                         >
                                             <Trash2 size={16} />
                                         </button>

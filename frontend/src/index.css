@@ -4,37 +4,15 @@
 
 @layer base {
   :root {
-    color-scheme: light;
-    --app-bg: #f4f7f3;
-    --app-bg-elevated: #eef3ef;
-    --panel: rgba(255, 255, 255, 0.82);
-    --panel-muted: rgba(247, 250, 248, 0.92);
-    --border-soft: rgba(129, 140, 129, 0.18);
-    --border-strong: rgba(64, 86, 76, 0.24);
-    --text-primary: #15211b;
-    --text-secondary: #4e6258;
-    --text-muted: #6f8378;
-    --accent-strong: #1f8f74;
-    --accent-soft: rgba(31, 143, 116, 0.12);
-    --shadow-soft: 0 18px 48px rgba(32, 55, 44, 0.08);
-    --shadow-strong: 0 24px 70px rgba(24, 44, 36, 0.14);
-  }
-
-  .dark {
-    color-scheme: dark;
-    --app-bg: #0b1513;
-    --app-bg-elevated: #0f1b18;
-    --panel: rgba(16, 26, 23, 0.84);
-    --panel-muted: rgba(20, 33, 28, 0.92);
-    --border-soft: rgba(164, 199, 179, 0.12);
-    --border-strong: rgba(164, 199, 179, 0.2);
-    --text-primary: #eef8f2;
-    --text-secondary: #bdd0c4;
-    --text-muted: #8ea398;
-    --accent-strong: #42c5a3;
-    --accent-soft: rgba(66, 197, 163, 0.14);
-    --shadow-soft: 0 20px 56px rgba(0, 0, 0, 0.26);
-    --shadow-strong: 0 26px 72px rgba(0, 0, 0, 0.38);
+    --cf-bg: #eef3f9;
+    --cf-surface: #ffffff;
+    --cf-surface-soft: #f8fbff;
+    --cf-border: #dbe4f1;
+    --cf-text: #10203a;
+    --cf-muted: #60708a;
+    --cf-accent: #18c58f;
+    --cf-shell: #2e3138;
+    --cf-titlebar: #262229;
   }
 
   html {
@@ -42,19 +20,17 @@
   }
 
   body {
-    margin: 0;
-    height: 100vh;
-    overflow: hidden;
-    background: var(--app-bg);
-    color: var(--text-primary);
-    font-family: "Segoe UI Variable Text", "Segoe UI", sans-serif;
-    text-rendering: optimizeLegibility;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
+    @apply antialiased;
+    background:
+      radial-gradient(circle at top, rgba(24, 197, 143, 0.08), transparent 28%),
+      linear-gradient(180deg, #f4f7fb 0%, var(--cf-bg) 100%);
+    color: var(--cf-text);
+    font-family: "Segoe UI Variable Display", "Segoe UI", "Aptos", sans-serif;
+    line-height: 1.5;
   }
 
-  * {
-    box-sizing: border-box;
+  #root {
+    min-height: 100vh;
   }
 
   button,
@@ -63,81 +39,56 @@
   textarea {
     font: inherit;
   }
-
-  button {
-    cursor: pointer;
-  }
-
-  input {
-    border: 0;
-    background: transparent;
-    color: inherit;
-  }
-
-  input:focus {
-    outline: none;
-  }
-
-  .cf-workspace input,
-  .cf-workspace select,
-  .cf-workspace textarea {
-    border-color: var(--border-soft);
-    background: color-mix(in srgb, var(--panel) 72%, transparent);
-    color: var(--text-primary);
-    box-shadow: none;
-  }
-
-  .cf-workspace textarea::placeholder,
-  .cf-workspace input::placeholder {
-    color: var(--text-muted);
-  }
-
-  .cf-workspace input:focus,
-  .cf-workspace select:focus,
-  .cf-workspace textarea:focus {
-    border-color: var(--accent-strong) !important;
-    box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent-strong) 14%, transparent);
-    outline: none;
-  }
-
-  .cf-workspace table thead {
-    background: color-mix(in srgb, var(--panel-muted) 90%, transparent);
-  }
-
-  .cf-workspace table tbody tr {
-    transition: background-color 180ms ease;
-  }
-
-  .cf-workspace table tbody tr:hover {
-    background: color-mix(in srgb, var(--panel-muted) 82%, transparent);
-  }
-
-  #root {
-    height: 100vh;
-  }
-
-  ::selection {
-    background: rgba(31, 143, 116, 0.22);
-  }
 }
 
 @layer utilities {
-  .glass-scrollbar {
+  .card {
+    @apply rounded-lg border bg-white transition-shadow hover:shadow-md;
+    border-color: var(--cf-border);
+  }
+
+  .btn-primary {
+    @apply rounded-lg px-4 py-2.5 font-medium text-white transition-colors;
+    background-color: var(--cf-text);
+  }
+
+  .btn-secondary {
+    @apply rounded-lg px-4 py-2.5 font-medium transition-colors;
+    background-color: var(--cf-surface-soft);
+    color: var(--cf-text);
+  }
+
+  /* Custom scrollbar for dark sidebars */
+  .sidebar-scrollbar {
     scrollbar-width: thin;
-    scrollbar-color: rgba(120, 140, 128, 0.4) transparent;
+    scrollbar-color: transparent transparent;
   }
 
-  .glass-scrollbar::-webkit-scrollbar {
-    width: 9px;
-    height: 9px;
+  .sidebar-scrollbar:hover {
+    scrollbar-color: #374151 transparent;
   }
 
-  .glass-scrollbar::-webkit-scrollbar-track {
+  .sidebar-scrollbar::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  .sidebar-scrollbar::-webkit-scrollbar-track {
     background: transparent;
   }
 
-  .glass-scrollbar::-webkit-scrollbar-thumb {
-    border-radius: 999px;
-    background: rgba(120, 140, 128, 0.35);
+  .sidebar-scrollbar::-webkit-scrollbar-thumb {
+    background-color: transparent;
+    border-radius: 10px;
+  }
+
+  .sidebar-scrollbar:hover::-webkit-scrollbar-thumb {
+    background-color: #374151;
+  }
+
+  .uncial-antiqua-regular {
+    font-family: "Uncial Antiqua", system-ui;
+    font-weight: 400;
+    font-style: normal;
   }
 }

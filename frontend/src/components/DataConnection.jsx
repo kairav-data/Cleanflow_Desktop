@@ -2,11 +2,13 @@ import React, { useState, useRef, useEffect } from 'react';
 import axios from 'axios';
 import {
     Upload, Database, FileSpreadsheet, Loader2, AlertCircle,
-    HardDrive, Server, Play, RefreshCw, Plus, X, ChevronDown,
+    HardDrive, Server, Play, RefreshCw, ChevronDown,
     Check, FileText, ShieldCheck, Zap
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { API_BASE } from '../lib/runtimeConfig';
+import DatabaseConnectionManager from './DatabaseConnectionManager';
+import { buildSampleQuery } from '../lib/databaseConnections';
 
 const DataConnection = ({ onUploadSuccess, compact = false }) => {
     const [mode, setMode] = useState('file');
@@ -20,18 +22,12 @@ const DataConnection = ({ onUploadSuccess, compact = false }) => {
     // Database state
     const [connections, setConnections] = useState([]);
     const [selectedConnection, setSelectedConnection] = useState(null);
-    const [query, setQuery] = useState('SELECT * FROM your_table LIMIT 100');
+    const [query, setQuery] = useState(buildSampleQuery('postgresql', 'your_table', 100));
     const [loadingConnections, setLoadingConnections] = useState(false);
-    const [showNewConnForm, setShowNewConnForm] = useState(false);
-    
     // New states for table selection
     const [tables, setTables] = useState([]);
     const [loadingTables, setLoadingTables] = useState(false);
     const [selectedTable, setSelectedTable] = useState('');
-
-    const [newConn, setNewConn] = useState({
-        name: '', db_type: 'postgresql', host: '', port: 5432, database: '', username: '', password: ''
-    });
 
     const token = localStorage.getItem('token');
     const headers = token ? { Authorization: `Bearer ${token}` } : {};
@@ -40,12 +36,17 @@ const DataConnection = ({ onUploadSuccess, compact = false }) => {
         if (mode === 'database' && token) fetchConnections();
     }, [mode, token]);
 
-    const fetchConnections = async () => {
+    const fetchConnections = async (preferredConnectionId = null) => {
         setLoadingConnections(true);
         try {
             const res = await axios.get(`${API_BASE}/connections`, { headers });
             setConnections(res.data);
-            if (res.data.length > 0 && !selectedConnection) setSelectedConnection(res.data[0]);
+            if (res.data.length > 0) {
+                const preferred = preferredConnectionId
+                    ? res.data.find((connection) => connection.id === preferredConnectionId)
+                    : null;
+                setSelectedConnection(preferred || selectedConnection || res.data[0]);
+            }
         } catch (err) {
             setError("Could not load saved connections.");
         } finally {
@@ -82,7 +83,7 @@ const DataConnection = ({ onUploadSuccess, compact = false }) => {
         const table = e.target.value;
         setSelectedTable(table);
         if (table) {
-            setQuery(`SELECT * FROM ${table} LIMIT 1000`);
+            setQuery(buildSampleQuery(selectedConnection?.db_type, table, 1000));
         } else {
             setQuery('');
         }
@@ -169,7 +170,7 @@ const DataConnection = ({ onUploadSuccess, compact = false }) => {
         : `relative group cursor-pointer border-2 border-dashed rounded-[1.75rem] p-14 md:p-16 flex flex-col items-center justify-center transition-all overflow-hidden ${isDragging ? 'border-brand-blue bg-brand-blue/5' : 'border-slate-300 bg-white hover:border-brand-blue hover:shadow-glow'}`;
     const uploadShellClass = compact ? 'w-16 h-16 bg-brand-blue/10 text-brand-blue rounded-2xl flex items-center justify-center mb-5 group-hover:scale-105 transition-transform duration-300' : 'w-20 h-20 bg-brand-blue/10 text-brand-blue rounded-[1.5rem] flex items-center justify-center mb-6 group-hover:scale-105 transition-transform duration-300';
     const uploadTitleClass = compact ? 'text-xl md:text-2xl font-black text-slate-800 mb-2' : 'text-2xl font-black text-slate-800 mb-2';
-    const uploadTextClass = compact ? 'text-slate-400 font-medium text-sm text-center' : 'text-slate-400 font-medium';
+    const uploadTextClass = compact ? 'text-slate-600 font-medium text-sm text-center' : 'text-slate-600 font-medium';
     const dbCardClass = compact
         ? 'bg-white border border-slate-200 rounded-[1.75rem] p-6 shadow-lg shadow-slate-200/40'
         : 'bg-white border border-slate-200 rounded-[1.75rem] p-8 shadow-lg shadow-slate-200/40';
@@ -201,7 +202,7 @@ const DataConnection = ({ onUploadSuccess, compact = false }) => {
                     <button
                         key={m}
                         onClick={() => setMode(m)}
-                        className={`${modeButtonClass} ${mode === m ? 'text-brand-blue' : 'text-slate-500 hover:text-slate-700'
+                        className={`${modeButtonClass} ${mode === m ? 'text-brand-blue' : 'text-slate-800 hover:text-slate-900'
                             }`}
                     >
                         {mode === m && (
@@ -212,7 +213,7 @@ const DataConnection = ({ onUploadSuccess, compact = false }) => {
                             />
                         )}
                         {m === 'file' ? <FileSpreadsheet size={18} /> : <Database size={18} />}
-                        {m === 'file' ? 'Local Files' : 'Cloud Database'}
+                        {m === 'file' ? 'Local Files' : 'Local / Cloud Database'}
                     </button>
                 ))}
             </div>
@@ -234,7 +235,7 @@ const DataConnection = ({ onUploadSuccess, compact = false }) => {
                                     <button
                                         key={d}
                                         onClick={() => setDelimiter(d)}
-                                        className={`w-10 h-10 rounded-lg flex items-center justify-center font-mono border transition-all ${delimiter === d ? 'bg-brand-blue text-white border-brand-blue shadow-glow' : 'bg-white text-slate-400 border-slate-200 hover:border-brand-blue/30'
+                                        className={`w-10 h-10 rounded-lg flex items-center justify-center font-mono border transition-all ${delimiter === d ? 'bg-brand-blue text-white border-brand-blue shadow-glow' : 'bg-white text-slate-800 border-slate-200 hover:border-brand-blue/30'
                                             }`}
                                     >
                                         {d === ',' ? ',' : d}
@@ -244,7 +245,7 @@ const DataConnection = ({ onUploadSuccess, compact = false }) => {
                                     type="text"
                                     placeholder="Other"
                                     maxLength={1}
-                                    className={`w-16 h-10 rounded-lg text-center font-mono border transition-all outline-none focus:border-brand-blue ${![',', ';', '|'].includes(delimiter) ? 'border-brand-blue text-brand-blue font-bold shadow-glow' : 'border-slate-200 text-slate-500'
+                                    className={`w-16 h-10 rounded-lg text-center font-mono border transition-all outline-none focus:border-brand-blue ${![',', ';', '|'].includes(delimiter) ? 'border-brand-blue text-brand-blue font-bold shadow-glow' : 'border-slate-200 text-slate-800'
                                         }`}
                                     value={![',', ';', '|'].includes(delimiter) ? delimiter : ''}
                                     onChange={(e) => setDelimiter(e.target.value)}
@@ -316,18 +317,29 @@ const DataConnection = ({ onUploadSuccess, compact = false }) => {
                                 <p className="text-sm text-slate-500 font-medium">Loading saved connections…</p>
                             </div>
                         ) : connections.length === 0 ? (
-                            <div className="flex flex-col items-center justify-center py-14 px-6 border-2 border-dashed border-slate-200 bg-slate-50/60 rounded-2xl text-center">
-                                <div className="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center mb-4">
-                                    <Database size={32} className="text-slate-400" />
+                            <div className="space-y-4 rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50/60 p-6">
+                                <div className="flex flex-col items-center justify-center text-center">
+                                    <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-100">
+                                        <Database size={32} className="text-slate-400" />
+                                    </div>
+                                    <h4 className="mb-1 text-lg font-black text-slate-700">No Connections Yet</h4>
+                                    <p className="mb-5 max-w-xs text-sm leading-relaxed text-slate-500">
+                                        Add a local SQLite database or a server connection here, then import data directly into this module.
+                                    </p>
+                                    <div className="flex items-center gap-2 text-xs font-semibold text-slate-400">
+                                        <ShieldCheck size={14} className="text-emerald-500" />
+                                        All connections are encrypted at rest
+                                    </div>
                                 </div>
-                                <h4 className="text-lg font-black text-slate-700 mb-1">No Connections Yet</h4>
-                                <p className="text-slate-500 text-sm max-w-xs mb-5 leading-relaxed">
-                                    You haven't saved any database connections. Add one from the sidebar to get started.
-                                </p>
-                                <div className="flex items-center gap-2 text-xs font-semibold text-slate-400">
-                                    <ShieldCheck size={14} className="text-emerald-500" />
-                                    All connections are encrypted at rest
-                                </div>
+                                <DatabaseConnectionManager
+                                    title="Create Database Connection"
+                                    initialOpen
+                                    compact
+                                    showInlineButton={false}
+                                    onConnectionSaved={async (connectionId) => {
+                                        await fetchConnections(connectionId);
+                                    }}
+                                />
                             </div>
                         ) : (
                             <div className="space-y-4">
@@ -337,9 +349,18 @@ const DataConnection = ({ onUploadSuccess, compact = false }) => {
                                     <div className="flex items-center gap-3 px-5 py-3.5 border-b border-slate-100 bg-slate-50/80">
                                         <div className="w-6 h-6 rounded-full bg-brand-blue text-white flex items-center justify-center text-xs font-black shrink-0">1</div>
                                         <span className="text-sm font-bold text-slate-700">Select Connection</span>
-                                        <button onClick={fetchConnections} className="ml-auto p-1.5 text-slate-400 hover:text-brand-blue hover:bg-brand-blue/5 rounded-lg transition-all" title="Refresh">
-                                            <RefreshCw size={14} />
-                                        </button>
+                                        <div className="ml-auto flex items-center gap-2">
+                                            <DatabaseConnectionManager
+                                                title="New Connection"
+                                                compact
+                                                onConnectionSaved={async (connectionId) => {
+                                                    await fetchConnections(connectionId);
+                                                }}
+                                            />
+                                            <button onClick={fetchConnections} className="p-1.5 text-slate-400 hover:text-brand-blue hover:bg-brand-blue/5 rounded-lg transition-all" title="Refresh">
+                                                <RefreshCw size={14} />
+                                            </button>
+                                        </div>
                                     </div>
                                     <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-3">
                                         {connections.map(conn => {

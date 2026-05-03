@@ -39,7 +39,7 @@ export default function Home() {
                     <input
                         type="text"
                         placeholder="Ask CleanFlow to 'Validate my sales_data.csv'..."
-                        className="w-full bg-transparent outline-none text-lg text-slate-900 placeholder:text-slate-400 font-medium h-12"
+                        className="w-full bg-transparent outline-none text-lg text-slate-900 placeholder:text-slate-600 font-medium h-12"
                     />
                     <button onClick={() => navigate('/validate')} className="bg-slate-900 hover:bg-black text-white px-6 py-3 rounded-xl font-bold transition-all flex items-center gap-2">
                         Start <ArrowRight size={18} />

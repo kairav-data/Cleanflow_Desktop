@@ -216,6 +216,8 @@ async def google_callback(code: str, state: str):
     
     access_token = create_access_token(data={"sub": user_data['email']})
     frontend_url = os.getenv('FRONTEND_URL', 'http://localhost:3000')
+    if frontend_url.startswith("file://"):
+        return RedirectResponse(f"{frontend_url}?token={access_token}")
     return RedirectResponse(f"{frontend_url}/auth/callback?token={access_token}")
 
 @router.get("/auth/microsoft")
@@ -264,6 +266,8 @@ async def microsoft_callback(code: str, state: str):
     
     access_token = create_access_token(data={"sub": user_data['mail']})
     frontend_url = os.getenv('FRONTEND_URL', 'http://localhost:3000')
+    if frontend_url.startswith("file://"):
+        return RedirectResponse(f"{frontend_url}?token={access_token}")
     return RedirectResponse(f"{frontend_url}/auth/callback?token={access_token}")
 
 @router.get("/auth/apple")
@@ -315,4 +319,6 @@ async def apple_callback(code: str, state: str):
     
     access_token = create_access_token(data={"sub": user_data['email']})
     frontend_url = os.getenv('FRONTEND_URL', 'http://localhost:3000')
+    if frontend_url.startswith("file://"):
+        return RedirectResponse(f"{frontend_url}?token={access_token}")
     return RedirectResponse(f"{frontend_url}/auth/callback?token={access_token}")

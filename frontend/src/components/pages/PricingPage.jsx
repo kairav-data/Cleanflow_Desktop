@@ -282,7 +282,7 @@ const PricingPage = ({ onClose }) => {
                   {plan.features.map((feat, i) => (
                     <li key={i} className="flex items-start gap-3">
                       <Check size={15} className={`${ac.check} mt-0.5 shrink-0`} />
-                      <span className="text-sm text-slate-400 font-medium">{feat}</span>
+                      <span className="text-sm text-slate-600 font-medium">{feat}</span>
                     </li>
                   ))}
                 </ul>

@@ -2,9 +2,11 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
 import { GitMerge, Upload, Play, CheckCircle, TrendingUp, Plus, Trash2, Database, File, FileSpreadsheet, FileText, AlertCircle } from 'lucide-react';
+import { DatabaseConnectionManager } from '../components';
 import DatasetViewer from '../components/DatasetViewer';
 import WorkspaceTabs from '../components/WorkspaceTabs';
 import { API_BASE } from '../lib/runtimeConfig';
+import { buildSampleQuery } from '../lib/databaseConnections';
 const STEPS = ['Upload', 'Configure', 'Results'];
 const DEFAULT_MATCH_RULE = { id: 1, column1: '', column2: '', algorithm: 'fuzzy', threshold: 0.8 };
 
@@ -16,7 +18,7 @@ export default function DataMatchingBuilder({
     initialOutputColumns = { dataset1: [], dataset2: [] },
     initialMatchRules = [DEFAULT_MATCH_RULE],
     initialDatasetMode = { dataset1: 'file', dataset2: 'file' },
-    initialDatasetQueries = { dataset1: 'SELECT * FROM table1 LIMIT 100', dataset2: 'SELECT * FROM table2 LIMIT 100' },
+    initialDatasetQueries = { dataset1: buildSampleQuery('postgresql', 'table1', 100), dataset2: buildSampleQuery('postgresql', 'table2', 100) },
     initialDatasetConnections = { dataset1: '', dataset2: '' },
     initialWorkspaceTab = 'dataset1',
     embedded = false,
@@ -65,7 +67,14 @@ export default function DataMatchingBuilder({
         try {
             const res = await axios.get(`${API_BASE}/connections`, { headers });
             setConnections(res.data);
-            if (res.data.length > 0) setDatasetConnections({ dataset1: res.data[0].id, dataset2: res.data[0].id });
+            if (res.data.length > 0) {
+                const defaultConn = res.data[0];
+                setDatasetConnections({ dataset1: defaultConn.id, dataset2: defaultConn.id });
+                setDatasetQueries({
+                    dataset1: buildSampleQuery(defaultConn.db_type, 'table1', 100),
+                    dataset2: buildSampleQuery(defaultConn.db_type, 'table2', 100),
+                });
+            }
         } catch (err) { console.error("Could not load saved connections.", err); }
     };
 
@@ -280,8 +289,8 @@ export default function DataMatchingBuilder({
                                         <div className="flex bg-slate-100 rounded-lg p-0.5">
                                             {['file', 'database'].map(mode => (
                                                 <button key={mode} onClick={() => setDatasetMode(prev => ({ ...prev, [dsId]: mode }))}
-                                                    className={`px-3 py-1 text-xs font-bold rounded-md transition-all ${datasetMode[dsId] === mode ? 'bg-white text-violet-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>
-                                                    {mode === 'file' ? 'File' : 'Database'}
+                                                    className={`px-3 py-1 text-xs font-bold rounded-md transition-all ${datasetMode[dsId] === mode ? 'bg-white text-violet-600 shadow-sm' : 'text-slate-800 hover:text-slate-900'}`}>
+                                                    {mode === 'file' ? 'File' : 'Local Database'}
                                                 </button>
                                             ))}
                                         </div>
@@ -326,9 +335,23 @@ export default function DataMatchingBuilder({
                                     ) : (
                                         <div className="space-y-3">
                                             {connections.length === 0 ? (
-                                                <div className="text-center py-6 text-slate-500 text-sm">
-                                                    <Database size={28} className="mx-auto text-slate-300 mb-2" />
-                                                    No connections. Add one from the sidebar.
+                                                <div className="space-y-4 rounded-xl border border-slate-200 bg-slate-50 px-4 py-5 text-center text-sm text-slate-500">
+                                                    <div>
+                                                        <Database size={28} className="mx-auto mb-2 text-slate-300" />
+                                                        No connections yet. Create a local or server database connection here.
+                                                    </div>
+                                                    <DatabaseConnectionManager
+                                                        title="Add Connection"
+                                                        compact
+                                                        initialOpen
+                                                        showInlineButton={false}
+                                                        onConnectionSaved={async (connectionId) => {
+                                                            await fetchConnections();
+                                                            if (connectionId) {
+                                                                setDatasetConnections(prev => ({ ...prev, [dsId]: connectionId }));
+                                                            }
+                                                        }}
+                                                    />
                                                 </div>
                                             ) : (
                                                 <>
@@ -336,16 +359,26 @@ export default function DataMatchingBuilder({
                                                         <label className="block text-xs font-bold text-slate-500 mb-1">Connection</label>
                                                         <select value={datasetConnections[dsId]}
                                                             onChange={e => setDatasetConnections(prev => ({ ...prev, [dsId]: e.target.value }))}
-                                                            className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-medium focus:border-violet-400 outline-none">
+                                                            className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-medium text-slate-800 focus:border-violet-400 outline-none">
                                                             <option value="">Select…</option>
                                                             {connections.map(c => <option key={c.id} value={c.id}>{c.name} ({c.db_type})</option>)}
                                                         </select>
                                                     </div>
+                                                    <DatabaseConnectionManager
+                                                        title="New Connection"
+                                                        compact
+                                                        onConnectionSaved={async (connectionId) => {
+                                                            await fetchConnections();
+                                                            if (connectionId) {
+                                                                setDatasetConnections(prev => ({ ...prev, [dsId]: connectionId }));
+                                                            }
+                                                        }}
+                                                    />
                                                     <div>
                                                         <label className="block text-xs font-bold text-slate-500 mb-1">SQL Query</label>
                                                         <textarea value={datasetQueries[dsId]}
                                                             onChange={e => setDatasetQueries(prev => ({ ...prev, [dsId]: e.target.value }))}
-                                                            className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-mono min-h-[80px] resize-none focus:border-violet-400 outline-none"
+                                                            className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-mono text-slate-800 min-h-[80px] resize-none focus:border-violet-400 outline-none"
                                                             placeholder="SELECT * FROM table" />
                                                     </div>
                                                     <button onClick={() => handleDatabaseIngest(dsId)} disabled={!datasetConnections[dsId] || !datasetQueries[dsId]}
@@ -433,7 +466,7 @@ export default function DataMatchingBuilder({
                                             <div>
                                                 <label className="block text-xs font-bold text-slate-500 mb-1.5">Column (Dataset 1)</label>
                                                 <select value={rule.column1} onChange={e => updateRule(rule.id, 'column1', e.target.value)}
-                                                    className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:border-violet-400 focus:ring-2 focus:ring-violet-400/10 outline-none">
+                                                    className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-800 focus:border-violet-400 focus:ring-2 focus:ring-violet-400/10 outline-none">
                                                     <option value="">Select column…</option>
                                                     {datasetColumns.dataset1.map(c => <option key={c} value={c}>{c}</option>)}
                                                 </select>
@@ -441,7 +474,7 @@ export default function DataMatchingBuilder({
                                             <div>
                                                 <label className="block text-xs font-bold text-slate-500 mb-1.5">Column (Dataset 2)</label>
                                                 <select value={rule.column2} onChange={e => updateRule(rule.id, 'column2', e.target.value)}
-                                                    className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:border-violet-400 focus:ring-2 focus:ring-violet-400/10 outline-none">
+                                                    className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-800 focus:border-violet-400 focus:ring-2 focus:ring-violet-400/10 outline-none">
                                                     <option value="">Select column…</option>
                                                     {datasetColumns.dataset2.map(c => <option key={c} value={c}>{c}</option>)}
                                                 </select>
@@ -452,7 +485,7 @@ export default function DataMatchingBuilder({
                                             <div>
                                                 <label className="block text-xs font-bold text-slate-500 mb-1.5">Algorithm</label>
                                                 <select value={rule.algorithm} onChange={e => updateRule(rule.id, 'algorithm', e.target.value)}
-                                                    className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:border-violet-400 outline-none">
+                                                    className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-800 focus:border-violet-400 outline-none">
                                                     {algorithms.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
                                                 </select>
                                             </div>

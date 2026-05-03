@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CleanFlow Desktop</title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #ffffff;
+            overflow: hidden;
+            display: flex;
+            user-select: none;
+        }
+        .left-panel {
+            width: 35%;
+            padding: 30px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            background: #ffffff;
+            z-index: 2;
+            box-sizing: border-box;
+            border-right: 1px solid #e2e8f0;
+        }
+        .right-panel {
+            width: 65%;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .right-panel::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: repeating-linear-gradient(
+                45deg,
+                rgba(14, 165, 233, 0.05) 0px,
+                rgba(14, 165, 233, 0.05) 2px,
+                transparent 2px,
+                transparent 8px
+            );
+            opacity: 0.5;
+        }
+        
+        .circle-container {
+            position: absolute;
+            width: 150%;
+            height: 150%;
+            right: -75%;
+            border-radius: 50%;
+            background: radial-gradient(circle, transparent 30%, rgba(14, 165, 233, 0.1) 60%, rgba(14, 165, 233, 0.2) 100%);
+            border: 2px dashed rgba(14, 165, 233, 0.3);
+            animation: spin 60s linear infinite;
+        }
+        
+        .circle-inner {
+            position: absolute;
+            width: 70%;
+            height: 70%;
+            top: 15%;
+            left: 15%;
+            border-radius: 50%;
+            border: 1px solid rgba(16, 185, 129, 0.2);
+            background: radial-gradient(circle, transparent 40%, rgba(16, 185, 129, 0.1) 80%, rgba(16, 185, 129, 0.15) 100%);
+            animation: spin-reverse 40s linear infinite;
+        }
+
+        @keyframes spin {
+            100% { transform: rotate(360deg); }
+        }
+        @keyframes spin-reverse {
+            100% { transform: rotate(-360deg); }
+        }
+
+        .title {
+            font-size: 32px;
+            color: #475569;
+            margin-top: 30px;
+            font-weight: 300;
+            line-height: 1.1;
+        }
+        .title strong {
+            font-weight: 600;
+            color: #0f172a;
+        }
+        .version {
+            font-size: 11px;
+            color: #64748b;
+            margin-top: 20px;
+            line-height: 1.5;
+        }
+        .footer {
+            font-size: 10px;
+            color: #94a3b8;
+            line-height: 1.5;
+        }
+        .logo {
+            font-size: 20px;
+            font-weight: 600;
+            color: #0f172a;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .logo-icon {
+            width: 20px;
+            height: 20px;
+            background: linear-gradient(135deg, #0ea5e9, #2563eb);
+            border-radius: 4px;
+            display: inline-block;
+        }
+        .loading-container {
+            margin-bottom: 15px;
+        }
+        .loading-text {
+            font-size: 12px;
+            color: #0ea5e9;
+            font-weight: 600;
+            margin-bottom: 6px;
+            animation: pulse 1.5s infinite;
+        }
+        .progress-bar {
+            width: 100%;
+            height: 3px;
+            background: #f1f5f9;
+            border-radius: 2px;
+            overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%;
+            width: 30%;
+            background: #0ea5e9;
+            border-radius: 2px;
+            animation: loading 30s cubic-bezier(0.1, 0.5, 0.9, 0.5) forwards;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+        @keyframes loading {
+            0% { width: 0%; }
+            50% { width: 70%; }
+            100% { width: 95%; }
+        }
+    </style>
+</head>
+<body>
+    <div class="left-panel">
+        <div>
+            <div class="logo">
+                <div class="logo-icon"></div>
+                CleanFlow
+            </div>
+            <div class="title">
+                CleanFlow<br><strong>Desktop</strong>
+            </div>
+            <div class="version">
+                Professional Edition<br>
+                Starting core services...<br>
+                v1.0.0
+            </div>
+        </div>
+        <div>
+            <div class="loading-container">
+                <div class="loading-text">Initializing backend...</div>
+                <div class="progress-bar">
+                    <div class="progress-fill"></div>
+                </div>
+            </div>
+            <div class="footer">
+                &copy; 2026 CleanFlow, Inc.<br>
+                All rights reserved.
+            </div>
+        </div>
+    </div>
+    <div class="right-panel">
+        <div class="circle-container">
+            <div class="circle-inner"></div>
+        </div>
+    </div>
+</body>
+</html>

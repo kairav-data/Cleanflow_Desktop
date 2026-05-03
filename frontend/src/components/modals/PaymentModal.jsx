@@ -56,7 +56,7 @@ const PaymentModal = ({ isOpen, onClose, onPaymentSuccess }) => {
 
                 <div className="p-8 -mt-8 w-full bg-white rounded-t-3xl relative z-20">
                     <div className="flex justify-center mb-8">
-                        <div className="text-5xl font-black text-slate-900 tracking-tight">$29<span className="text-xl text-slate-400 font-medium">/mo</span></div>
+                        <div className="text-5xl font-black text-slate-900 tracking-tight">$29<span className="text-xl text-slate-600 font-medium">/mo</span></div>
                     </div>
 
                     <div className="space-y-4 mb-8 text-left max-w-xs mx-auto">

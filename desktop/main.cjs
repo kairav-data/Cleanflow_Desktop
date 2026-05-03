@@ -9,6 +9,7 @@ const API_BASE_URL = `http://${BACKEND_HOST}:${BACKEND_PORT}`;
 
 let backendProcess = null;
 let mainWindow = null;
+let splashWindow = null;
 
 function projectRoot() {
   return path.join(__dirname, "..");
@@ -163,7 +164,8 @@ async function startBackend() {
       BACKEND_PORT,
       CLEANFLOW_DATA_DIR: runtimePaths.dataRoot,
       CLEANFLOW_ENV_FILE: preferredEnvFile,
-      FRONTEND_URL: "null"
+      FRONTEND_URL: "file:///" + path.join(projectRoot(), "frontend", "dist", "index.html").replace(/\\/g, "/"),
+      BASE_URL: API_BASE_URL
     },
     windowsHide: true,
     stdio: ["ignore", "pipe", "pipe"]
@@ -181,6 +183,27 @@ async function startBackend() {
   await waitForBackend();
 }
 
+function createSplashWindow() {
+  splashWindow = new BrowserWindow({
+    width: 640,
+    height: 400,
+    frame: false,
+    show: false,
+    resizable: false,
+    backgroundColor: '#ffffff',
+    webPreferences: {
+      nodeIntegration: false,
+      contextIsolation: true
+    }
+  });
+
+  splashWindow.loadFile(path.join(__dirname, "splash.html"));
+
+  splashWindow.once("ready-to-show", () => {
+    splashWindow.show();
+  });
+}
+
 function createMainWindow() {
   mainWindow = new BrowserWindow({
     width: 1440,
@@ -190,6 +213,7 @@ function createMainWindow() {
     show: false,
     title: "CleanFlow Desktop",
     backgroundColor: "#0f172a",
+    frame: false,
     webPreferences: {
       preload: path.join(__dirname, "preload.cjs"),
       contextIsolation: true,
@@ -199,6 +223,10 @@ function createMainWindow() {
   });
 
   mainWindow.once("ready-to-show", () => {
+    if (splashWindow) {
+      splashWindow.close();
+      splashWindow = null;
+    }
     mainWindow.show();
   });
 
@@ -217,7 +245,14 @@ function stopBackend() {
 
 app.whenReady().then(async () => {
   app.setAppUserModelId("com.cleanflow.desktop");
-  await startBackend();
+  createSplashWindow();
+  
+  try {
+    await startBackend();
+  } catch (error) {
+    console.error("Backend failed to start:", error);
+  }
+  
   createMainWindow();
 
   app.on("activate", () => {
@@ -245,10 +280,28 @@ ipcMain.handle("cleanflow:get-runtime-info", () => {
   const runtimePaths = ensureRuntimeDirectories();
   return {
     apiBaseUrl: API_BASE_URL,
+    isDesktop: true,
     appDataDir: runtimePaths.dataRoot,
     uploadsDir: runtimePaths.uploadsDir,
     resultsDir: runtimePaths.resultsDir
   };
+});
+
+ipcMain.handle("cleanflow:pick-database-file", async () => {
+  const result = await dialog.showOpenDialog(mainWindow, {
+    title: "Select Local Database File",
+    properties: ["openFile"],
+    filters: [
+      { name: "Database Files", extensions: ["db", "sqlite", "sqlite3", "db3"] },
+      { name: "All Files", extensions: ["*"] }
+    ]
+  });
+
+  if (result.canceled || !result.filePaths?.length) {
+    return { canceled: true, filePath: null };
+  }
+
+  return { canceled: false, filePath: result.filePaths[0] };
 });
 
 ipcMain.handle("cleanflow:open-path", async (_event, targetPath) => {
@@ -267,4 +320,22 @@ ipcMain.handle("cleanflow:show-item-in-folder", async (_event, targetPath) => {
 
   shell.showItemInFolder(targetPath);
   return { success: true };
+});
+
+ipcMain.handle("cleanflow:window-minimize", () => {
+  if (mainWindow) mainWindow.minimize();
+});
+
+ipcMain.handle("cleanflow:window-maximize", () => {
+  if (mainWindow) {
+    if (mainWindow.isMaximized()) {
+      mainWindow.unmaximize();
+    } else {
+      mainWindow.maximize();
+    }
+  }
+});
+
+ipcMain.handle("cleanflow:window-close", () => {
+  if (mainWindow) mainWindow.close();
 });

@@ -5,7 +5,7 @@ import {
     LogOut, Search, Sparkles, Database,
     FileCheck, ArrowRight, Zap, Check,
     Globe, ChevronRight, Shuffle, GitMerge, RefreshCw, Trash2, ShieldCheck, AlertTriangle, BarChart3, TrendingUp,
-    Menu, X, Home, LayoutDashboard, Settings, User, FolderClock, Clock3, BarChart2, BookOpen, ArrowLeftRight
+    Menu, X, Home, LayoutDashboard, Settings, User, FolderClock, Clock3, BarChart2, BookOpen, ArrowLeftRight, Minus, Square
 } from 'lucide-react';
 
 // Components
@@ -22,6 +22,49 @@ import cleanflowLogo from './assets/logo.png';
 import { EnrichmentBuilder, ScraperBuilder, SchemaMapper, DataMatchingBuilder, PricingIntelligenceBuilder, PipelineBuilder, SchedulerBuilder, PipelineRuns, DataVisualizer, GlobalRepositoryBuilder, DataTransformer } from './features';
 
 const Motion = motion;
+
+const TrialExpiredView = ({ user, onLogout }) => (
+    <div className="flex h-full w-full flex-col items-center justify-center bg-[#05070b] p-6 relative overflow-hidden">
+        <div className="absolute inset-0" style={{ background: 'linear-gradient(120deg, #05070b 0%, #0a1220 52%, #05110f 100%)' }} />
+        <motion.div animate={{ scale: [1, 1.1, 1], opacity: [0.3, 0.5, 0.3] }} transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }} className="absolute -top-20 left-1/4 h-[500px] w-[500px] rounded-full bg-[#6f47ff]/20 blur-[120px] pointer-events-none mix-blend-screen" />
+        <motion.div animate={{ scale: [1, 1.2, 1], opacity: [0.2, 0.4, 0.2] }} transition={{ duration: 10, repeat: Infinity, ease: "easeInOut", delay: 1 }} className="absolute -bottom-20 right-1/4 h-[500px] w-[500px] rounded-full bg-[#18c58f]/20 blur-[120px] pointer-events-none mix-blend-screen" />
+        
+        <div className="relative z-10 flex max-w-md flex-col items-center text-center">
+            <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-rose-500/20 to-red-600/20 shadow-[0_0_40px_rgba(225,29,72,0.15)] border border-rose-500/30 backdrop-blur-xl">
+                <AlertTriangle size={36} className="text-rose-500" />
+            </div>
+            
+            <h1 className="mb-3 text-3xl font-black tracking-tight text-white md:text-4xl">
+                Trial Expired
+            </h1>
+            <p className="mb-8 text-[15px] font-medium leading-relaxed text-[#9aa7bd]">
+                Your 15-day free trial has ended. To continue executing intelligent data workflows and using Cleanflow, please upgrade to a premium plan.
+            </p>
+            
+            <div className="flex w-full flex-col gap-3">
+                <button
+                    onClick={() => window.open('https://cleanflow.one', '_blank')}
+                    className="group relative flex w-full items-center justify-center gap-2 overflow-hidden rounded-xl bg-gradient-to-r from-[#6f47ff] to-[#3cb4ff] py-3.5 px-6 text-[14px] font-bold text-white shadow-[0_8px_20px_rgba(111,71,255,0.2)] transition-all hover:-translate-y-0.5 hover:shadow-[0_12px_25px_rgba(111,71,255,0.3)]"
+                >
+                    <div className="absolute inset-0 bg-white/20 translate-y-full transition-transform duration-300 group-hover:translate-y-0" />
+                    <Zap size={18} className="relative z-10" />
+                    <span className="relative z-10">Buy Subscription</span>
+                </button>
+                
+                <button
+                    onClick={onLogout}
+                    className="flex w-full items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 py-3.5 text-[14px] font-bold text-[#c7d1e0] transition-colors hover:bg-white/10 hover:text-white"
+                >
+                    <LogOut size={18} /> Log out
+                </button>
+            </div>
+            
+            <p className="mt-8 text-xs font-medium text-[#5d6b83]">
+                Need help? Contact <a href="mailto:admin@cleanflow.one" className="text-[#3cb4ff] hover:underline">admin@cleanflow.one</a> for renewal.
+            </p>
+        </div>
+    </div>
+);
 
 function App() {
     const [activeTab, setActiveTab] = useState('home');
@@ -58,6 +101,13 @@ function App() {
         document.addEventListener('mousedown', handleOutsideClick);
         return () => document.removeEventListener('mousedown', handleOutsideClick);
     }, [activeMenu]);
+
+    // Trial check
+    const today = new Date();
+    const createdDate = user?.created_at ? new Date(user.created_at) : new Date();
+    const msDiff = today - createdDate;
+    const daysPassed = msDiff / (1000 * 60 * 60 * 24);
+    const isTrialExpired = user && !user.is_premium && daysPassed > 15;
 
     useEffect(() => {
         const token = localStorage.getItem('token');
@@ -126,9 +176,6 @@ function App() {
 
 
     const handleLogout = () => {
-        const shouldLogout = window.confirm("Are you sure you want to log out?");
-        if (!shouldLogout) return;
-
         localStorage.removeItem('token');
         setUser(null);
         setStep(1);
@@ -427,24 +474,24 @@ function App() {
                     key="dashboard-tab"
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
+
                     exit={{ opacity: 0, y: -10 }}
                     className="mx-auto w-full max-w-[1560px] pb-16"
                 >
                     {/* Hero Section */}
-                    <div className="mb-10 relative overflow-hidden rounded-[34px] border border-[#1b2230] shadow-[0_28px_80px_rgba(10,18,34,0.28)] bg-[#05070b]">
+                    <div className="mb-6 relative overflow-hidden rounded-[24px] border border-[#1b2230] shadow-[0_28px_80px_rgba(10,18,34,0.28)] bg-[#05070b]">
                         {/* Ambient glow blobs for an impressive color gradient */}
                         <div className="absolute inset-0" style={{ background: 'linear-gradient(120deg, #05070b 0%, #0a1220 52%, #05110f 100%)' }} />
-                        <div className="absolute top-0 left-1/4 h-[420px] w-[420px] rounded-full bg-[#6f47ff]/20 blur-[110px] pointer-events-none mix-blend-screen" />
-                        <div className="absolute bottom-0 right-1/4 h-[420px] w-[420px] rounded-full bg-[#18c58f]/20 blur-[110px] pointer-events-none mix-blend-screen" />
-                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-[540px] w-[540px] bg-[#3cb4ff]/10 blur-[130px] pointer-events-none mix-blend-screen" />
+                        <motion.div animate={{ scale: [1, 1.1, 1], opacity: [0.3, 0.5, 0.3] }} transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }} className="absolute -top-20 left-1/4 h-[500px] w-[500px] rounded-full bg-[#6f47ff]/30 blur-[120px] pointer-events-none mix-blend-screen" />
+                        <motion.div animate={{ scale: [1, 1.2, 1], opacity: [0.2, 0.4, 0.2] }} transition={{ duration: 10, repeat: Infinity, ease: "easeInOut", delay: 1 }} className="absolute -bottom-20 right-1/4 h-[500px] w-[500px] rounded-full bg-[#18c58f]/30 blur-[120px] pointer-events-none mix-blend-screen" />
+                        <motion.div animate={{ scale: [1, 1.05, 1], opacity: [0.1, 0.2, 0.1] }} transition={{ duration: 12, repeat: Infinity, ease: "easeInOut", delay: 2 }} className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-[600px] w-[600px] bg-[#3cb4ff]/20 blur-[140px] pointer-events-none mix-blend-screen" />
                         <div className="absolute -top-10 -right-10 opacity-[0.04]"><Sparkles size={270} className="text-white" /></div>
 
-                        <div className="relative z-10 px-8 py-8 md:px-10 md:py-10">
-                            <div className="flex flex-col gap-10 xl:flex-row xl:items-start xl:justify-between">
-                                {/* Left: Text + CTAs */}
+                        <div className="relative z-10 px-5 py-4 md:px-6 md:py-5">
+                            <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
                                 <div className="flex-1 min-w-0">
                                     {/* Badge */}
-                                    <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-[#1ab67d]/25 bg-[#04281c] px-4 py-2 text-[12px] font-bold uppercase tracking-[0.24em] text-[#26d59a]">
+                                    <div className="mb-3 inline-flex items-center gap-1.5 rounded-full border border-[#1ab67d]/25 bg-[#04281c] px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.24em] text-[#26d59a]">
                                         <span className="relative flex h-2 w-2">
                                             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#26d59a] opacity-75"></span>
                                             <span className="relative inline-flex rounded-full h-2 w-2 bg-[#26d59a]"></span>
@@ -453,45 +500,45 @@ function App() {
                                     </div>
 
                                     {/* Heading */}
-                                    <h1 className="mb-1 text-4xl font-black leading-[0.95] tracking-[-0.04em] text-white md:text-6xl">
+                                    <h1 className="mb-0.5 text-2xl font-black leading-[0.95] tracking-[-0.04em] text-white md:text-3xl">
                                         Welcome back,
                                     </h1>
-                                    <p className="mb-4 bg-gradient-to-r from-[#2ce5a6] via-[#22d1a0] to-[#87f5d0] bg-clip-text text-4xl font-black leading-[0.95] tracking-[-0.04em] text-transparent md:text-6xl">
+                                    <p className="mb-3 bg-gradient-to-r from-[#2ce5a6] via-[#22d1a0] to-[#87f5d0] bg-clip-text text-2xl font-black leading-[0.95] tracking-[-0.04em] text-transparent md:text-3xl">
                                         {user.full_name || 'User'}
                                     </p>
 
                                     {/* Subtitle */}
-                                    <p className="mb-8 max-w-2xl text-base font-medium leading-8 text-[#9aa7bd] md:text-lg">
+                                    <p className="mb-4 max-w-xl text-xs font-medium leading-5 text-[#9aa7bd]">
                                         Execute intelligent data workflows, manage your recent jobs, and move through the platform with the guided toolset below.
                                     </p>
 
                                     {/* CTA Buttons */}
-                                    <div className="flex flex-wrap items-center gap-4">
+                                    <div className="flex flex-wrap items-center gap-3">
                                         <button
                                             onClick={() => setActiveTab('pipeline')}
-                                            className="inline-flex items-center gap-2 rounded-2xl bg-white px-6 py-3 text-[15px] font-bold text-[#141923] shadow-[0_16px_35px_rgba(255,255,255,0.08)] transition-all hover:-translate-y-0.5 hover:bg-[#f7f9fc]"
+                                            className="inline-flex items-center gap-1.5 rounded-xl bg-white px-4 py-2 text-[12px] font-bold text-[#141923] shadow-[0_8px_20px_rgba(255,255,255,0.08)] transition-all hover:-translate-y-0.5 hover:bg-[#f7f9fc]"
                                         >
-                                            <Zap size={17} className="text-[#10b981]" /> New Workflow
+                                            <Zap size={14} className="text-[#10b981]" /> New Workflow
                                         </button>
                                         <button
                                             onClick={() => document.getElementById('job-history-section')?.scrollIntoView({ behavior: 'smooth' })}
-                                            className="inline-flex items-center gap-2 rounded-2xl border border-white/12 bg-white/[0.06] px-6 py-3 text-[15px] font-semibold text-white transition-all hover:bg-white/[0.11]"
+                                            className="inline-flex items-center gap-1.5 rounded-xl border border-white/12 bg-white/[0.06] px-4 py-2 text-[12px] font-semibold text-white transition-all hover:bg-white/[0.11]"
                                         >
-                                            <BarChart3 size={17} /> View Recent Jobs
+                                            <BarChart3 size={14} /> View Recent Jobs
                                         </button>
                                     </div>
                                 </div>
 
                                 {/* Right: Stats */}
-                                <div className="grid min-w-[220px] gap-6 self-stretch xl:pt-6">
+                                <div className="grid min-w-[180px] gap-4 self-stretch xl:pt-4">
                                     {[
                                         { value: recentJobs.length, label: 'active jobs', color: 'text-white' },
                                         { value: recentJobs.length > 0 ? '98%' : '—', label: 'success rate', color: 'text-emerald-400' },
                                         { value: recentJobs.reduce((acc, j) => acc + (j.total_rows || 0), 0).toLocaleString() || '0', label: 'rows processed', color: 'text-[#3cb4ff]' },
                                     ].map(({ value, label, color }) => (
                                         <div key={label} className="text-left xl:text-right">
-                                            <span className={`text-4xl font-black tracking-[-0.04em] ${color}`}>{value}</span>
-                                            <span className="mt-1 block text-[13px] font-semibold uppercase tracking-[0.28em] text-[#72809a]">{label}</span>
+                                            <span className={`text-2xl font-black tracking-[-0.04em] ${color}`}>{value}</span>
+                                            <span className="mt-0.5 block text-[9px] font-semibold uppercase tracking-[0.2em] text-[#72809a]">{label}</span>
                                         </div>
                                     ))}
                                 </div>
@@ -501,10 +548,10 @@ function App() {
 
 
                     {/* Section: Tutorials & Tools */}
-                    <div className="mb-10">
-                        <h2 className="mb-6 flex items-center gap-3 text-[22px] font-black tracking-[-0.02em] text-[#10203a]">
-                            <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[#e7fbf3] text-[#14b87f]">
-                                <Database size={20} />
+                    <div className="mb-6">
+                        <h2 className="mb-4 flex items-center gap-2 text-[18px] font-black tracking-[-0.02em] text-[#10203a]">
+                            <span className="flex h-8 w-8 items-center justify-center rounded-[12px] bg-[#e7fbf3] text-[#14b87f]">
+                                <Database size={16} />
                             </span>
                             Data Services & Tutorials
                         </h2>
@@ -592,48 +639,59 @@ function App() {
                                     action: () => setActiveTab('pipeline'),
                                 }
                             ].map((item) => (
-
-                                <div key={item.title} className="group flex h-full flex-col overflow-hidden rounded-[24px] border border-[#dbe4f1] bg-white shadow-[0_16px_45px_rgba(15,23,42,0.06)] transition-all hover:-translate-y-1 hover:shadow-[0_22px_55px_rgba(15,23,42,0.1)]">
-                                    <div className="flex-1 p-6">
-                                        <div className={`mb-6 flex h-14 w-14 items-center justify-center rounded-2xl ${item.bg}`}>
+                                <motion.div 
+                                    whileHover={{ y: -6, scale: 1.01 }}
+                                    transition={{ type: 'spring', stiffness: 300 }}
+                                    key={item.title} 
+                                    className="group relative flex h-full flex-col overflow-hidden rounded-[20px] border border-white/60 bg-white/50 backdrop-blur-xl shadow-[0_12px_40px_rgba(15,23,42,0.06)]"
+                                >
+                                    <div className="absolute inset-0 bg-gradient-to-br from-white/90 to-white/30 pointer-events-none" />
+                                    <div className={`absolute -right-10 -top-10 h-24 w-24 rounded-full blur-[30px] opacity-20 group-hover:opacity-40 transition-opacity duration-500 ${item.bg}`} />
+                                    
+                                    <div className="relative z-10 flex-1 p-5">
+                                        <div className={`mb-4 flex h-12 w-12 items-center justify-center rounded-[16px] shadow-sm transition-transform duration-500 group-hover:scale-110 group-hover:rotate-3 ${item.bg}`}>
                                             <item.icon size={20} className={item.color} />
                                         </div>
-                                        <h3 className="text-[22px] font-black tracking-[-0.02em] text-[#0d1b31]">{item.title}</h3>
-                                        <p className="mt-3 text-[15px] leading-7 text-[#5d6b83]">{item.description}</p>
+                                        <h3 className="text-[18px] font-black tracking-[-0.03em] text-[#0d1b31] group-hover:text-[#6f47ff] transition-colors duration-300">{item.title}</h3>
+                                        <p className="mt-2 text-[13px] leading-snug text-[#5d6b83] font-medium">{item.description}</p>
 
-                                        <div className="mt-6 rounded-[18px] border border-[#edf2f8] bg-[#f7fafe] p-5">
-                                            <h4 className="mb-4 text-[12px] font-black uppercase tracking-[0.22em] text-[#8ea0bc]">How it works</h4>
-                                            <ul className="space-y-3">
+                                        <div className="mt-5 rounded-[16px] border border-white/80 bg-white/50 p-4 shadow-[inset_0_2px_10px_rgba(255,255,255,0.7)]">
+                                            <h4 className="mb-3 text-[11px] font-black uppercase tracking-[0.24em] text-[#8ea0bc] flex items-center gap-1.5">
+                                                <Zap size={12} className={item.color} /> Workflow Steps
+                                            </h4>
+                                            <ul className="space-y-2.5">
                                                 {item.tutorial.split('\n').map((step, idx) => (
-                                                    <li key={idx} className="flex gap-3 text-[14px] leading-7 text-[#40516d]">
-                                                        <span className="mt-[2px] flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white text-[12px] font-black text-[#7f91ad] shadow-sm">{step.charAt(0)}</span>
-                                                        <span>{step.substring(2)}</span>
+                                                    <li key={idx} className="flex gap-2.5 text-[12px] leading-tight text-[#40516d] items-start">
+                                                        <span className={`mt-[2px] flex h-4 w-4 shrink-0 items-center justify-center rounded-full text-[9px] font-black shadow-sm ${item.bg} ${item.color}`}>{step.charAt(0)}</span>
+                                                        <span className="pt-px">{step.substring(2)}</span>
                                                     </li>
                                                 ))}
                                             </ul>
                                         </div>
                                     </div>
-                                    <div className="shrink-0 border-t border-[#edf2f8] bg-[#fbfdff] p-5">
+                                    <div className="relative z-10 shrink-0 p-4 pt-0">
                                         <button
                                             onClick={item.action}
-                                            className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[#10203a] py-3 text-[15px] font-bold text-white shadow-[0_16px_28px_rgba(15,23,42,0.12)] transition-all hover:bg-[#162b4b]"
+                                            className={`group/btn relative overflow-hidden flex w-full items-center justify-center gap-2 rounded-xl py-2.5 text-[13px] font-bold text-white shadow-md transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5`}
+                                            style={{ background: 'linear-gradient(to right, #10203a, #1a365d)' }}
                                         >
-                                            Launch Tool <ArrowRight size={16} />
+                                            <div className="absolute inset-0 bg-white/20 translate-y-full group-hover/btn:translate-y-0 transition-transform duration-300" />
+                                            <span className="relative z-10 flex items-center gap-1.5">Launch Workspace <ArrowRight size={14} className="group-hover/btn:translate-x-1 transition-transform" /></span>
                                         </button>
                                     </div>
-                                </div>
+                                </motion.div>
                             ))}
                         </div>
                     </div>
 
                     {/* Section: Job History & Orchestration */}
-                    <div id="job-history-section" className="mb-12 grid grid-cols-1 gap-6 lg:grid-cols-3">
+                    <div id="job-history-section" className="mb-10 grid grid-cols-1 gap-6 lg:grid-cols-3">
                         <div className="lg:col-span-3">
-                            <div className="flex flex-col overflow-hidden rounded-[26px] border border-[#dbe4f1] bg-white shadow-[0_16px_45px_rgba(15,23,42,0.06)]">
-                                <div className="flex items-center justify-between border-b border-[#edf2f8] bg-[#f8fbff] p-6">
+                            <div className="flex flex-col overflow-hidden rounded-[20px] border border-[#dbe4f1] bg-white shadow-[0_16px_45px_rgba(15,23,42,0.06)]">
+                                <div className="flex items-center justify-between border-b border-[#edf2f8] bg-[#f8fbff] p-5">
                                     <div>
-                                        <h3 className="text-[24px] font-black tracking-[-0.02em] text-[#10203a]">Job History</h3>
-                                        <p className="mt-1 text-[15px] text-[#60708a]">Review outputs from your recent pipeline runs and data services.</p>
+                                        <h3 className="text-[20px] font-black tracking-[-0.02em] text-[#10203a]">Job History</h3>
+                                        <p className="mt-1 text-[13px] text-[#60708a]">Review outputs from your recent pipeline runs and data services.</p>
                                     </div>
                                     <div className="flex items-center gap-2">
                                         <button onClick={fetchRecentJobs} className="rounded-xl p-2 text-[#71829f] transition-colors hover:bg-white hover:text-[#10203a]" title="Refresh">
@@ -985,28 +1043,6 @@ function App() {
         </AnimatePresence>
     );
 
-    // Unauthenticated / Landing Page Render
-    if (!user) {
-        return (
-            <AuthModal
-                isOpen={true}
-                defaultMode={authDefaultMode}
-                onClose={() => {}}
-                onLoginSuccess={(u) => {
-                    setUser(u);
-                    fetchRecentJobs();
-                    if (intendedTab) {
-                        setActiveTab(intendedTab);
-                        if (intendedTab === 'validate') setStep(1);
-                        setIntendedTab(null);
-                    } else {
-                        setActiveTab('dashboard');
-                    }
-                }}
-            />
-        );
-    }
-
     // Authenticated Layout: VSCode-style title bar + narrow activity bar
     const FULL_TAB_IDS = ['pipeline', 'validate', 'repository', 'enrichment', 'scraper', 'mapper', 'matching', 'pricing-intelligence', 'visualizer', 'transformer'];
 
@@ -1116,23 +1152,72 @@ function App() {
                     Cleanflow — Data Intelligence Platform
                 </div>
 
-                {/* Right: mobile toggle */}
-                <button
-                    onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-                    style={{ WebkitAppRegion: 'no-drag' }}
-                    className="flex rounded p-1 text-[#d8dfeb] transition-colors hover:bg-white/15 lg:hidden"
-                >
-                    {isSidebarOpen ? <X size={14} /> : <Menu size={14} />}
-                </button>
+                {/* Right: Window controls + mobile toggle */}
+                <div className="flex items-center h-full" style={{ WebkitAppRegion: 'no-drag' }}>
+                    {/* Mobile toggle */}
+                    <button
+                        onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+                        className="mr-2 flex rounded p-1 text-[#d8dfeb] transition-colors hover:bg-white/15 lg:hidden"
+                    >
+                        {isSidebarOpen ? <X size={14} /> : <Menu size={14} />}
+                    </button>
+
+                    {/* Desktop Window Controls */}
+                    <div className="hidden lg:flex h-full items-center">
+                        <button
+                            onClick={() => window.cleanflowDesktop?.windowMinimize()}
+                            className="flex h-full w-11 items-center justify-center text-[#d8dfeb] transition-colors hover:bg-white/10"
+                            title="Minimize"
+                        >
+                            <Minus size={16} strokeWidth={1.5} />
+                        </button>
+                        <button
+                            onClick={() => window.cleanflowDesktop?.windowMaximize()}
+                            className="flex h-full w-11 items-center justify-center text-[#d8dfeb] transition-colors hover:bg-white/10"
+                            title="Maximize/Restore"
+                        >
+                            <Square size={13} strokeWidth={1.5} />
+                        </button>
+                        <button
+                            onClick={() => window.cleanflowDesktop?.windowClose()}
+                            className="flex h-full w-11 items-center justify-center text-[#d8dfeb] transition-colors hover:bg-red-500 hover:text-white"
+                            title="Close"
+                        >
+                            <X size={16} strokeWidth={1.5} />
+                        </button>
+                    </div>
+                </div>
             </div>
 
             {/* ── BODY: Activity Bar + Main ── */}
             <div className="flex flex-1 overflow-hidden">
-
-                {/* Mobile overlay */}
-                {isSidebarOpen && (
-                    <div className="fixed inset-0 z-40 bg-black/60 lg:hidden" onClick={() => setIsSidebarOpen(false)} />
-                )}
+                {!user ? (
+                    <div className="flex flex-1 relative bg-white overflow-hidden">
+                        <AuthModal
+                            isOpen={true}
+                            defaultMode={authDefaultMode}
+                            onClose={() => {}}
+                            onLoginSuccess={(u) => {
+                                setUser(u);
+                                fetchRecentJobs();
+                                if (intendedTab) {
+                                    setActiveTab(intendedTab);
+                                    if (intendedTab === 'validate') setStep(1);
+                                    setIntendedTab(null);
+                                } else {
+                                    setActiveTab('dashboard');
+                                }
+                            }}
+                        />
+                    </div>
+                ) : isTrialExpired ? (
+                    <TrialExpiredView user={user} onLogout={handleLogout} />
+                ) : (
+                    <>
+                        {/* Mobile overlay */}
+                        {isSidebarOpen && (
+                            <div className="fixed inset-0 z-40 bg-black/60 lg:hidden" onClick={() => setIsSidebarOpen(false)} />
+                        )}
 
                 {/* ── LEFT ACTIVITY BAR (always 48px, VSCode style) ── */}
                 <nav className={`fixed left-0 top-[32px] z-50 flex w-[48px] shrink-0 flex-col items-center border-r border-[#252526] bg-[#333333] transition-transform duration-300 lg:static ${
@@ -1214,11 +1299,12 @@ function App() {
                         {renderWorkspaceContent()}
                     </div>
                 </main>
-
+                </>
+                )}
             </div>
 
             {/* Support Tools */}
-            <ChatBot />
+            {user && <ChatBot />}
         </div>
     );
 }

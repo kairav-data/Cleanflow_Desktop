@@ -95,7 +95,7 @@ export default function Validation() {
                             className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all ${
                                 activeTab === 'rules'
                                     ? 'bg-white text-slate-900 shadow-sm'
-                                    : 'text-slate-500 hover:text-slate-700'
+                                    : 'text-slate-800 hover:text-slate-900'
                             }`}
                         >
                             <ShieldCheck size={16} />
@@ -111,7 +111,7 @@ export default function Validation() {
                             className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all ${
                                 activeTab === 'dataset'
                                     ? 'bg-white text-slate-900 shadow-sm'
-                                    : 'text-slate-500 hover:text-slate-700'
+                                    : 'text-slate-800 hover:text-slate-900'
                             }`}
                         >
                             <Database size={16} />

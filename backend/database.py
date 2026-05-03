@@ -36,6 +36,7 @@ class UserPG(Base):
     is_verified = Column(Boolean, default=False)
     otp = Column(String, nullable=True)
     otp_created_at = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
     # Relationships
     jobs = relationship("ValidationJob", back_populates="owner")
     connections = relationship("DbConnection", back_populates="owner")
@@ -196,6 +197,7 @@ class DatabaseManager:
                 
                 # --- Quick migrations for missing columns in dev ---
                 migration_queries = [
+                    "ALTER TABLE users ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT NOW();",
                     "ALTER TABLE users ADD COLUMN IF NOT EXISTS is_verified BOOLEAN DEFAULT FALSE;",
                     "ALTER TABLE users ADD COLUMN IF NOT EXISTS otp VARCHAR;",
                     "ALTER TABLE users ADD COLUMN IF NOT EXISTS otp_created_at TIMESTAMP;",
@@ -360,7 +362,8 @@ class DatabaseManager:
                 "is_premium": user.is_premium,
                 "is_verified": user.is_verified,
                 "otp": user.otp,
-                "otp_created_at": user.otp_created_at
+                "otp_created_at": user.otp_created_at,
+                "created_at": user.created_at.isoformat() if getattr(user, "created_at", None) else None
             }
         return None
 

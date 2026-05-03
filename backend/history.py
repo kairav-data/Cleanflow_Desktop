@@ -2,6 +2,9 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from datetime import datetime
 from typing import List
 import uuid
+from pathlib import Path
+import re
+from urllib.parse import quote_plus
 
 from models import (
     ValidationJobCreate, ValidationJob,
@@ -97,6 +100,9 @@ async def get_connections(current_user: UserInDB = Depends(get_current_user)) ->
                 "port": conn_obj.port,
                 "database": conn_obj.database,
                 "username": conn_obj.username,
+                "driver_mode": conn_obj.driver_mode or "native",
+                "odbc_driver": conn_obj.odbc_driver or "",
+                "dsn": conn_obj.dsn or "",
                 "created_at": conn_obj.created_at.isoformat() if conn_obj.created_at else None
             }
             result.append(conn)
@@ -196,35 +202,58 @@ async def _get_tables(conn: dict) -> List[str]:
     return tables
 
 async def _test_db_connection(conn: DatabaseConnectionCreate) -> bool:
-    db_type = conn.db_type.value
     try:
+        payload = conn.model_dump()
+        if _is_odbc_connection(payload):
+            connection = _open_odbc_connection(payload, timeout=10)
+            connection.close()
+            return True
+
+        db_type = conn.db_type.value
         if db_type == "mssql":
             import pymssql
             connection = pymssql.connect(
-                server=conn.host, port=str(conn.port),
-                user=conn.username, password=conn.password,
-                database=conn.database, timeout=10
+                server=payload.get("host") or "localhost",
+                port=str(payload.get("port") or 1433),
+                user=payload.get("username") or "",
+                password=payload.get("password") or "",
+                database=payload.get("database") or None,
+                timeout=10
             )
             connection.close()
             return True
-        else:
-            import sqlalchemy
-            engine = sqlalchemy.create_engine(_build_connection_string(conn), connect_args={"connect_timeout": 10})
-            with engine.connect() as connection:
-                connection.execute(sqlalchemy.text("SELECT 1"))
-            return True
+
+        import sqlalchemy
+        engine_kwargs = {}
+        if db_type not in {"sqlite", "oracle"}:
+            engine_kwargs["connect_args"] = {"connect_timeout": 10}
+        engine = sqlalchemy.create_engine(_build_connection_string(conn), **engine_kwargs)
+        with engine.connect() as connection:
+            connection.execute(sqlalchemy.text("SELECT 1"))
+        return True
     except Exception as e:
         raise Exception(f"Connection failed: {str(e)}")
 
 async def _execute_query(conn: dict, query: str) -> List[dict]:
     db_type = conn.get("db_type", "")
     try:
+        if _is_odbc_connection(conn):
+            connection = _open_odbc_connection(conn, timeout=30)
+            try:
+                cursor = connection.cursor()
+                cursor.execute(query)
+                columns = [column[0] for column in (cursor.description or [])]
+                rows = cursor.fetchall()
+                return [dict(zip(columns, row)) for row in rows]
+            finally:
+                connection.close()
+
         if db_type == "mssql":
             import pymssql
             connection = pymssql.connect(
-                server=conn['host'], port=str(conn['port']),
-                user=conn['username'], password=conn['password'],
-                database=conn['database'], timeout=30
+                server=conn.get('host') or 'localhost', port=str(conn.get('port') or 1433),
+                user=conn.get('username') or '', password=conn.get('password') or '',
+                database=conn.get('database') or None, timeout=30
             )
             cursor = connection.cursor(as_dict=True)
             cursor.execute(query)
@@ -244,16 +273,143 @@ def _build_connection_string(conn: DatabaseConnectionCreate) -> str:
     # Logic for various DB types...
     return _build_connection_string_from_dict(conn.model_dump())
 
+def _normalize_sqlite_path(raw_path: str) -> str:
+    cleaned = str(raw_path or "").strip().strip('"').strip("'")
+    if not cleaned:
+        raise ValueError("SQLite database path is required")
+
+    resolved = Path(cleaned).expanduser()
+    try:
+        resolved = resolved.resolve(strict=False)
+    except Exception:
+        pass
+
+    normalized = resolved.as_posix()
+    if re.match(r"^[A-Za-z]:/", normalized):
+        return f"sqlite:///{normalized}"
+    if normalized.startswith("/"):
+        return f"sqlite:////{normalized.lstrip('/')}"
+    return f"sqlite:///{normalized}"
+
 def _build_connection_string_from_dict(conn: dict) -> str:
     db_type = conn.get("db_type", "")
-    u, p, h, port, d = conn.get('username'), conn.get('password'), conn.get('host'), conn.get('port'), conn.get('database')
+    u = quote_plus(str(conn.get('username') or ''))
+    p = quote_plus(str(conn.get('password') or ''))
+    h = str(conn.get('host') or 'localhost').strip()
+    port = conn.get('port')
+    d = str(conn.get('database') or '').strip()
     
     if db_type == "mssql":
-        return f"mssql+pymssql://{u}:{p}@{h}:{port}/{d}"
+        base = f"mssql+pymssql://{u}:{p}@{h}"
+        if port:
+            base += f":{port}"
+        if d:
+            base += f"/{quote_plus(d)}"
+        return base
     elif db_type == "mysql":
-        return f"mysql+pymysql://{u}:{p}@{h}:{port}/{d}"
+        base = f"mysql+pymysql://{u}:{p}@{h}"
+        if port:
+            base += f":{port}"
+        if d:
+            base += f"/{quote_plus(d)}"
+        return base
     elif db_type == "postgresql":
-        return f"postgresql://{u}:{p}@{h}:{port}/{d}"
+        base = f"postgresql://{u}:{p}@{h}"
+        if port:
+            base += f":{port}"
+        if d:
+            base += f"/{quote_plus(d)}"
+        return base
+    elif db_type == "oracle":
+        base = f"oracle+oracledb://{u}:{p}@{h}"
+        if port:
+            base += f":{port}"
+        if d:
+            base += f"/?service_name={quote_plus(d)}"
+        return base
     elif db_type == "sqlite":
-        return f"sqlite:///{d}"
+        return _normalize_sqlite_path(d)
     raise ValueError(f"Unsupported database type: {db_type}")
+
+def _is_odbc_connection(conn: dict) -> bool:
+    return str(conn.get("driver_mode") or "native").lower() == "odbc"
+
+def _pick_odbc_driver(db_type: str) -> str:
+    import pyodbc
+
+    drivers = pyodbc.drivers()
+    candidate_map = {
+        "mssql": [
+            "ODBC Driver 18 for SQL Server",
+            "ODBC Driver 17 for SQL Server",
+            "SQL Server Native Client 11.0",
+            "SQL Server",
+        ],
+        "mysql": [
+            "MySQL ODBC 8.0 Unicode Driver",
+            "MySQL ODBC 8.0 ANSI Driver",
+            "MySQL ODBC 5.3 Unicode Driver",
+        ],
+        "postgresql": [
+            "PostgreSQL Unicode(x64)",
+            "PostgreSQL Unicode",
+            "PostgreSQL ANSI(x64)",
+            "PostgreSQL ANSI",
+        ],
+        "oracle": [
+            "Oracle in OraClient21Home1",
+            "Oracle in OraClient19Home1",
+            "Oracle ODBC Driver",
+        ],
+    }
+
+    for candidate in candidate_map.get(db_type, []):
+        if candidate in drivers:
+            return candidate
+    if drivers:
+        return drivers[-1]
+    raise ValueError("No ODBC driver was found on this machine.")
+
+def _build_odbc_connection_string(conn: dict) -> str:
+    db_type = str(conn.get("db_type") or "").lower()
+    dsn = str(conn.get("dsn") or "").strip()
+    database = str(conn.get("database") or "").strip()
+    username = str(conn.get("username") or "").strip()
+    password = str(conn.get("password") or "")
+
+    parts = []
+    if dsn:
+        parts.append(f"DSN={dsn}")
+    else:
+        driver = str(conn.get("odbc_driver") or "").strip() or _pick_odbc_driver(db_type)
+        host = str(conn.get("host") or "localhost").strip()
+        port = conn.get("port")
+        server_value = host
+        if port:
+            if db_type == "mssql":
+                server_value = f"{host},{port}"
+            else:
+                server_value = f"{host}:{port}"
+        parts.append(f"DRIVER={{{driver}}}")
+        if db_type == "mssql":
+            parts.append(f"SERVER={server_value}")
+            if database:
+                parts.append(f"DATABASE={database}")
+        elif db_type in {"postgresql", "mysql"}:
+            parts.append(f"SERVER={host}")
+            if port:
+                parts.append(f"PORT={port}")
+            if database:
+                parts.append(f"DATABASE={database}")
+        elif db_type == "oracle":
+            parts.append(f"DBQ={database or server_value}")
+
+    if username:
+        parts.append(f"UID={username}")
+    parts.append(f"PWD={password}")
+    return ";".join(parts)
+
+def _open_odbc_connection(conn: dict, timeout: int = 10):
+    import pyodbc
+
+    return pyodbc.connect(_build_odbc_connection_string(conn), timeout=timeout)

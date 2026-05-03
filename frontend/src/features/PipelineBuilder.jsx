@@ -1307,7 +1307,7 @@ export const PipelineBuilder = ({ onComplete }) => {
           initialOutputColumns={activeNode.data.outputColumns || { dataset1: [], dataset2: [] }}
           initialMatchRules={activeNode.data.matchRules || []}
           initialDatasetMode={activeNode.data.datasetMode || { dataset1: 'file', dataset2: 'file' }}
-          initialDatasetQueries={activeNode.data.datasetQueries || { dataset1: 'SELECT * FROM table1 LIMIT 100', dataset2: 'SELECT * FROM table2 LIMIT 100' }}
+          initialDatasetQueries={activeNode.data.datasetQueries || { dataset1: 'SELECT * FROM table1', dataset2: 'SELECT * FROM table2' }}
           initialDatasetConnections={activeNode.data.datasetConnections || { dataset1: '', dataset2: '' }}
           initialWorkspaceTab={activeNode.data.workspaceTab || 'dataset1'}
           onSaveConfig={(config) => {
@@ -1381,7 +1381,7 @@ export const PipelineBuilder = ({ onComplete }) => {
               </div>
               <div>
                   <h1 className="text-sm font-black text-slate-900 leading-tight">Pipeline Orchestrator</h1>
-                  <p className="text-xs text-slate-400 font-medium leading-none mt-0.5">Drag • Connect • Run</p>
+                  <p className="text-xs text-slate-600 font-medium leading-none mt-0.5">Drag • Connect • Run</p>
               </div>
               {nodes.length > 0 && (
                   <span className="ml-2 px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 text-xs font-bold border border-slate-200">
@@ -1390,7 +1390,7 @@ export const PipelineBuilder = ({ onComplete }) => {
               )}
           </div>
           <div className="flex items-center gap-3">
-              <div className="flex items-center gap-1 bg-slate-50 border border-slate-200 rounded-lg p-1 mr-2 hidden md:flex">
+              <div className="flex items-center gap-1 bg-slate-50 border border-slate-200 rounded-lg text-slate-800 p-1 mr-2 hidden md:flex">
                   <input
                       type="text"
                       className="bg-transparent text-sm font-bold text-slate-700 px-3 py-1.5 w-48 outline-none"
@@ -1398,9 +1398,9 @@ export const PipelineBuilder = ({ onComplete }) => {
                       onChange={e => setPipelineName(e.target.value)}
                       placeholder="Name your pipeline..."
                   />
-                  <button onClick={handleSavePipeline} disabled={isSaving} className="p-1.5 rounded-md bg-white border border-slate-200 text-slate-500 hover:text-emerald-600 hover:border-emerald-200 shadow-sm transition-colors" title="Save Pipeline"><Save size={16} /></button>
-                  <button onClick={() => setShowLoadDrawer(true)} className="p-1.5 rounded-md bg-white border border-slate-200 text-slate-500 hover:text-sky-600 hover:border-sky-200 shadow-sm transition-colors" title="Load Pipeline"><FolderOpen size={16} /></button>
-                  <button onClick={() => setShowScheduleModal(true)} disabled={!pipelineId} className="p-1.5 rounded-md bg-white border border-slate-200 text-slate-500 hover:text-indigo-600 hover:border-indigo-200 shadow-sm transition-colors disabled:opacity-50" title="Schedule Pipeline (Save first)"><Clock size={16} /></button>
+                  <button onClick={handleSavePipeline} disabled={isSaving} className="p-1.5 rounded-md bg-white border border-slate-200 text-slate-800 hover:text-emerald-600 hover:border-emerald-200 shadow-sm transition-colors" title="Save Pipeline"><Save size={16} /></button>
+                  <button onClick={() => setShowLoadDrawer(true)} className="p-1.5 rounded-md bg-white border border-slate-200 text-slate-800 hover:text-sky-600 hover:border-sky-200 shadow-sm transition-colors" title="Load Pipeline"><FolderOpen size={16} /></button>
+                  <button onClick={() => setShowScheduleModal(true)} disabled={!pipelineId} className="p-1.5 rounded-md bg-white border border-slate-200 text-slate-800 hover:text-indigo-600 hover:border-indigo-200 shadow-sm transition-colors disabled:opacity-50" title="Schedule Pipeline (Save first)"><Clock size={16} /></button>
               </div>
 
               {isExecuting && (
@@ -1773,7 +1773,7 @@ export const PipelineBuilder = ({ onComplete }) => {
                                     </div>
                                     <div>
                                         <h2 className="text-lg font-black text-slate-800">{activeNode.data.label}</h2>
-                                        <p className="text-xs text-slate-400 font-medium tracking-wide uppercase mt-0.5">Node Configuration</p>
+                                        <p className="text-xs text-slate-600 font-medium tracking-wide uppercase mt-0.5">Node Configuration</p>
                                     </div>
                                 </div>
                                 <button onClick={() => setActiveNode(null)} className="p-2.5 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors">
@@ -1982,7 +1982,7 @@ export const PipelineBuilder = ({ onComplete }) => {
                   </div>
                   <div>
                     <h2 className="text-base font-black text-slate-800 leading-tight">AI Visualizer — Pipeline Output</h2>
-                    <p className="text-xs text-slate-400 font-medium">Auto-generated charts from pipeline result dataset</p>
+                    <p className="text-xs text-slate-600 font-medium">Auto-generated charts from pipeline result dataset</p>
                   </div>
                 </div>
                 <button
@@ -2447,7 +2447,7 @@ const CleanerConfigPanel = ({ node, columns = [], onSave }) => {
             <div className="space-y-4 mb-8">
                 {rules.length === 0 && <p className="text-center text-sm text-slate-400 italic">No cleaning rules. Add one!</p>}
                 {rules.map(r => (
-                    <div key={r.id} className="p-4 bg-slate-50 border border-slate-200 rounded-xl relative">
+                    <div key={r.id} className="p-4 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 relative">
                         <button onClick={() => removeRule(r.id)} className="absolute top-2 right-2 text-red-500 hover:bg-red-100 p-1.5 rounded-md">
                             <Trash2 size={16} />
                         </button>

@@ -20,6 +20,8 @@ import {
     Upload,
 } from 'lucide-react';
 import { API_BASE } from '../lib/runtimeConfig';
+import { DatabaseConnectionManager } from '../components';
+import { buildSampleQuery } from '../lib/databaseConnections';
 const Motion = motion;
 const STEPS = ['Upload', 'Match Setup', 'Review', 'Pricing', 'Results'];
 const PRESET_SEPARATORS = [',', ';', '|'];
@@ -58,7 +60,7 @@ const createCompetitorSource = (index, connectionId = '') => {
         columns: [],
         mode: 'file',
         connectionId,
-        query: 'SELECT * FROM competitor_prices LIMIT 100',
+        query: buildSampleQuery('postgresql', 'competitor_prices', 100),
         separator: ',',
         matchColumn: '',
         matchColumns: {},
@@ -169,7 +171,7 @@ export default function PricingIntelligenceBuilder() {
         columns: [],
         mode: 'file',
         connectionId: '',
-        query: 'SELECT * FROM products LIMIT 100',
+        query: buildSampleQuery('postgresql', 'products', 100),
         separator: ',',
     });
     const [competitorSources, setCompetitorSources] = useState([createCompetitorSource(1)]);
@@ -261,11 +263,17 @@ export default function PricingIntelligenceBuilder() {
                 const available = res.data || [];
                 setConnections(available);
                 if (available.length > 0) {
-                    const defaultConnectionId = available[0].id;
-                    setOurDataset((prev) => ({ ...prev, connectionId: prev.connectionId || defaultConnectionId }));
+                    const defaultConnection = available[0];
+                    const defaultConnectionId = defaultConnection.id;
+                    setOurDataset((prev) => ({
+                        ...prev,
+                        connectionId: prev.connectionId || defaultConnectionId,
+                        query: prev.connectionId ? prev.query : buildSampleQuery(defaultConnection.db_type, 'products', 100),
+                    }));
                     setCompetitorSources((prev) => prev.map((source) => ({
                         ...source,
                         connectionId: source.connectionId || defaultConnectionId,
+                        query: source.connectionId ? source.query : buildSampleQuery(defaultConnection.db_type, 'competitor_prices', 100),
                     })));
                 }
             } catch (error) {
@@ -789,6 +797,16 @@ export default function PricingIntelligenceBuilder() {
                             query={ourDataset.query}
                             onQueryChange={(query) => setOurDataset((prev) => ({ ...prev, query }))}
                             connections={connections}
+                            onConnectionSaved={async (nextConnectionId) => {
+                                const token = localStorage.getItem('token');
+                                if (!token) return;
+                                const res = await axios.get(`${API_BASE}/connections`, { headers: { Authorization: `Bearer ${token}` } });
+                                const available = res.data || [];
+                                setConnections(available);
+                                if (nextConnectionId) {
+                                    setOurDataset((prev) => ({ ...prev, connectionId: nextConnectionId }));
+                                }
+                            }}
                             onUpload={handleOurFileUpload}
                             onDatabaseLoad={handleOurDatabaseIngest}
                         />
@@ -810,6 +828,16 @@ export default function PricingIntelligenceBuilder() {
                                         source={source}
                                         index={index}
                                         connections={connections}
+                                        onConnectionSaved={async (nextConnectionId) => {
+                                            const token = localStorage.getItem('token');
+                                            if (!token) return;
+                                            const res = await axios.get(`${API_BASE}/connections`, { headers: { Authorization: `Bearer ${token}` } });
+                                            const available = res.data || [];
+                                            setConnections(available);
+                                            if (nextConnectionId) {
+                                                updateCompetitorSource(source.id, { connectionId: nextConnectionId });
+                                            }
+                                        }}
                                         onChange={(patch) => updateCompetitorSource(source.id, patch)}
                                         onUpload={(file) => handleCompetitorFileUpload(source.id, source.datasetId, source.separator, file)}
                                         onDatabaseLoad={() => handleCompetitorDatabaseIngest(source)}
@@ -1247,6 +1275,7 @@ function DatasetCard({
     query,
     onQueryChange,
     connections,
+    onConnectionSaved,
     onUpload,
     onDatabaseLoad,
 }) {
@@ -1262,7 +1291,7 @@ function DatasetCard({
                         {onLabelChange ? (
                             <div className="w-full max-w-[220px]">
                                 <label className="block text-[11px] font-bold text-slate-500 mb-1.5">Client label</label>
-                                <input value={label || ''} onChange={(event) => onLabelChange(event.target.value)} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:border-amber-400 outline-none" />
+                                <input value={label || ''} onChange={(event) => onLabelChange(event.target.value)} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-sm font-medium focus:border-amber-400 outline-none" />
                             </div>
                         ) : null}
                     </div>
@@ -1271,7 +1300,7 @@ function DatasetCard({
             </div>
             <div className="flex bg-slate-100 rounded-lg p-0.5 mb-4 w-fit">
                 {['file', 'database'].map((item) => (
-                    <button key={item} onClick={() => onModeChange(item)} className={`px-3 py-1 text-xs font-bold rounded-md transition-all ${mode === item ? 'bg-white text-amber-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>{item === 'file' ? 'File Upload' : 'Database'}</button>
+                    <button key={item} onClick={() => onModeChange(item)} className={`px-3 py-1 text-xs font-bold rounded-md transition-all ${mode === item ? 'bg-white text-amber-600 shadow-sm' : 'text-slate-800 hover:text-slate-900'}`}>{item === 'file' ? 'File Upload' : 'Local Database'}</button>
                 ))}
             </div>
             {mode === 'file' ? (
@@ -1285,7 +1314,16 @@ function DatasetCard({
             ) : (
                 <div className="space-y-3">
                     {connections.length === 0 ? (
-                        <div className="text-sm text-slate-500 bg-slate-50 rounded-xl border border-slate-200 px-4 py-5">Save a database connection in CleanFlow first, then return here to query pricing inputs directly.</div>
+                        <div className="space-y-4 rounded-xl border border-slate-200 bg-slate-50 px-4 py-5 text-sm text-slate-500">
+                            <div>Create a local SQLite or server connection here, then query pricing inputs directly.</div>
+                            <DatabaseConnectionManager
+                                title="Add Connection"
+                                compact
+                                initialOpen
+                                showInlineButton={false}
+                                onConnectionSaved={onConnectionSaved}
+                            />
+                        </div>
                     ) : (
                         <>
                             <div>
@@ -1294,6 +1332,7 @@ function DatasetCard({
                                     {connections.map((connection) => <option key={connection.id} value={connection.id}>{connection.name}</option>)}
                                 </select>
                             </div>
+                            <DatabaseConnectionManager title="New Connection" compact onConnectionSaved={onConnectionSaved} />
                             <div>
                                 <label className="block text-xs font-bold text-slate-500 mb-1.5">SQL Query</label>
                                 <textarea rows={4} value={query} onChange={(event) => onQueryChange(event.target.value)} className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:border-amber-400 outline-none resize-none" />
@@ -1311,7 +1350,7 @@ function DatasetCard({
     );
 }
 
-function CompetitorSourceCard({ source, index, connections, onChange, onUpload, onDatabaseLoad, onRemove, canRemove }) {
+function CompetitorSourceCard({ source, index, connections, onChange, onUpload, onDatabaseLoad, onRemove, canRemove, onConnectionSaved }) {
     return (
         <div className="rounded-2xl border border-slate-200 p-4 bg-slate-50">
             <div className="flex items-start justify-between gap-4 mb-4">
@@ -1326,7 +1365,7 @@ function CompetitorSourceCard({ source, index, connections, onChange, onUpload, 
             </div>
             <div className="flex bg-white rounded-lg p-0.5 mb-4 w-fit border border-slate-200">
                 {['file', 'database'].map((item) => (
-                    <button key={item} onClick={() => onChange({ mode: item })} className={`px-3 py-1 text-xs font-bold rounded-md transition-all ${source.mode === item ? 'bg-slate-900 text-white shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>{item === 'file' ? 'File Upload' : 'Database'}</button>
+                    <button key={item} onClick={() => onChange({ mode: item })} className={`px-3 py-1 text-xs font-bold rounded-md transition-all ${source.mode === item ? 'bg-slate-900 text-white shadow-sm' : 'text-slate-800 hover:text-slate-900'}`}>{item === 'file' ? 'File Upload' : 'Local Database'}</button>
                 ))}
             </div>
             {source.mode === 'file' ? (
@@ -1340,12 +1379,22 @@ function CompetitorSourceCard({ source, index, connections, onChange, onUpload, 
             ) : (
                 <div className="space-y-3">
                     {connections.length === 0 ? (
-                        <div className="text-sm text-slate-500 bg-white rounded-xl border border-slate-200 px-4 py-5">Save a database connection in CleanFlow first, then return here to query competitor feeds directly.</div>
+                        <div className="space-y-4 rounded-xl border border-slate-200 bg-white px-4 py-5 text-sm text-slate-500">
+                            <div>Create a local SQLite or server connection here, then query competitor feeds directly.</div>
+                            <DatabaseConnectionManager
+                                title="Add Connection"
+                                compact
+                                initialOpen
+                                showInlineButton={false}
+                                onConnectionSaved={onConnectionSaved}
+                            />
+                        </div>
                     ) : (
                         <>
                             <select value={source.connectionId} onChange={(event) => onChange({ connectionId: event.target.value })} className="w-full px-3 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-medium focus:border-amber-400 outline-none">
                                 {connections.map((connection) => <option key={connection.id} value={connection.id}>{connection.name}</option>)}
                             </select>
+                            <DatabaseConnectionManager title="New Connection" compact onConnectionSaved={onConnectionSaved} />
                             <textarea rows={4} value={source.query} onChange={(event) => onChange({ query: event.target.value })} className="w-full px-3 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-medium focus:border-amber-400 outline-none resize-none" />
                             <button onClick={onDatabaseLoad} className="w-full py-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-sm transition-colors">Load Competitor Dataset</button>
                         </>

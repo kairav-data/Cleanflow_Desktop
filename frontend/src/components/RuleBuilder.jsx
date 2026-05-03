@@ -467,7 +467,7 @@ const RuleBuilder = ({
                                     <label className="text-xs font-black text-slate-400 uppercase tracking-wider mb-2 block">Column Target</label>
                                     {columns.length > 0 ? (
                                         <select
-                                            className={`w-full ${compact ? 'p-2.5 rounded-lg text-sm' : 'p-3.5 rounded-xl'} bg-slate-50 border border-slate-200 font-semibold focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all`}
+                                            className={`w-full ${compact ? 'p-2.5 rounded-lg text-sm' : 'p-3.5 rounded-xl'} bg-slate-50 border border-slate-200 font-semibold text-slate-800 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all`}
                                             value={rule.column}
                                             onChange={(e) => updateRule(rule.id, 'column', e.target.value)}
                                         >
@@ -478,7 +478,7 @@ const RuleBuilder = ({
                                         <input
                                             type="text"
                                             placeholder="Type column name"
-                                            className={`w-full ${compact ? 'p-2.5 rounded-lg' : 'p-3.5 rounded-xl'} bg-slate-50 border border-slate-200 font-semibold focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all text-sm`}
+                                            className={`w-full ${compact ? 'p-2.5 rounded-lg' : 'p-3.5 rounded-xl'} bg-slate-50 border border-slate-200 font-semibold text-slate-800 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all text-sm`}
                                             value={rule.column}
                                             onChange={(e) => updateRule(rule.id, 'column', e.target.value)}
                                         />
@@ -489,7 +489,7 @@ const RuleBuilder = ({
                                 <div className={columnSpanClass}>
                                     <label className="text-xs font-black text-slate-400 uppercase tracking-wider mb-2 block">Rule Category</label>
                                     <select
-                                        className={`w-full ${compact ? 'p-2.5 rounded-lg text-sm' : 'p-3.5 rounded-xl'} bg-slate-50 border border-slate-200 font-semibold focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all`}
+                                        className={`w-full ${compact ? 'p-2.5 rounded-lg text-sm' : 'p-3.5 rounded-xl'} bg-slate-50 border border-slate-200 font-semibold text-slate-800 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all`}
                                             value={rule.category}
                                             onChange={(e) => {
                                                 const newCategory = e.target.value;
@@ -509,7 +509,7 @@ const RuleBuilder = ({
                                 <div className={columnSpanClass}>
                                     <label className="text-xs font-black text-slate-400 uppercase tracking-wider mb-2 block">Specific Condition</label>
                                     <select
-                                        className={`w-full ${compact ? 'p-2.5 rounded-lg text-sm' : 'p-3.5 rounded-xl'} bg-slate-50 border border-slate-200 font-semibold focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all`}
+                                        className={`w-full ${compact ? 'p-2.5 rounded-lg text-sm' : 'p-3.5 rounded-xl'} bg-slate-50 border border-slate-200 font-semibold text-slate-800 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all`}
                                         value={rule.rule_type}
                                         onChange={(e) => updateRule(rule.id, 'rule_type', e.target.value)}
                                     >
@@ -524,7 +524,7 @@ const RuleBuilder = ({
                                     <label className="text-xs font-black text-slate-400 uppercase tracking-wider mb-2 block">Parameters Config</label>
                                     {rule.rule_type === 'type_check' && (
                                         <select
-                                            className={`w-full ${compact ? 'p-2.5 rounded-lg text-sm' : 'p-3.5 rounded-xl'} bg-slate-50 border border-slate-200 font-semibold focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all`}
+                                            className={`w-full ${compact ? 'p-2.5 rounded-lg text-sm' : 'p-3.5 rounded-xl'} bg-slate-50 border border-slate-200 font-semibold text-slate-800 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all`}
                                             onChange={(e) => updateParams(rule.id, 'type', e.target.value)}
                                             value={rule.params.type || 'string'}
                                         >
@@ -534,7 +534,7 @@ const RuleBuilder = ({
 
                                     {rule.rule_type === 'date_format' && (
                                         <select
-                                            className={`w-full ${compact ? 'p-2.5 rounded-lg text-sm' : 'p-3.5 rounded-xl'} bg-slate-50 border border-slate-200 font-semibold focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all`}
+                                            className={`w-full ${compact ? 'p-2.5 rounded-lg text-sm' : 'p-3.5 rounded-xl'} bg-slate-50 border border-slate-200 font-semibold text-slate-800 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all`}
                                             onChange={(e) => updateParams(rule.id, 'format', e.target.value)}
                                             value={rule.params.format || '%Y-%m-%d'}
                                         >
@@ -546,7 +546,7 @@ const RuleBuilder = ({
                                         <input
                                             type="number"
                                             placeholder="Numeric Value"
-                                            className={`w-full ${compact ? 'p-2.5 rounded-lg text-sm' : 'p-3.5 rounded-xl'} bg-slate-50 border border-slate-200 font-semibold outline-none transition-all`}
+                                            className={`w-full ${compact ? 'p-2.5 rounded-lg text-sm' : 'p-3.5 rounded-xl'} bg-slate-50 border border-slate-200 font-semibold text-slate-800 outline-none transition-all`}
                                             value={rule.params[rule.rule_type === 'length_exact' ? 'len' : rule.rule_type.split('_')[1]] || ''}
                                             onChange={(e) => updateParams(rule.id, rule.rule_type === 'length_exact' ? 'len' : (rule.rule_type.split('_')[1]), e.target.value)}
                                         />
@@ -556,7 +556,7 @@ const RuleBuilder = ({
                                         <input
                                             type="number"
                                             placeholder="Set Threshold"
-                                            className={`w-full ${compact ? 'p-2.5 rounded-lg text-sm' : 'p-3.5 rounded-xl'} bg-slate-50 border border-slate-200 font-semibold outline-none transition-all`}
+                                            className={`w-full ${compact ? 'p-2.5 rounded-lg text-sm' : 'p-3.5 rounded-xl'} bg-slate-50 border border-slate-200 font-semibold text-slate-800 outline-none transition-all`}
                                             value={rule.params.value || ''}
                                             onChange={(e) => updateParams(rule.id, 'value', e.target.value)}
                                         />
@@ -566,13 +566,13 @@ const RuleBuilder = ({
                                         <div className="flex gap-2">
                                             <input
                                                 type="number" placeholder="Min"
-                                                className={`w-1/2 ${compact ? 'p-2.5 rounded-lg text-sm' : 'p-3.5 rounded-xl'} bg-slate-50 border border-slate-200 font-semibold outline-none transition-all`}
+                                                className={`w-1/2 ${compact ? 'p-2.5 rounded-lg text-sm' : 'p-3.5 rounded-xl'} bg-slate-50 border border-slate-200 font-semibold text-slate-800 outline-none transition-all`}
                                                 value={rule.params.min || ''}
                                                 onChange={(e) => updateParams(rule.id, 'min', e.target.value)}
                                             />
                                             <input
                                                 type="number" placeholder="Max"
-                                                className={`w-1/2 ${compact ? 'p-2.5 rounded-lg text-sm' : 'p-3.5 rounded-xl'} bg-slate-50 border border-slate-200 font-semibold outline-none transition-all`}
+                                                className={`w-1/2 ${compact ? 'p-2.5 rounded-lg text-sm' : 'p-3.5 rounded-xl'} bg-slate-50 border border-slate-200 font-semibold text-slate-800 outline-none transition-all`}
                                                 value={rule.params.max || ''}
                                                 onChange={(e) => updateParams(rule.id, 'max', e.target.value)}
                                             />
@@ -589,7 +589,7 @@ const RuleBuilder = ({
                                         <input
                                             type="text"
                                             placeholder="Pattern (e.g. ^[0-9]{3}$)"
-                                            className={`w-full ${compact ? 'p-2.5 rounded-lg text-sm' : 'p-3.5 rounded-xl'} bg-slate-50 border border-slate-200 font-semibold outline-none transition-all text-sm`}
+                                            className={`w-full ${compact ? 'p-2.5 rounded-lg text-sm' : 'p-3.5 rounded-xl'} bg-slate-50 border border-slate-200 font-semibold text-slate-800 outline-none transition-all text-sm`}
                                             value={rule.params.regex || ''}
                                             onChange={(e) => updateParams(rule.id, 'regex', e.target.value)}
                                         />
@@ -599,7 +599,7 @@ const RuleBuilder = ({
                                         <input
                                             type="text"
                                             placeholder="Comma separated lists"
-                                            className={`w-full ${compact ? 'p-2.5 rounded-lg text-sm' : 'p-3.5 rounded-xl'} bg-slate-50 border border-slate-200 font-semibold outline-none transition-all text-sm`}
+                                            className={`w-full ${compact ? 'p-2.5 rounded-lg text-sm' : 'p-3.5 rounded-xl'} bg-slate-50 border border-slate-200 font-semibold text-slate-800 outline-none transition-all text-sm`}
                                             value={rule.params.values ? (Array.isArray(rule.params.values) ? rule.params.values.join(',') : rule.params.values) : ''}
                                             onChange={(e) => updateParams(rule.id, 'values', e.target.value.split(','))}
                                         />
@@ -609,7 +609,7 @@ const RuleBuilder = ({
                                         <input
                                             type="text"
                                             placeholder="Target substring..."
-                                            className={`w-full ${compact ? 'p-2.5 rounded-lg text-sm' : 'p-3.5 rounded-xl'} bg-slate-50 border border-slate-200 font-semibold outline-none transition-all`}
+                                            className={`w-full ${compact ? 'p-2.5 rounded-lg text-sm' : 'p-3.5 rounded-xl'} bg-slate-50 border border-slate-200 font-semibold text-slate-800 outline-none transition-all`}
                                             value={rule.params[rule.rule_type === 'starts_with' ? 'prefix' : 'suffix'] || ''}
                                             onChange={(e) => updateParams(rule.id, rule.rule_type === 'starts_with' ? 'prefix' : 'suffix', e.target.value)}
                                         />
@@ -620,7 +620,7 @@ const RuleBuilder = ({
                                             <input
                                                 type="text"
                                                 placeholder="e.g. value > 100"
-                                                className={`w-full ${compact ? 'p-2.5 rounded-lg' : 'p-3.5 rounded-xl'} bg-slate-50 border border-slate-200 font-semibold outline-none transition-all text-sm`}
+                                                className={`w-full ${compact ? 'p-2.5 rounded-lg' : 'p-3.5 rounded-xl'} bg-slate-50 border border-slate-200 font-semibold text-slate-800 outline-none transition-all text-sm`}
                                                 value={rule.params.expression || ''}
                                                 onChange={(e) => updateParams(rule.id, 'expression', e.target.value)}
                                             />
@@ -630,7 +630,7 @@ const RuleBuilder = ({
                                     {rule.rule_type === 'column_compare' && (
                                         <div className="flex gap-2 items-center">
                                             <select
-                                                className={`w-1/3 ${compact ? 'p-2.5 rounded-lg text-sm' : 'p-3.5 rounded-xl'} bg-slate-50 border border-slate-200 font-semibold outline-none transition-all`}
+                                                className={`w-1/3 ${compact ? 'p-2.5 rounded-lg text-sm' : 'p-3.5 rounded-xl'} bg-slate-50 border border-slate-200 font-semibold text-slate-800 outline-none transition-all`}
                                                 value={rule.params.operator || '=='}
                                                 onChange={(e) => updateParams(rule.id, 'operator', e.target.value)}
                                             >
@@ -642,7 +642,7 @@ const RuleBuilder = ({
                                                 <option value="<=">&lt;=</option>
                                             </select>
                                             <select
-                                                className={`w-2/3 ${compact ? 'p-2.5 rounded-lg text-sm' : 'p-3.5 rounded-xl'} bg-slate-50 border border-slate-200 font-semibold outline-none transition-all`}
+                                                className={`w-2/3 ${compact ? 'p-2.5 rounded-lg text-sm' : 'p-3.5 rounded-xl'} bg-slate-50 border border-slate-200 font-semibold text-slate-800 outline-none transition-all`}
                                                 value={rule.params.compare_column || ''}
                                                 onChange={(e) => updateParams(rule.id, 'compare_column', e.target.value)}
                                             >
@@ -656,7 +656,7 @@ const RuleBuilder = ({
                                         <div className="flex flex-col gap-2">
                                             <div className="flex gap-2">
                                                 <select
-                                                    className={`w-1/2 ${compact ? 'p-2.5 rounded-lg text-xs' : 'p-3.5 rounded-xl text-sm'} bg-slate-50 border border-slate-200 font-semibold outline-none transition-all`}
+                                                    className={`w-1/2 ${compact ? 'p-2.5 rounded-lg text-xs' : 'p-3.5 rounded-xl text-sm'} bg-slate-50 border border-slate-200 font-semibold text-slate-800 outline-none transition-all`}
                                                     value={rule.params.condition_column || ''}
                                                     onChange={(e) => updateParams(rule.id, 'condition_column', e.target.value)}
                                                 >
@@ -666,7 +666,7 @@ const RuleBuilder = ({
                                                 <input
                                                     type="text"
                                                     placeholder="is equal to..."
-                                                    className={`w-1/2 ${compact ? 'p-2.5 rounded-lg text-xs' : 'p-3.5 rounded-xl text-sm'} bg-slate-50 border border-slate-200 font-semibold outline-none transition-all`}
+                                                    className={`w-1/2 ${compact ? 'p-2.5 rounded-lg text-xs' : 'p-3.5 rounded-xl text-sm'} bg-slate-50 border border-slate-200 font-semibold text-slate-800 outline-none transition-all`}
                                                     value={rule.params.condition_value || ''}
                                                     onChange={(e) => updateParams(rule.id, 'condition_value', e.target.value)}
                                                 />
@@ -674,7 +674,7 @@ const RuleBuilder = ({
                                             <input
                                                 type="text"
                                                 placeholder="Then expect this value"
-                                                className={`w-full ${compact ? 'p-2.5 rounded-lg text-xs' : 'p-3.5 rounded-xl text-sm'} bg-slate-50 border border-slate-200 font-semibold outline-none transition-all`}
+                                                className={`w-full ${compact ? 'p-2.5 rounded-lg text-xs' : 'p-3.5 rounded-xl text-sm'} bg-slate-50 border border-slate-200 font-semibold text-slate-800 outline-none transition-all`}
                                                 value={rule.params.expected_value || ''}
                                                 onChange={(e) => updateParams(rule.id, 'expected_value', e.target.value)}
                                             />

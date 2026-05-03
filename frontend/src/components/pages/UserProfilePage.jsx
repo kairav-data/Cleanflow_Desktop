@@ -259,7 +259,7 @@ const UserProfilePage = ({ user, onLogout, onClose }) => {
           {loadingJobs ? (
             <div className="text-center py-12 text-slate-500">Loading history...</div>
           ) : jobs.length === 0 ? (
-            <div className="text-center py-12 bg-slate-50 border border-slate-200 rounded-xl">
+            <div className="text-center py-12 bg-slate-50 border border-slate-200 rounded-xl text-slate-800">
               <HistoryIcon size={48} className="mx-auto text-slate-300 mb-4" />
               <p className="text-slate-600 font-medium">No activity history yet.</p>
               <p className="text-sm text-slate-500 mt-2">Use any of the platform tools to see them logged here.</p>
@@ -683,6 +683,22 @@ const UserProfilePage = ({ user, onLogout, onClose }) => {
                   </p>
                 </div>
               )}
+              
+              <div className="pt-4 border-t border-slate-100">
+                <p className="text-sm text-slate-600">Membership Status</p>
+                <div className="flex items-center gap-2 mt-1">
+                  <span className={`px-2.5 py-1 text-xs font-bold uppercase tracking-wider rounded-md ${
+                    user?.is_premium ? 'bg-amber-100 text-amber-700' : 'bg-blue-100 text-blue-700'
+                  }`}>
+                    {user?.is_premium ? 'Premium Plan' : 'Free Trial'}
+                  </span>
+                  {!user?.is_premium && (
+                    <span className="text-sm font-medium text-slate-600">
+                      ({Math.max(0, 15 - Math.floor((new Date() - (user?.created_at ? new Date(user.created_at) : new Date())) / (1000 * 60 * 60 * 24)))} days remaining)
+                    </span>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
 

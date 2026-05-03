@@ -106,7 +106,7 @@ export default function Pricing() {
 
                             <div className="mb-6">
                                 <span className="text-5xl font-black text-slate-900">{plan.price}</span>
-                                {plan.period && <span className="text-slate-400 font-medium">{plan.period}</span>}
+                                {plan.period && <span className="text-slate-600 font-medium">{plan.period}</span>}
                             </div>
 
                             <div className="flex-grow space-y-4 mb-8">

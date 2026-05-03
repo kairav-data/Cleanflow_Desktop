@@ -17,8 +17,7 @@ bootstrap_environment()
 
 import shutil
 import polars as pl
-import pandas as pd # Keep for legacy database reading if needed, or migration
-from sqlalchemy import create_engine, text
+from sqlalchemy import text
 from typing import List
 
 from logger import setup_logger
@@ -32,7 +31,7 @@ from auth import router as auth_router, get_current_user
 from history import (
     router as history_router, 
     connections_router, 
-    _build_connection_string_from_dict
+    _execute_query
 )
 from payment import router as payment_router
 from chatbot import chat_router
@@ -254,31 +253,21 @@ async def ingest_database(request: dict, current_user: UserInDB = Depends(get_cu
         raise HTTPException(status_code=404, detail="Connection not found")
 
     try:
-        # 2. Build connection string (imported from history.py)
-        conn_str = _build_connection_string_from_dict(conn_data)
+        rows = await _execute_query(conn_data, query)
+        df = pl.from_dicts(rows) if rows else pl.DataFrame()
         
-        # 3. Create engine and execute query using Pandas
-        # Polars read_database is better but requires connectorx or adbc
-        # Fallback to pandas then polars for compatibility if needed, or try polars read_database
-        try:
-             df = pl.read_database(query, conn_str)
-        except:
-             # Fallback to pandas if polars connectors missing
-             engine_db = create_engine(conn_str)
-             pdf = pd.read_sql(query, engine_db)
-             df = pl.from_pandas(pdf)
-        
-        # 4. Initialize the ValidationEngine with the resulting dataframe
+        # 3. Initialize the ValidationEngine with the resulting dataframe
         engine = ValidationEngine()
         columns = engine.load_data(dataframe=df)
         
-        # 5. Store session
+        # 4. Store session
         sessions[engine.session_id] = engine
         
         return {
             "session_id": engine.session_id,
             "filename": f"DB: {conn_data.get('name', 'Remote DB')}",
             "columns": columns,
+            "rows": df.height,
             "source_config": _build_database_source_config(
                 connection_id,
                 conn_data.get('name', 'Remote DB'),
@@ -1034,14 +1023,8 @@ async def ingest_database_pricing(request: dict, current_user: UserInDB = Depend
         raise HTTPException(status_code=404, detail="Connection not found")
 
     try:
-        conn_str = _build_connection_string_from_dict(conn_data)
-
-        try:
-            df = pl.read_database(query, conn_str)
-        except:
-            engine_db = create_engine(conn_str)
-            pdf = pd.read_sql(query, engine_db)
-            df = pl.from_pandas(pdf)
+        rows = await _execute_query(conn_data, query)
+        df = pl.from_dicts(rows) if rows else pl.DataFrame()
 
         if session_id not in sessions:
             pricer = PricingIntelligence(session_id)

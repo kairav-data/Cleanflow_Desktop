@@ -4,15 +4,15 @@
 
 @layer base {
   :root {
-    --cf-bg: #eef3f9;
+    --cf-bg: #eef4fb;
     --cf-surface: #ffffff;
-    --cf-surface-soft: #f8fbff;
-    --cf-border: #dbe4f1;
-    --cf-text: #10203a;
-    --cf-muted: #60708a;
-    --cf-accent: #18c58f;
-    --cf-shell: #2e3138;
-    --cf-titlebar: #262229;
+    --cf-surface-soft: #f4f8ff;
+    --cf-border: #d0dff0;
+    --cf-text: #0f2040;
+    --cf-muted: #4a6080;
+    --cf-accent: #0072C6;
+    --cf-shell: #0b1a2e;
+    --cf-titlebar: #091527;
   }
 
   html {
@@ -22,10 +22,11 @@
   body {
     @apply antialiased;
     background:
-      radial-gradient(circle at top, rgba(24, 197, 143, 0.08), transparent 28%),
-      linear-gradient(180deg, #f4f7fb 0%, var(--cf-bg) 100%);
+      radial-gradient(circle at top left, rgba(0, 114, 198, 0.07), transparent 35%),
+      radial-gradient(circle at bottom right, rgba(0, 163, 173, 0.05), transparent 35%),
+      linear-gradient(180deg, #f0f7ff 0%, var(--cf-bg) 100%);
     color: var(--cf-text);
-    font-family: "Segoe UI Variable Display", "Segoe UI", "Aptos", sans-serif;
+    font-family: "Segoe UI Variable Display", "Segoe UI", "Aptos", "Inter", sans-serif;
     line-height: 1.5;
   }
 
@@ -43,47 +44,64 @@
 
 @layer utilities {
   .card {
-    @apply rounded-lg border bg-white transition-shadow hover:shadow-md;
+    @apply rounded-xl border bg-white transition-shadow hover:shadow-md;
     border-color: var(--cf-border);
   }
 
   .btn-primary {
-    @apply rounded-lg px-4 py-2.5 font-medium text-white transition-colors;
-    background-color: var(--cf-text);
+    @apply rounded-xl px-4 py-2.5 font-semibold text-white transition-all;
+    background: linear-gradient(135deg, #0072C6, #005999);
+    box-shadow: 0 2px 8px rgba(0, 114, 198, 0.25);
+  }
+
+  .btn-primary:hover {
+    background: linear-gradient(135deg, #0085E3, #0072C6);
+    box-shadow: 0 4px 14px rgba(0, 114, 198, 0.35);
+    transform: translateY(-1px);
   }
 
   .btn-secondary {
-    @apply rounded-lg px-4 py-2.5 font-medium transition-colors;
+    @apply rounded-xl px-4 py-2.5 font-medium transition-colors;
     background-color: var(--cf-surface-soft);
     color: var(--cf-text);
+    border: 1px solid var(--cf-border);
   }
 
   /* Custom scrollbar for dark sidebars */
   .sidebar-scrollbar {
-    scrollbar-width: thin;
+    scrollbar-width: none;
     scrollbar-color: transparent transparent;
-  }
-
-  .sidebar-scrollbar:hover {
-    scrollbar-color: #374151 transparent;
+    -ms-overflow-style: none;
   }
 
   .sidebar-scrollbar::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
+    width: 0;
+    height: 0;
+    background: transparent;
+    display: none;
   }
 
   .sidebar-scrollbar::-webkit-scrollbar-track {
-    background: transparent;
+    background: transparent !important;
   }
 
   .sidebar-scrollbar::-webkit-scrollbar-thumb {
-    background-color: transparent;
-    border-radius: 10px;
+    background: transparent !important;
+    border-radius: 9999px;
+  }
+
+  .sidebar-scrollbar:hover {
+    scrollbar-color: #1a3a5c transparent;
+  }
+
+  .sidebar-scrollbar:hover::-webkit-scrollbar {
+    display: block;
+    width: 6px;
   }
 
   .sidebar-scrollbar:hover::-webkit-scrollbar-thumb {
-    background-color: #374151;
+    background-color: #1a3a5c;
+    border-radius: 10px;
   }
 
   .uncial-antiqua-regular {

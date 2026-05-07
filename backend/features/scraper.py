@@ -1,117 +1,137 @@
 """
 Web Scraping Feature for CleanFlow
 
-Provides template-based and custom web scraping:
-- Pre-built templates for common sites (Amazon, LinkedIn, News)
-- CSS selector-based custom scraping
-- Support for both static and dynamic pages
+Uses Firecrawl API to extract Markdown, HTML, Screenshots, and Structured JSON data.
+Requires a valid Firecrawl API key linked to the user.
 """
 
 from typing import Dict, List, Any, Optional
-import pandas as pd
-import re
+import httpx
+import json
 from .base import BaseFeature, FeatureResult
 
-
-class ScrapingTemplate:
-    """Base class for scraping templates"""
-    
-    @staticmethod
-    def get_selectors() -> Dict[str, str]:
-        """Return CSS selectors for this template"""
-        raise NotImplementedError
-    
-    @staticmethod
-    def parse_data(html_content: str) -> Dict[str, Any]:
-        """Parse HTML and extract data"""
-        raise NotImplementedError
-
-
-class AmazonProductTemplate(ScrapingTemplate):
-    """Template for Amazon product pages"""
-    
-    @staticmethod
-    def get_selectors() -> Dict[str, str]:
-        return {
-            "title": "#productTitle",
-            "price": ".a-price-whole",
-            "rating": ".a-icon-star .a-icon-alt",
-            "reviews_count": "#acrCustomerReviewText",
-            "availability": "#availability span",
-            "description": "#feature-bullets"
-        }
-    
-    @staticmethod
-    def parse_data(html_content: str) -> Dict[str, Any]:
-        """Simplified parsing (in real implementation, use BeautifulSoup)"""
-        # This is a placeholder - actual implementation would use BeautifulSoup
-        return {
-            "title": "Sample Product",
-            "price": "$99.99",
-            "rating": "4.5 out of 5 stars",
-            "reviews_count": "1,234 ratings",
-            "availability": "In Stock",
-            "description": "Product features..."
-        }
-
-
-class NewsArticleTemplate(ScrapingTemplate):
-    """Template for news articles"""
-    
-    @staticmethod
-    def get_selectors() -> Dict[str, str]:
-        return {
-            "headline": "h1.article-title, h1.headline",
-            "author": ".author-name, .byline",
-            "date": "time, .publish-date",
-            "content": ".article-body, .story-content",
-            "category": ".category, .section"
-        }
-    
-    @staticmethod
-    def parse_data(html_content: str) -> Dict[str, Any]:
-        return {
-            "headline": "Sample Headline",
-            "author": "John Doe",
-            "date": "2024-01-01",
-            "content": "Article content...",
-            "category": "Technology"
-        }
-
-
-class LinkedInProfileTemplate(ScrapingTemplate):
-    """Template for LinkedIn profiles"""
-    
-    @staticmethod
-    def get_selectors() -> Dict[str, str]:
-        return {
-            "name": ".pv-text-details__left-panel h1",
-            "headline": ".pv-text-details__left-panel .text-body-medium",
-            "location": ".pv-text-details__left-panel .text-body-small",
-            "company": ".experience-item .t-bold",
-            "education": ".education-item .t-bold"
-        }
-    
-    @staticmethod
-    def parse_data(html_content: str) -> Dict[str, Any]:
-        return {
-            "name": "Jane Smith",
-            "headline": "Senior Data Engineer",
-            "location": "San Francisco, CA",
-            "company": "Tech Corp",
-            "education": "MIT"
-        }
-
-
 class WebScraper(BaseFeature):
-    """Main web scraping feature"""
+    """Main web scraping feature using Firecrawl API"""
     
-    TEMPLATES = {
-        'amazon_product': AmazonProductTemplate,
-        'news_article': NewsArticleTemplate,
-        'linkedin_profile': LinkedInProfileTemplate
-    }
+    FIRECRAWL_BASE_URL = "https://api.firecrawl.dev/v1"
     
+    def __init__(self, session_id: str, api_key: str = None):
+        super().__init__(session_id)
+        self.api_key = api_key
+
+    async def _call_firecrawl_scrape(self, url: str, formats: List[str], extract_prompt: str = None) -> Dict[str, Any]:
+        if not self.api_key:
+            raise Exception("Firecrawl API key is missing. Please set it in your account resources.")
+            
+        payload = {
+            "url": url,
+            "formats": formats
+        }
+        
+        if "extract" in formats and extract_prompt:
+            payload["extract"] = {"prompt": extract_prompt}
+            
+        headers = {
+            "Authorization": f"Bearer {self.api_key}",
+            "Content-Type": "application/json"
+        }
+        
+        async with httpx.AsyncClient(timeout=60.0) as client:
+            response = await client.post(f"{self.FIRECRAWL_BASE_URL}/scrape", json=payload, headers=headers)
+            
+            if response.status_code != 200:
+                error_msg = response.text
+                try:
+                    error_msg = response.json().get("error", error_msg)
+                except:
+                    pass
+                raise Exception(f"Firecrawl API Error: {error_msg}")
+                
+            return response.json()
+            
+    async def get_credit_usage(self) -> Dict[str, Any]:
+        """Fetch and normalize Firecrawl credit usage for the UI."""
+        if not self.api_key:
+            return {
+                "remaining": None,
+                "consumed": None,
+                "plan": None,
+                "billing_period_start": None,
+                "billing_period_end": None,
+                "error": "API key not set"
+            }
+
+        headers = {
+            "Authorization": f"Bearer {self.api_key}"
+        }
+
+        async with httpx.AsyncClient() as client:
+            response = await client.get(f"{self.FIRECRAWL_BASE_URL}/team/credit-usage", headers=headers)
+
+            if response.status_code != 200:
+                return {
+                    "remaining": None,
+                    "consumed": None,
+                    "plan": None,
+                    "billing_period_start": None,
+                    "billing_period_end": None,
+                    "error": f"Failed to fetch credits: {response.status_code}"
+                }
+
+            payload = response.json()
+            data = payload.get("data", {}) if isinstance(payload, dict) else {}
+
+            remaining = data.get("remaining")
+            if remaining is None:
+                remaining = data.get("remainingCredits")
+            if remaining is None:
+                remaining = data.get("remaining_credits")
+
+            plan = data.get("plan")
+            if plan is None:
+                plan = data.get("planCredits")
+            if plan is None:
+                plan = data.get("plan_credits")
+
+            available_total = data.get("available_total")
+            if available_total is None:
+                available_total = remaining
+
+            consumed = data.get("consumed")
+            if consumed is None:
+                consumed = data.get("consumedCredits")
+
+            extra_credits = data.get("extraCredits")
+            if (
+                isinstance(plan, (int, float))
+                and isinstance(available_total, (int, float))
+            ):
+                extra_credits = max(available_total - plan, 0)
+                remaining = min(available_total, plan)
+
+            if consumed is None and isinstance(plan, (int, float)) and isinstance(remaining, (int, float)):
+                consumed = max(plan - remaining, 0)
+
+            billing_period_start = (
+                data.get("billing_period_start")
+                or data.get("billingPeriodStart")
+            )
+            billing_period_end = (
+                data.get("billing_period_end")
+                or data.get("billingPeriodEnd")
+            )
+
+            return {
+                "remaining": remaining,
+                "available_total": available_total,
+                "consumed": consumed,
+                "plan": plan,
+                "extra_credits": extra_credits,
+                "billing_period_start": billing_period_start,
+                "billing_period_end": billing_period_end,
+                "error": None
+            }
+
     async def preview(self, config: Dict[str, Any], limit: int = 1) -> FeatureResult:
         """Preview scraping on a single URL"""
         try:
@@ -120,30 +140,33 @@ class WebScraper(BaseFeature):
                 return FeatureResult(success=False, error=error)
             
             url = config.get('url')
-            template = config.get('template')
-            custom_selectors = config.get('selectors', {})
+            formats = config.get('formats', ['markdown'])
+            extract_prompt = config.get('extract_prompt')
             
-            # In real implementation, fetch and parse the URL
-            # For now, return template sample data
-            if template and template in self.TEMPLATES:
-                template_class = self.TEMPLATES[template]
-                data = template_class.parse_data("")
-                selectors = template_class.get_selectors()
-            else:
-                # Custom scraping
-                data = {key: f"Extracted value for {key}" for key in custom_selectors.keys()}
-                selectors = custom_selectors
+            result = await self._call_firecrawl_scrape(url, formats, extract_prompt)
+            data = result.get('data', {})
+            
+            formatted_item = {"url": url}
+            
+            if "markdown" in formats and "markdown" in data:
+                formatted_item["markdown"] = data["markdown"][:500] + "..." if len(data.get("markdown", "")) > 500 else data.get("markdown")
+            if "html" in formats and "html" in data:
+                formatted_item["html"] = "HTML content retrieved (truncated for preview)"
+            if "screenshot" in formats and "screenshot" in data:
+                formatted_item["screenshot_url"] = data["screenshot"]
+            if "extract" in formats and "extract" in data:
+                extracted = data["extract"]
+                if isinstance(extracted, dict):
+                    formatted_item.update(extracted)
+                else:
+                    formatted_item["extracted_data"] = str(extracted)
             
             return FeatureResult(
                 success=True,
-                data=[{
-                    "url": url,
-                    **data
-                }],
+                data=[formatted_item],
                 metadata={
-                    'template': template,
-                    'selectors_used': selectors,
-                    'fields_extracted': list(data.keys())
+                    'formats_used': formats,
+                    'fields_extracted': list(formatted_item.keys())
                 }
             )
         except Exception as e:
@@ -157,33 +180,41 @@ class WebScraper(BaseFeature):
                 return FeatureResult(success=False, error=error)
             
             urls = config.get('urls', [])
-            template = config.get('template')
-            custom_selectors = config.get('selectors', {})
+            formats = config.get('formats', ['markdown'])
+            extract_prompt = config.get('extract_prompt')
             
             results = []
+            failed = 0
             
-            # In real implementation, scrape each URL
             for url in urls:
-                if template and template in self.TEMPLATES:
-                    template_class = self.TEMPLATES[template]
-                    data = template_class.parse_data("")
-                else:
-                    data = {key: f"Extracted from {url}" for key in custom_selectors.keys()}
-                
-                results.append({
-                    "url": url,
-                    "status": "success",
-                    **data
-                })
+                try:
+                    result = await self._call_firecrawl_scrape(url, formats, extract_prompt)
+                    data = result.get('data', {})
+                    
+                    item = {"url": url, "status": "success"}
+                    if "markdown" in formats: item["markdown"] = data.get("markdown")
+                    if "html" in formats: item["html"] = data.get("html")
+                    if "screenshot" in formats: item["screenshot_url"] = data.get("screenshot")
+                    if "extract" in formats and "extract" in data:
+                        extracted = data["extract"]
+                        if isinstance(extracted, dict):
+                            item.update(extracted)
+                        else:
+                            item["extracted_data"] = str(extracted)
+                            
+                    results.append(item)
+                except Exception as e:
+                    failed += 1
+                    results.append({"url": url, "status": "error", "error_message": str(e)})
             
             return FeatureResult(
                 success=True,
                 data=results,
                 metadata={
                     'total_urls': len(urls),
-                    'successful': len(results),
-                    'failed': 0,
-                    'template': template
+                    'successful': len(results) - failed,
+                    'failed': failed,
+                    'formats_used': formats
                 }
             )
         except Exception as e:
@@ -193,41 +224,39 @@ class WebScraper(BaseFeature):
         """Validate scraping configuration"""
         if 'url' not in config and 'urls' not in config:
             return False, "At least one URL is required"
-        
-        template = config.get('template')
-        selectors = config.get('selectors', {})
-        
-        if not template and not selectors:
-            return False, "Either template or custom selectors must be provided"
-        
-        if template and template not in self.TEMPLATES:
-            return False, f"Unknown template: {template}. Available: {list(self.TEMPLATES.keys())}"
+            
+        formats = config.get('formats', [])
+        if not formats:
+            return False, "At least one format must be selected (markdown, html, screenshot, extract)"
+            
+        if "extract" in formats and not config.get("extract_prompt"):
+            return False, "Extraction prompt is required when 'extract' format is selected"
         
         return True, None
     
     @classmethod
-    def get_available_templates(cls) -> List[Dict[str, Any]]:
-        """Get list of available scraping templates"""
+    def get_available_formats(cls) -> List[Dict[str, Any]]:
+        """Get list of available scraping formats"""
         return [
             {
-                "id": "amazon_product",
-                "name": "Amazon Product",
-                "description": "Extract product details from Amazon",
-                "fields": ["title", "price", "rating", "reviews_count", "availability", "description"],
-                "example_url": "https://www.amazon.com/dp/PRODUCT_ID"
+                "id": "markdown",
+                "name": "Markdown",
+                "description": "Clean, readable markdown text extracted from the page."
             },
             {
-                "id": "news_article",
-                "name": "News Article",
-                "description": "Extract article content from news sites",
-                "fields": ["headline", "author", "date", "content", "category"],
-                "example_url": "https://news-site.com/article"
+                "id": "html",
+                "name": "HTML",
+                "description": "Full HTML content of the page."
             },
             {
-                "id": "linkedin_profile",
-                "name": "LinkedIn Profile",
-                "description": "Extract profile information from LinkedIn",
-                "fields": ["name", "headline", "location", "company", "education"],
-                "example_url": "https://www.linkedin.com/in/username"
+                "id": "screenshot",
+                "name": "Screenshot",
+                "description": "A full-page screenshot image URL."
+            },
+            {
+                "id": "extract",
+                "name": "AI Extraction",
+                "description": "Extract structured data using an AI prompt (JSON format)."
             }
         ]
+

@@ -4,7 +4,7 @@ import {
   ArrowRight, User, Lock, Mail, LogOut, Save, Eye, EyeOff,
   AlertCircle, CheckCircle2, X, Clock, History as HistoryIcon,
   Database, FileCheck, GitMerge, Globe, Shuffle, Sparkles, Phone, Briefcase,
-  Server, Plus, Trash2
+  Server, Plus, Trash2, Key, Coins, RefreshCw
 } from 'lucide-react';
 import axios from 'axios';
 import { API_BASE } from '../../lib/runtimeConfig';
@@ -35,7 +35,17 @@ const UserProfilePage = ({ user, onLogout, onClose }) => {
     phone_number: user?.phone_number || '',
     professional_field: user?.professional_field || '',
     country: user?.country || '',
+    firecrawl_api_key: user?.firecrawl_api_key || '',
   });
+
+  const [credits, setCredits] = useState(null);
+  const [loadingCredits, setLoadingCredits] = useState(false);
+
+  const formatCreditValue = (value) => (
+    typeof value === 'number' && Number.isFinite(value)
+      ? value.toLocaleString()
+      : 'N/A'
+  );
 
   // Password form state
   const [passwordData, setPasswordData] = useState({
@@ -52,8 +62,23 @@ const UserProfilePage = ({ user, onLogout, onClose }) => {
       fetchJobs();
     } else if (activeTab === 'connections') {
       fetchConnections();
+    } else if (activeTab === 'resources') {
+      fetchCredits();
     }
   }, [activeTab]);
+
+  const fetchCredits = async () => {
+    if (!token) return;
+    setLoadingCredits(true);
+    try {
+      const res = await axios.get(`${API_BASE}/features/scraper/credits`, { headers });
+      setCredits(res.data);
+    } catch (e) {
+      console.error('Error fetching credits:', e);
+    } finally {
+      setLoadingCredits(false);
+    }
+  };
 
   const fetchJobs = async () => {
     if (!token) {
@@ -180,6 +205,7 @@ const UserProfilePage = ({ user, onLogout, onClose }) => {
     { id: 'history', label: 'History', icon: HistoryIcon },
     { id: 'connections', label: 'Connections', icon: Database },
     { id: 'profile', label: 'Profile', icon: User },
+    { id: 'resources', label: 'Resources', icon: Key },
     { id: 'security', label: 'Security', icon: Lock },
     { id: 'account', label: 'Account', icon: Mail },
   ];
@@ -641,6 +667,117 @@ const UserProfilePage = ({ user, onLogout, onClose }) => {
               {loading ? 'Updating...' : 'Update Password'}
             </button>
           </form>
+        </div>
+      )}
+
+      {/* Resources Tab */}
+      {activeTab === 'resources' && (
+        <div className="space-y-6">
+          <div className="bg-white border border-slate-200 rounded-lg p-8">
+            <h2 className="text-xl font-bold text-slate-900 mb-6 flex items-center gap-2">
+              <Key size={20} className="text-orange-500" />
+              API Keys & Resources
+            </h2>
+            <p className="text-sm text-slate-600 mb-6">Manage external API keys used by CleanFlow features.</p>
+
+            <form onSubmit={handleProfileUpdate} className="mb-8 p-6 border border-slate-200 rounded-xl bg-slate-50">
+              <div className="mb-4">
+                <label className="block text-sm font-bold text-slate-900 mb-2 flex items-center gap-2">
+                  Firecrawl API Key
+                  <span className="px-2 py-0.5 bg-orange-100 text-orange-700 rounded text-[10px] uppercase tracking-wider font-black">Web Scraper</span>
+                </label>
+                <div className="relative">
+                  <Key className="absolute left-3 top-2.5 text-slate-400" size={18} />
+                  <input
+                    type="password"
+                    value={profileData.firecrawl_api_key}
+                    onChange={(e) =>
+                      setProfileData({ ...profileData, firecrawl_api_key: e.target.value })
+                    }
+                    className="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 transition-all font-mono text-sm"
+                    placeholder="fc-..."
+                  />
+                </div>
+                <p className="text-xs text-slate-500 mt-2">Get your API key from <a href="https://firecrawl.dev" target="_blank" rel="noreferrer" className="text-orange-600 font-semibold hover:underline">firecrawl.dev</a></p>
+              </div>
+              
+              <button
+                type="submit"
+                disabled={loading}
+                className="flex items-center gap-2 px-6 py-2.5 bg-slate-900 text-white rounded-lg font-semibold hover:bg-slate-800 disabled:opacity-50 transition-colors text-sm"
+              >
+                <Save size={16} />
+                {loading ? 'Saving...' : 'Save API Key'}
+              </button>
+            </form>
+
+            <h3 className="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
+              <Coins size={18} className="text-amber-500" />
+              Resource Usage
+            </h3>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="p-5 border border-slate-200 rounded-xl bg-white shadow-sm flex flex-col relative overflow-hidden">
+                <div className="flex justify-between items-start mb-4 relative z-10">
+                  <div>
+                    <h4 className="text-sm font-bold text-slate-800 mb-1">Firecrawl Credits</h4>
+                    <p className="text-[11px] text-slate-500 font-medium">Remaining credits in the current billing plan</p>
+                  </div>
+                  <button onClick={fetchCredits} className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors">
+                    <RefreshCw size={14} className={loadingCredits ? "animate-spin" : ""} />
+                  </button>
+                </div>
+                
+                <div className="flex items-end gap-2 relative z-10 mt-auto">
+                  <span className="text-3xl font-black text-slate-900 leading-none">
+                    {loadingCredits ? '...' : formatCreditValue(credits?.remaining)}
+                  </span>
+                  <span className="text-sm font-semibold text-slate-500 mb-1">plan credits remaining</span>
+                </div>
+
+                <div className="relative z-10 mt-4 grid grid-cols-2 gap-3 text-xs">
+                  <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+                    <p className="text-[10px] font-black uppercase tracking-wider text-slate-500">Consumed</p>
+                    <p className="mt-1 text-base font-bold text-slate-900">{formatCreditValue(credits?.consumed)}</p>
+                  </div>
+                  <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+                    <p className="text-[10px] font-black uppercase tracking-wider text-slate-500">Plan Total</p>
+                    <p className="mt-1 text-base font-bold text-slate-900">{formatCreditValue(credits?.plan)}</p>
+                  </div>
+                </div>
+
+                {typeof credits?.extra_credits === 'number' && credits.extra_credits > 0 && (
+                  <div className="relative z-10 mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2">
+                    <p className="text-[10px] font-black uppercase tracking-wider text-amber-700">Extra Credits Available</p>
+                    <p className="mt-1 text-sm font-bold text-amber-900">
+                      {formatCreditValue(credits.extra_credits)} additional credits outside the monthly plan
+                    </p>
+                    <p className="mt-1 text-[11px] text-amber-800/80">
+                      Total available in Firecrawl account: {formatCreditValue(credits?.available_total)}
+                    </p>
+                  </div>
+                )}
+
+                {(credits?.billing_period_start || credits?.billing_period_end || credits?.error) && (
+                  <div className="relative z-10 mt-4 text-[11px] text-slate-500 space-y-1">
+                    {credits?.billing_period_start && credits?.billing_period_end && (
+                      <p>
+                        Billing period: {new Date(credits.billing_period_start).toLocaleDateString()} - {new Date(credits.billing_period_end).toLocaleDateString()}
+                      </p>
+                    )}
+                    {credits?.error && (
+                      <p className="text-amber-600">{credits.error}</p>
+                    )}
+                  </div>
+                )}
+                
+                <div className="absolute -bottom-6 -right-6 text-amber-500/10 pointer-events-none">
+                  <Coins size={100} />
+                </div>
+              </div>
+            </div>
+            
+          </div>
         </div>
       )}
 

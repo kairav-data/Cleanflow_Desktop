@@ -86,7 +86,7 @@ const PIPELINE_NODE_DEFS = {
     icon: Database,
     accent: '#0f766e',
     bg: '#ecfeff',
-    libraryBadgeClass: 'border-emerald-200 bg-emerald-50 text-emerald-700',
+    libraryBadgeClass: 'border-sky-200 bg-sky-50 text-sky-700',
     supportsSequenceIn: false,
     supportsSequenceOut: true,
     supportsDataIn: false,
@@ -102,7 +102,7 @@ const PIPELINE_NODE_DEFS = {
     icon: Globe,
     accent: '#ea580c',
     bg: '#fff7ed',
-    libraryBadgeClass: 'border-orange-200 bg-orange-50 text-orange-700',
+    libraryBadgeClass: 'border-sky-200 bg-sky-50 text-sky-700',
     supportsSequenceIn: false,
     supportsSequenceOut: true,
     supportsDataIn: false,
@@ -118,7 +118,7 @@ const PIPELINE_NODE_DEFS = {
     icon: Sparkles,
     accent: '#059669',
     bg: '#ecfdf5',
-    libraryBadgeClass: 'border-emerald-200 bg-emerald-50 text-emerald-700',
+    libraryBadgeClass: 'border-sky-200 bg-sky-50 text-sky-700',
     supportsSequenceIn: true,
     supportsSequenceOut: true,
     supportsDataIn: true,
@@ -150,7 +150,7 @@ const PIPELINE_NODE_DEFS = {
     icon: GitMerge,
     accent: '#4f46e5',
     bg: '#eef2ff',
-    libraryBadgeClass: 'border-indigo-200 bg-indigo-50 text-indigo-700',
+    libraryBadgeClass: 'border-blue-200 bg-blue-50 text-blue-700',
     supportsSequenceIn: true,
     supportsSequenceOut: true,
     supportsDataIn: true,
@@ -166,7 +166,7 @@ const PIPELINE_NODE_DEFS = {
     icon: Shuffle,
     accent: '#7c3aed',
     bg: '#f5f3ff',
-    libraryBadgeClass: 'border-violet-200 bg-violet-50 text-violet-700',
+    libraryBadgeClass: 'border-blue-200 bg-blue-50 text-blue-700',
     supportsSequenceIn: true,
     supportsSequenceOut: true,
     supportsDataIn: true,
@@ -182,7 +182,7 @@ const PIPELINE_NODE_DEFS = {
     icon: Filter,
     accent: '#d97706',
     bg: '#fffbeb',
-    libraryBadgeClass: 'border-amber-200 bg-amber-50 text-amber-700',
+    libraryBadgeClass: 'border-blue-200 bg-blue-50 text-blue-700',
     supportsSequenceIn: true,
     supportsSequenceOut: true,
     supportsDataIn: true,
@@ -198,7 +198,7 @@ const PIPELINE_NODE_DEFS = {
     icon: Calculator,
     accent: '#db2777',
     bg: '#fdf2f8',
-    libraryBadgeClass: 'border-pink-200 bg-pink-50 text-pink-700',
+    libraryBadgeClass: 'border-blue-200 bg-blue-50 text-blue-700',
     supportsSequenceIn: true,
     supportsSequenceOut: true,
     supportsDataIn: true,
@@ -246,7 +246,7 @@ const PIPELINE_NODE_DEFS = {
     icon: ArrowLeftRight,
     accent: '#7c3aed',
     bg: '#f5f3ff',
-    libraryBadgeClass: 'border-violet-200 bg-violet-50 text-violet-700',
+    libraryBadgeClass: 'border-blue-200 bg-blue-50 text-blue-700',
     supportsSequenceIn: true,
     supportsSequenceOut: true,
     supportsDataIn: true,
@@ -262,7 +262,7 @@ const PIPELINE_NODE_DEFS = {
     icon: GitBranch,
     accent: '#0891b2',
     bg: '#ecfeff',
-    libraryBadgeClass: 'border-cyan-200 bg-cyan-50 text-cyan-700',
+    libraryBadgeClass: 'border-sky-200 bg-sky-50 text-sky-700',
     supportsSequenceIn: true,
     supportsSequenceOut: true,
     supportsDataIn: true,
@@ -278,7 +278,7 @@ const PIPELINE_NODE_DEFS = {
     icon: Repeat,
     accent: '#7c3aed',
     bg: '#f5f3ff',
-    libraryBadgeClass: 'border-violet-200 bg-violet-50 text-violet-700',
+    libraryBadgeClass: 'border-blue-200 bg-blue-50 text-blue-700',
     supportsSequenceIn: true,
     supportsSequenceOut: true,
     supportsDataIn: true,
@@ -342,7 +342,7 @@ const PIPELINE_NODE_DEFS = {
     icon: Download,
     accent: '#059669',
     bg: '#ecfdf5',
-    libraryBadgeClass: 'border-emerald-200 bg-emerald-50 text-emerald-700',
+    libraryBadgeClass: 'border-sky-200 bg-sky-50 text-sky-700',
     supportsSequenceIn: true,
     supportsSequenceOut: false,
     supportsDataIn: true,
@@ -567,29 +567,29 @@ const FEATURE_OVERLAY_META = {
     badge: 'Cleaning',
     description: 'Configure cleaning operations with the same workspace used in the Data Service tab.',
     icon: Sparkles,
-    pillClass: 'border-emerald-100 bg-emerald-50 text-emerald-700',
-    iconClass: 'border-emerald-100 bg-emerald-50 text-emerald-600',
+    pillClass: 'border-sky-100 bg-sky-50 text-sky-700',
+    iconClass: 'border-sky-100 bg-sky-50 text-sky-600',
   },
   mapper: {
     badge: 'Transformation',
     description: 'Open the schema mapping workspace on top of the builder and save the mapping into this node.',
     icon: GitMerge,
-    pillClass: 'border-indigo-100 bg-indigo-50 text-indigo-700',
-    iconClass: 'border-indigo-100 bg-indigo-50 text-indigo-600',
+    pillClass: 'border-blue-100 bg-blue-50 text-blue-700',
+    iconClass: 'border-blue-100 bg-blue-50 text-blue-600',
   },
   matching: {
     badge: 'Matching',
     description: 'Configure cross-dataset matching rules with the same matching workspace used in Data Service.',
     icon: Shuffle,
-    pillClass: 'border-violet-100 bg-violet-50 text-violet-700',
-    iconClass: 'border-violet-100 bg-violet-50 text-violet-600',
+    pillClass: 'border-blue-100 bg-blue-50 text-blue-700',
+    iconClass: 'border-blue-100 bg-blue-50 text-blue-600',
   },
   transformer: {
     badge: 'Transformation',
     description: 'Build low-code transformation steps against the main input and any connected lookup datasets.',
     icon: ArrowLeftRight,
-    pillClass: 'border-violet-100 bg-violet-50 text-violet-700',
-    iconClass: 'border-violet-100 bg-violet-50 text-violet-600',
+    pillClass: 'border-blue-100 bg-blue-50 text-blue-700',
+    iconClass: 'border-blue-100 bg-blue-50 text-blue-600',
   },
   script: {
     badge: 'Script',
@@ -642,8 +642,8 @@ const PipelineNode = ({ id: nodeId, data, selected }) => {
   const borderColor = selected ? '#1d4ed8' : configured ? definition.accent : '#f59e0b';
   const surfaceColor = selected ? '#ffffff' : definition.bg;
   const statusClass = configured
-    ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
-    : 'border-amber-200 bg-amber-50 text-amber-700';
+    ? 'border-sky-200 bg-sky-50 text-sky-700'
+    : 'border-blue-200 bg-blue-50 text-blue-700';
 
   return (
     <div
@@ -755,7 +755,7 @@ const PipelineNode = ({ id: nodeId, data, selected }) => {
             </span>
           )}
           {(definition.supportsDataIn || definition.supportsDataOut) && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-1 text-emerald-700">
+            <span className="inline-flex items-center gap-1 rounded-full bg-sky-50 px-2 py-1 text-sky-700">
               <ArrowRightLeft size={11} /> Data
             </span>
           )}
@@ -1376,7 +1376,7 @@ export const PipelineBuilder = ({ onComplete }) => {
       {/* ── Premium Header ── */}
       <div className="h-[60px] shrink-0 flex items-center justify-between px-6 z-10 bg-white border-b border-slate-100 shadow-sm">
           <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-md shadow-emerald-200">
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-sky-500 to-teal-600 flex items-center justify-center shadow-md shadow-sky-200">
                   <GitMerge size={15} className="text-white" />
               </div>
               <div>
@@ -1398,14 +1398,14 @@ export const PipelineBuilder = ({ onComplete }) => {
                       onChange={e => setPipelineName(e.target.value)}
                       placeholder="Name your pipeline..."
                   />
-                  <button onClick={handleSavePipeline} disabled={isSaving} className="p-1.5 rounded-md bg-white border border-slate-200 text-slate-800 hover:text-emerald-600 hover:border-emerald-200 shadow-sm transition-colors" title="Save Pipeline"><Save size={16} /></button>
+                  <button onClick={handleSavePipeline} disabled={isSaving} className="p-1.5 rounded-md bg-white border border-slate-200 text-slate-800 hover:text-sky-600 hover:border-sky-200 shadow-sm transition-colors" title="Save Pipeline"><Save size={16} /></button>
                   <button onClick={() => setShowLoadDrawer(true)} className="p-1.5 rounded-md bg-white border border-slate-200 text-slate-800 hover:text-sky-600 hover:border-sky-200 shadow-sm transition-colors" title="Load Pipeline"><FolderOpen size={16} /></button>
-                  <button onClick={() => setShowScheduleModal(true)} disabled={!pipelineId} className="p-1.5 rounded-md bg-white border border-slate-200 text-slate-800 hover:text-indigo-600 hover:border-indigo-200 shadow-sm transition-colors disabled:opacity-50" title="Schedule Pipeline (Save first)"><Clock size={16} /></button>
+                  <button onClick={() => setShowScheduleModal(true)} disabled={!pipelineId} className="p-1.5 rounded-md bg-white border border-slate-200 text-slate-800 hover:text-blue-600 hover:border-blue-200 shadow-sm transition-colors disabled:opacity-50" title="Schedule Pipeline (Save first)"><Clock size={16} /></button>
               </div>
 
               {isExecuting && (
-                  <span className="flex items-center gap-1.5 text-xs text-amber-600 font-bold animate-pulse">
-                      <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-ping" /> Executing…
+                  <span className="flex items-center gap-1.5 text-xs text-blue-600 font-bold animate-pulse">
+                      <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-ping" /> Executing…
                   </span>
               )}
               <button
@@ -1414,7 +1414,7 @@ export const PipelineBuilder = ({ onComplete }) => {
                   className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-black text-sm transition-all ${
                       isExecuting || nodes.length === 0
                           ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
-                          : 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white hover:from-emerald-400 hover:to-teal-500 shadow-lg shadow-emerald-200 hover:scale-[1.02]'
+                          : 'bg-gradient-to-r from-sky-500 to-teal-600 text-white hover:from-sky-400 hover:to-teal-500 shadow-lg shadow-sky-200 hover:scale-[1.02]'
                   }`}
               >
                   <Play size={15} fill={isExecuting || nodes.length === 0 ? 'currentColor' : 'currentColor'} />
@@ -1516,10 +1516,10 @@ export const PipelineBuilder = ({ onComplete }) => {
                 <button
                   type="button"
                   onClick={() => setSequenceDataFlowOpen((open) => !open)}
-                  className="w-full rounded-2xl border border-slate-200 bg-white text-left shadow-sm transition-all hover:border-emerald-200 hover:shadow-md"
+                  className="w-full rounded-2xl border border-slate-200 bg-white text-left shadow-sm transition-all hover:border-sky-200 hover:shadow-md"
                 >
                   <div className="flex items-start gap-3 px-4 py-4">
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-emerald-200 bg-emerald-50 text-emerald-700">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-sky-200 bg-sky-50 text-sky-700">
                       <Workflow size={18} />
                     </div>
                     <div className="min-w-0 flex-1">
@@ -1529,7 +1529,7 @@ export const PipelineBuilder = ({ onComplete }) => {
                             <span className="rounded-full border border-slate-200 bg-slate-50 px-2 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">
                               Sequence
                             </span>
-                            <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-emerald-700">
+                            <span className="rounded-full border border-sky-200 bg-sky-50 px-2 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-sky-700">
                               Data Flow Task
                             </span>
                           </div>
@@ -1547,11 +1547,11 @@ export const PipelineBuilder = ({ onComplete }) => {
                 </button>
 
                 {sequenceDataFlowOpen && (
-                  <div className="mt-3 space-y-4 rounded-2xl border border-emerald-100 bg-emerald-50/40 p-3">
+                  <div className="mt-3 space-y-4 rounded-2xl border border-sky-100 bg-sky-50/40 p-3">
                     <div>
                       <div className="mb-2 flex items-center justify-between px-1">
                         <p className="text-xs font-black uppercase tracking-widest text-slate-400">Sources</p>
-                        <span className="rounded-full bg-white px-2 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-emerald-700 shadow-sm">
+                        <span className="rounded-full bg-white px-2 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-sky-700 shadow-sm">
                           Input
                         </span>
                       </div>
@@ -1562,7 +1562,7 @@ export const PipelineBuilder = ({ onComplete }) => {
                             <div key={n.type}
                                 draggable
                                 onDragStart={(e) => onDragStart(e, n.type)}
-                                className="flex items-center gap-3 rounded-xl border border-white bg-white px-3 py-2.5 shadow-sm transition-all hover:border-emerald-200 hover:bg-emerald-50/50"
+                                className="flex items-center gap-3 rounded-xl border border-white bg-white px-3 py-2.5 shadow-sm transition-all hover:border-sky-200 hover:bg-sky-50/50"
                             >
                                 <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style={{ background: n.bg }}>
                                     <n.icon size={14} style={{ color: n.color }} />
@@ -1576,7 +1576,7 @@ export const PipelineBuilder = ({ onComplete }) => {
                     <div>
                       <div className="mb-2 flex items-center justify-between px-1">
                         <p className="text-xs font-black uppercase tracking-widest text-slate-400">Data Services</p>
-                        <span className="rounded-full bg-white px-2 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-emerald-700 shadow-sm">
+                        <span className="rounded-full bg-white px-2 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-sky-700 shadow-sm">
                           Transform
                         </span>
                       </div>
@@ -1594,7 +1594,7 @@ export const PipelineBuilder = ({ onComplete }) => {
                             <div key={n.type}
                                 draggable
                                 onDragStart={(e) => onDragStart(e, n.type)}
-                                className="flex items-center gap-3 rounded-xl border border-white bg-white px-3 py-2.5 shadow-sm transition-all hover:border-emerald-200 hover:bg-emerald-50/50"
+                                className="flex items-center gap-3 rounded-xl border border-white bg-white px-3 py-2.5 shadow-sm transition-all hover:border-sky-200 hover:bg-sky-50/50"
                             >
                                 <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style={{ background: n.bg }}>
                                     <n.icon size={14} style={{ color: n.color }} />
@@ -1648,14 +1648,14 @@ export const PipelineBuilder = ({ onComplete }) => {
                           onDragStart={(e) => onDragStart(e, n.type)}
                           className={`flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-grab select-none transition-all border ${
                               n.type === 'export'
-                                  ? 'border-emerald-100 bg-emerald-50 hover:bg-emerald-100'
+                                  ? 'border-sky-100 bg-sky-50 hover:bg-sky-100'
                                   : 'border-slate-100 hover:border-slate-200 hover:bg-slate-50'
                           }`}
                       >
                           <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style={{ background: n.bg }}>
                               <n.icon size={14} style={{ color: n.color }} />
                           </div>
-                          <span className={`text-xs font-bold ${n.type === 'export' ? 'text-emerald-700' : 'text-slate-600'}`}>{n.label}</span>
+                          <span className={`text-xs font-bold ${n.type === 'export' ? 'text-sky-700' : 'text-slate-600'}`}>{n.label}</span>
                       </div>
                   ))}
                 </div>
@@ -1921,7 +1921,7 @@ export const PipelineBuilder = ({ onComplete }) => {
                     {/* Log header */}
                     <div className="flex items-center justify-between px-5 py-3 border-b border-slate-800 shrink-0">
                         <h3 className="text-sm font-bold flex items-center gap-2">
-                            <CheckCircle size={14} className="text-emerald-400" /> Execution Complete
+                            <CheckCircle size={14} className="text-sky-400" /> Execution Complete
                         </h3>
                         <button onClick={() => setLogsExpanded(v => !v)} className="text-slate-400 hover:text-white p-1 rounded">
                             {logsExpanded ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
@@ -1932,7 +1932,7 @@ export const PipelineBuilder = ({ onComplete }) => {
                         <div className="space-y-2 font-mono text-xs max-h-40 overflow-y-auto px-5 py-3 shrink-0">
                             {executionLogs.map((log, idx) => (
                                 <div key={idx} className="flex flex-col">
-                                    <span className={log.status === 'success' ? 'text-emerald-400' : 'text-red-400'}>
+                                    <span className={log.status === 'success' ? 'text-sky-400' : 'text-red-400'}>
                                         [{log.type.toUpperCase()}] {log.status}
                                     </span>
                                     <span className="text-slate-400">{log.message || log.error}</span>
@@ -1945,13 +1945,13 @@ export const PipelineBuilder = ({ onComplete }) => {
                     <div className="px-5 py-3 border-t border-slate-800 flex flex-col gap-2 shrink-0">
                         {downloadUrl && (
                             <a href={downloadUrl} target="_blank" rel="noreferrer"
-                               className="w-full flex items-center justify-center gap-2 bg-emerald-500 hover:bg-emerald-400 text-slate-900 font-bold py-2 rounded-xl transition-colors text-sm">
+                               className="w-full flex items-center justify-center gap-2 bg-sky-500 hover:bg-sky-400 text-slate-900 font-bold py-2 rounded-xl transition-colors text-sm">
                                 <Download size={15} /> Download Result
                             </a>
                         )}
                         <button
                             onClick={runVisualizerAnalysis}
-                            className="w-full flex items-center justify-center gap-2 bg-violet-600 hover:bg-violet-500 disabled:opacity-60 disabled:cursor-not-allowed text-white font-bold py-2 rounded-xl transition-colors text-sm"
+                            className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-60 disabled:cursor-not-allowed text-white font-bold py-2 rounded-xl transition-colors text-sm"
                         >
                             {vizLoading
                                 ? <><RefreshCw size={14} className="animate-spin" /> Analyzing…</>
@@ -1977,7 +1977,7 @@ export const PipelineBuilder = ({ onComplete }) => {
               {/* Panel header */}
               <div className="sticky top-0 z-10 -mx-6 mb-5 flex items-center justify-between border-b border-slate-200 bg-slate-50 px-6 pb-4 pt-1">
                 <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-violet-200">
+                  <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-lg shadow-blue-200">
                     <BarChart3 size={18} className="text-white" />
                   </div>
                   <div>
@@ -1995,7 +1995,7 @@ export const PipelineBuilder = ({ onComplete }) => {
 
               {/* Loading */}
               {vizLoading && (
-                <div className="flex items-center justify-center py-16 gap-3 text-violet-600">
+                <div className="flex items-center justify-center py-16 gap-3 text-blue-600">
                   <RefreshCw size={22} className="animate-spin" />
                   <span className="font-bold text-sm">AI is analyzing the pipeline output…</span>
                 </div>
@@ -2086,7 +2086,7 @@ export const PipelineBuilder = ({ onComplete }) => {
               ) : (
                 <div className="flex h-full w-full items-center justify-center bg-slate-50 p-6">
                   <div className="w-full max-w-2xl rounded-[28px] border border-slate-100 bg-white p-8 text-center shadow-xl shadow-slate-200/60">
-                    <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-500 to-indigo-600 shadow-lg shadow-violet-200">
+                    <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500 to-blue-600 shadow-lg shadow-blue-200">
                       <AlertCircle size={26} className="text-white" />
                     </div>
                     <h2 className="text-2xl font-black text-slate-900">Pipeline output is not ready</h2>
@@ -2168,7 +2168,7 @@ export const PipelineBuilder = ({ onComplete }) => {
                   <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }} exit={{ scale: 0.95 }} className="bg-white rounded-2xl shadow-xl max-w-md w-full overflow-hidden">
                       <div className="p-5 border-b border-slate-100 flex items-center justify-between">
                           <div className="flex items-center gap-3">
-                              <CalendarDays className="text-indigo-500" size={20} />
+                              <CalendarDays className="text-blue-500" size={20} />
                               <h3 className="font-black text-slate-800">Schedule Pipeline</h3>
                           </div>
                           <button onClick={() => setShowScheduleModal(false)} className="p-2 rounded-xl hover:bg-slate-100 text-slate-400"><X size={18} /></button>
@@ -2192,7 +2192,7 @@ export const PipelineBuilder = ({ onComplete }) => {
                               alert("Failed to save schedule: " + (err.response?.data?.detail || err.message));
                           }
                       }}>
-                          <div className="px-3 py-2 bg-indigo-50 text-indigo-700 text-xs rounded-lg mb-4">
+                          <div className="px-3 py-2 bg-blue-50 text-blue-700 text-xs rounded-lg mb-4">
                               <strong>Note:</strong> Scheduling relies on an active cron execution backend connected to this target API.
                           </div>
                           <div>
@@ -2223,7 +2223,7 @@ export const PipelineBuilder = ({ onComplete }) => {
                           </div>
                           <div className="pt-4 border-t border-slate-100 flex justify-end gap-3 mt-4">
                               <button type="button" onClick={() => setShowScheduleModal(false)} className="px-4 py-2 rounded-xl text-slate-500 hover:bg-slate-100 font-semibold text-sm transition-colors">Cancel</button>
-                              <button type="submit" className="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-sm shadow-md transition-colors">Save Schedule</button>
+                              <button type="submit" className="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-sm shadow-md transition-colors">Save Schedule</button>
                           </div>
                       </form>
                   </motion.div>
@@ -2457,7 +2457,7 @@ const CleanerConfigPanel = ({ node, columns = [], onSave }) => {
                                 <label className="text-xs font-bold text-slate-500 uppercase">Column Name</label>
                                 {columns.length > 0 ? (
                                     <select
-                                        className="w-full text-sm p-2 border border-slate-200 rounded-lg outline-none focus:border-emerald-500"
+                                        className="w-full text-sm p-2 border border-slate-200 rounded-lg outline-none focus:border-sky-500"
                                         value={r.column}
                                         onChange={e => updateRule(r.id, 'column', e.target.value)}
                                     >
@@ -2467,12 +2467,12 @@ const CleanerConfigPanel = ({ node, columns = [], onSave }) => {
                                         ))}
                                     </select>
                                 ) : (
-                                    <input type="text" className="w-full text-sm p-2 border border-slate-200 rounded-lg outline-none focus:border-emerald-500" placeholder="e.g. email" value={r.column} onChange={e => updateRule(r.id, 'column', e.target.value)} />
+                                    <input type="text" className="w-full text-sm p-2 border border-slate-200 rounded-lg outline-none focus:border-sky-500" placeholder="e.g. email" value={r.column} onChange={e => updateRule(r.id, 'column', e.target.value)} />
                                 )}
                             </div>
                             <div>
                                 <label className="text-xs font-bold text-slate-500 uppercase">Operation</label>
-                                <select className="w-full text-sm p-2 border border-slate-200 rounded-lg outline-none focus:border-emerald-500" value={r.operation} onChange={e => { const val = e.target.value; setRules(prev => prev.map(rule => rule.id === r.id ? { ...rule, operation: val, params: {} } : rule)); }}>
+                                <select className="w-full text-sm p-2 border border-slate-200 rounded-lg outline-none focus:border-sky-500" value={r.operation} onChange={e => { const val = e.target.value; setRules(prev => prev.map(rule => rule.id === r.id ? { ...rule, operation: val, params: {} } : rule)); }}>
                                     <option value="trim_whitespace">Trim Whitespace</option>
                                     <option value="uppercase">Uppercase</option>
                                     <option value="lowercase">Lowercase</option>
@@ -2537,7 +2537,7 @@ const MapperConfigPanel = ({ node, columns = [], onSave }) => {
         <div className="flex flex-col h-full bg-white rounded-3xl shadow-xl border border-slate-100 py-6 px-4">
             <div className="flex items-center justify-between mb-6">
                 <h3 className="font-bold text-lg text-slate-800">Schema Mapping</h3>
-                <button onClick={autoMap} className="text-xs font-bold bg-indigo-50 text-indigo-700 hover:bg-indigo-100 px-3 py-1.5 rounded-lg transition-colors">
+                <button onClick={autoMap} className="text-xs font-bold bg-blue-50 text-blue-700 hover:bg-blue-100 px-3 py-1.5 rounded-lg transition-colors">
                     Auto-Map
                 </button>
             </div>
@@ -2545,7 +2545,7 @@ const MapperConfigPanel = ({ node, columns = [], onSave }) => {
             <label className="text-xs font-bold text-slate-500 uppercase mb-2">Target Schema</label>
             <textarea
                 rows={5}
-                className="w-full text-sm p-3 border border-slate-200 rounded-xl outline-none focus:border-indigo-500"
+                className="w-full text-sm p-3 border border-slate-200 rounded-xl outline-none focus:border-blue-500"
                 placeholder="customer_name&#10;customer_email&#10;signup_date"
                 value={targetSchema}
                 onChange={(e) => setTargetSchema(e.target.value)}
@@ -2554,7 +2554,7 @@ const MapperConfigPanel = ({ node, columns = [], onSave }) => {
             <div className="mt-6 space-y-3">
                 <h4 className="text-sm font-bold text-slate-700">Source to Target Mapping</h4>
                 {columns.length === 0 && (
-                    <p className="text-sm text-amber-600 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                    <p className="text-sm text-blue-600 bg-blue-50 border border-blue-200 rounded-lg px-3 py-2">
                         Upload a dataset first to map detected source columns.
                     </p>
                 )}
@@ -2564,7 +2564,7 @@ const MapperConfigPanel = ({ node, columns = [], onSave }) => {
                             {sourceCol}
                         </div>
                         <select
-                            className="w-full text-sm p-2.5 border border-slate-200 rounded-lg outline-none focus:border-indigo-500"
+                            className="w-full text-sm p-2.5 border border-slate-200 rounded-lg outline-none focus:border-blue-500"
                             value={mappings[sourceCol] || ''}
                             onChange={(e) => setMappings((prev) => ({ ...prev, [sourceCol]: e.target.value }))}
                         >
@@ -2616,7 +2616,7 @@ const MatchingConfigPanel = ({ node, columns = [], onSave }) => {
                     <h3 className="font-bold text-lg text-slate-800">Data Matching</h3>
                     <p className="text-sm text-slate-500">Configure duplicate or similarity rules on pipeline columns.</p>
                 </div>
-                <button onClick={addRule} className="text-xs font-bold bg-purple-50 text-purple-700 hover:bg-purple-100 px-3 py-1.5 rounded-lg transition-colors">
+                <button onClick={addRule} className="text-xs font-bold bg-sky-50 text-sky-700 hover:bg-sky-100 px-3 py-1.5 rounded-lg transition-colors">
                     <Plus size={14} className="inline mr-1" /> Rule
                 </button>
             </div>
@@ -2632,7 +2632,7 @@ const MatchingConfigPanel = ({ node, columns = [], onSave }) => {
                         <div className="space-y-3 mt-4">
                             <div className="grid grid-cols-2 gap-3">
                                 <select
-                                    className="w-full text-sm p-2 border border-slate-200 rounded-lg outline-none focus:border-purple-500"
+                                    className="w-full text-sm p-2 border border-slate-200 rounded-lg outline-none focus:border-sky-500"
                                     value={rule.column1}
                                     onChange={(e) => updateRule(rule.id, 'column1', e.target.value)}
                                 >
@@ -2640,7 +2640,7 @@ const MatchingConfigPanel = ({ node, columns = [], onSave }) => {
                                     {columns.map((column) => <option key={column} value={column}>{column}</option>)}
                                 </select>
                                 <select
-                                    className="w-full text-sm p-2 border border-slate-200 rounded-lg outline-none focus:border-purple-500"
+                                    className="w-full text-sm p-2 border border-slate-200 rounded-lg outline-none focus:border-sky-500"
                                     value={rule.column2}
                                     onChange={(e) => updateRule(rule.id, 'column2', e.target.value)}
                                 >
@@ -2650,7 +2650,7 @@ const MatchingConfigPanel = ({ node, columns = [], onSave }) => {
                             </div>
                             <div className="grid grid-cols-[1fr_auto] gap-3 items-center">
                                 <select
-                                    className="w-full text-sm p-2 border border-slate-200 rounded-lg outline-none focus:border-purple-500"
+                                    className="w-full text-sm p-2 border border-slate-200 rounded-lg outline-none focus:border-sky-500"
                                     value={rule.algorithm}
                                     onChange={(e) => updateRule(rule.id, 'algorithm', e.target.value)}
                                 >
@@ -2667,7 +2667,7 @@ const MatchingConfigPanel = ({ node, columns = [], onSave }) => {
                                 min="0"
                                 max="1"
                                 step="0.05"
-                                className="w-full accent-purple-600"
+                                className="w-full accent-sky-600"
                                 value={rule.threshold}
                                 onChange={(e) => updateRule(rule.id, 'threshold', Number(e.target.value))}
                             />
@@ -2702,7 +2702,7 @@ const ScraperConfigPanel = ({ node, onSave }) => {
 
             <label className="text-xs font-bold text-slate-500 uppercase mb-2">Template</label>
             <select
-                className="w-full text-sm p-2.5 border border-slate-200 rounded-lg outline-none focus:border-orange-500"
+                className="w-full text-sm p-2.5 border border-slate-200 rounded-lg outline-none focus:border-sky-500"
                 value={template}
                 onChange={(e) => setTemplate(e.target.value)}
             >
@@ -2715,7 +2715,7 @@ const ScraperConfigPanel = ({ node, onSave }) => {
             <label className="text-xs font-bold text-slate-500 uppercase mt-5 mb-2">Preview URL</label>
             <input
                 type="url"
-                className="w-full text-sm p-2.5 border border-slate-200 rounded-lg outline-none focus:border-orange-500"
+                className="w-full text-sm p-2.5 border border-slate-200 rounded-lg outline-none focus:border-sky-500"
                 placeholder="https://example.com/page"
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
@@ -2724,7 +2724,7 @@ const ScraperConfigPanel = ({ node, onSave }) => {
             <label className="text-xs font-bold text-slate-500 uppercase mt-5 mb-2">URLs To Scrape</label>
             <textarea
                 rows={6}
-                className="w-full text-sm p-3 border border-slate-200 rounded-xl outline-none focus:border-orange-500"
+                className="w-full text-sm p-3 border border-slate-200 rounded-xl outline-none focus:border-sky-500"
                 placeholder="https://example.com/page-1&#10;https://example.com/page-2"
                 value={urlsText}
                 onChange={(e) => setUrlsText(e.target.value)}
@@ -2761,7 +2761,7 @@ const FilterConfigPanel = ({ node, columns = [], onSave }) => {
         <div className="flex flex-col h-full bg-white rounded-3xl shadow-xl border border-slate-100 py-6 px-4">
             <div className="flex items-center justify-between mb-6">
                 <h3 className="font-bold text-lg text-slate-800">Filter Rows</h3>
-                <button onClick={() => setFilterRules([...filterRules, { column: '', condition: 'equals', value: '' }])} className="text-xs font-bold bg-amber-50 text-amber-700 px-3 py-1.5 rounded-lg hover:bg-amber-100">
+                <button onClick={() => setFilterRules([...filterRules, { column: '', condition: 'equals', value: '' }])} className="text-xs font-bold bg-blue-50 text-blue-700 px-3 py-1.5 rounded-lg hover:bg-blue-100">
                     + Add Condition
                 </button>
             </div>
@@ -2858,15 +2858,15 @@ const JoinConfigPanel = ({ node, columns = [], onSave }) => {
                 </div>
                 <div className="grid grid-cols-2 gap-4 border-t border-slate-100 pt-5">
                     <div>
-                        <label className="block text-xs font-bold text-emerald-600 uppercase mb-2">Left Key (This Dataset)</label>
-                        <select className="w-full text-sm p-2.5 bg-emerald-50 border border-emerald-200/50 rounded-lg outline-none" value={leftKey} onChange={e => setLeftKey(e.target.value)}>
+                        <label className="block text-xs font-bold text-sky-600 uppercase mb-2">Left Key (This Dataset)</label>
+                        <select className="w-full text-sm p-2.5 bg-sky-50 border border-sky-200/50 rounded-lg outline-none" value={leftKey} onChange={e => setLeftKey(e.target.value)}>
                             <option value="">Source branch...</option>
                             {columns.map(c => <option key={c} value={c}>{c}</option>)}
                         </select>
                     </div>
                     <div>
-                        <label className="block text-xs font-bold text-indigo-600 uppercase mb-2">Right Key (Merging Dataset)</label>
-                        <input type="text" className="w-full text-sm p-2.5 bg-indigo-50 border border-indigo-200/50 rounded-lg outline-none placeholder:text-indigo-300" placeholder="e.g. customer_id..." value={rightKey} onChange={e => setRightKey(e.target.value)} />
+                        <label className="block text-xs font-bold text-blue-600 uppercase mb-2">Right Key (Merging Dataset)</label>
+                        <input type="text" className="w-full text-sm p-2.5 bg-blue-50 border border-blue-200/50 rounded-lg outline-none placeholder:text-blue-300" placeholder="e.g. customer_id..." value={rightKey} onChange={e => setRightKey(e.target.value)} />
                     </div>
                 </div>
             </div>
@@ -2904,7 +2904,7 @@ const LoopConfigPanel = ({ node, onSave }) => {
     const [chunkSize, setChunkSize] = useState(node.data.chunkSize || 100);
     return (
         <div className="flex flex-col h-full bg-white rounded-3xl shadow-xl border border-slate-100 py-6 px-4">
-            <h3 className="font-bold text-lg text-slate-800 mb-6 flex items-center gap-2"><Repeat size={20} className="text-purple-500" /> Loop (Iterator)</h3>
+            <h3 className="font-bold text-lg text-slate-800 mb-6 flex items-center gap-2"><Repeat size={20} className="text-sky-500" /> Loop (Iterator)</h3>
             <div className="space-y-4 mb-6 border border-slate-200 rounded-xl p-5 bg-slate-50">
                 <div>
                     <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Chunk Processing Size</label>
@@ -2923,14 +2923,14 @@ const ConditionalConfigPanel = ({ node, onSave }) => {
     const [conditionExpression, setConditionExpression] = useState(node.data.conditionExpression || '');
     return (
         <div className="flex flex-col h-full bg-white rounded-3xl shadow-xl border border-slate-100 py-6 px-4">
-            <h3 className="font-bold text-lg text-slate-800 mb-6 flex items-center gap-2"><GitBranch size={20} className="text-cyan-500" /> Conditional Branch</h3>
+            <h3 className="font-bold text-lg text-slate-800 mb-6 flex items-center gap-2"><GitBranch size={20} className="text-sky-500" /> Conditional Branch</h3>
             <div className="space-y-4 mb-6">
                 <div>
                     <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Expression (Python Eval Subset)</label>
-                    <textarea rows="3" className="w-full text-sm p-3 border border-slate-200 rounded-xl font-mono text-slate-800 outline-none bg-slate-50 focus:border-cyan-500 transition-colors" placeholder="e.g. df['amount'] > 1000 and df['status'] == 'active'" value={conditionExpression} onChange={e => setConditionExpression(e.target.value)} />
+                    <textarea rows="3" className="w-full text-sm p-3 border border-slate-200 rounded-xl font-mono text-slate-800 outline-none bg-slate-50 focus:border-sky-500 transition-colors" placeholder="e.g. df['amount'] > 1000 and df['status'] == 'active'" value={conditionExpression} onChange={e => setConditionExpression(e.target.value)} />
                 </div>
-                <div className="px-4 py-3 bg-cyan-50 border border-cyan-100 rounded-xl">
-                    <p className="text-xs text-cyan-800">Only rows evaluating to TRUE for this expression will pass through to the subsequent nodes. The expression uses a standard pandas syntax evaluation.</p>
+                <div className="px-4 py-3 bg-sky-50 border border-sky-100 rounded-xl">
+                    <p className="text-xs text-sky-800">Only rows evaluating to TRUE for this expression will pass through to the subsequent nodes. The expression uses a standard pandas syntax evaluation.</p>
                 </div>
             </div>
             <div className="mt-auto pt-4 border-t border-slate-200 flex justify-end">
@@ -3032,15 +3032,15 @@ const ExportConfigPanel = ({ node, onSave }) => {
 
     return (
         <div className="flex flex-col h-full bg-white rounded-3xl shadow-xl border border-slate-100 py-6 px-4">
-            <h3 className="font-bold text-lg text-slate-800 mb-6 flex items-center gap-2"><Download size={20} className="text-emerald-600" /> Export Dataset</h3>
+            <h3 className="font-bold text-lg text-slate-800 mb-6 flex items-center gap-2"><Download size={20} className="text-sky-600" /> Export Dataset</h3>
             <div className="space-y-5 mb-6">
-                <div className="rounded-2xl border border-emerald-100 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
+                <div className="rounded-2xl border border-sky-100 bg-sky-50 px-4 py-3 text-sm text-sky-900">
                     Downloads appear only when this export step is present in the Sequence Flow and a dataset is connected through Data Flow.
                 </div>
                 <div>
                     <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Output Format</label>
                     <select
-                        className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 text-sm font-medium text-slate-700 outline-none transition-colors focus:border-emerald-500"
+                        className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 text-sm font-medium text-slate-700 outline-none transition-colors focus:border-sky-500"
                         value={outputFormat}
                         onChange={(e) => setOutputFormat(e.target.value)}
                     >
@@ -3053,7 +3053,7 @@ const ExportConfigPanel = ({ node, onSave }) => {
                     <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Optional File Name</label>
                     <input
                         type="text"
-                        className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 text-sm text-slate-700 outline-none transition-colors focus:border-emerald-500"
+                        className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 text-sm text-slate-700 outline-none transition-colors focus:border-sky-500"
                         value={outputName}
                         onChange={(e) => setOutputName(e.target.value)}
                         placeholder="customer_master_cleaned"

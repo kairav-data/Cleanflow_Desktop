@@ -31,6 +31,7 @@ class UserPG(Base):
     professional_field = Column(String, nullable=True)
     country = Column(String, nullable=True)
     company_name = Column(String, nullable=True)
+    firecrawl_api_key = Column(String, nullable=True)
     hashed_password = Column(String)
     is_premium = Column(Boolean, default=False)
     is_verified = Column(Boolean, default=False)
@@ -205,6 +206,7 @@ class DatabaseManager:
                     "ALTER TABLE users ADD COLUMN IF NOT EXISTS professional_field VARCHAR;",
                     "ALTER TABLE users ADD COLUMN IF NOT EXISTS country VARCHAR;",
                     "ALTER TABLE users ADD COLUMN IF NOT EXISTS company_name VARCHAR;",
+                    "ALTER TABLE users ADD COLUMN IF NOT EXISTS firecrawl_api_key VARCHAR;",
                     "ALTER TABLE validation_jobs ADD COLUMN IF NOT EXISTS rules TEXT;",
                     "ALTER TABLE validation_jobs ADD COLUMN IF NOT EXISTS module VARCHAR DEFAULT 'validation';",
                     "ALTER TABLE validation_jobs ADD COLUMN IF NOT EXISTS total_rows INTEGER DEFAULT 0;",
@@ -337,6 +339,7 @@ class DatabaseManager:
                 professional_field=user_data.get('professional_field'),
                 country=user_data.get('country'),
                 company_name=user_data.get('company_name'),
+                firecrawl_api_key=user_data.get('firecrawl_api_key'),
                 hashed_password=user_data['hashed_password'],
                 is_premium=user_data.get('is_premium', False),
                 is_verified=False
@@ -358,6 +361,7 @@ class DatabaseManager:
                 "professional_field": user.professional_field,
                 "country": user.country,
                 "company_name": user.company_name,
+                "firecrawl_api_key": user.firecrawl_api_key,
                 "hashed_password": user.hashed_password,
                 "is_premium": user.is_premium,
                 "is_verified": user.is_verified,
@@ -372,6 +376,19 @@ class DatabaseManager:
         user = db.query(UserPG).filter(UserPG.email == email).first()
         if user:
             user.is_premium = True
+            db.commit()
+        db.close()
+        
+    async def update_user(self, email: str, update_data: dict):
+        db = self.SessionLocal()
+        user = db.query(UserPG).filter(UserPG.email == email).first()
+        if user:
+            if 'full_name' in update_data: user.full_name = update_data['full_name']
+            if 'phone_number' in update_data: user.phone_number = update_data['phone_number']
+            if 'professional_field' in update_data: user.professional_field = update_data['professional_field']
+            if 'country' in update_data: user.country = update_data['country']
+            if 'company_name' in update_data: user.company_name = update_data['company_name']
+            if 'firecrawl_api_key' in update_data: user.firecrawl_api_key = update_data['firecrawl_api_key']
             db.commit()
         db.close()
         

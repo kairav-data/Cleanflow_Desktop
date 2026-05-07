@@ -5,8 +5,8 @@ from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 import random
-from models import UserCreate, UserInDB, Token, TokenData, VerifyOTPRequest, ResendOTPRequest
-from database import get_user, create_user, update_user_otp, verify_user
+from models import UserCreate, UserInDB, Token, TokenData, VerifyOTPRequest, ResendOTPRequest, UserBase
+from database import get_user, create_user, update_user_otp, verify_user, db
 from email_utils import send_otp_email
 
 import os
@@ -167,6 +167,14 @@ async def resend_otp(request: ResendOTPRequest):
 @router.get("/users/me", response_model=UserInDB)
 async def read_users_me(current_user: UserInDB = Depends(get_current_user)):
     return current_user
+
+@router.put("/users/profile")
+async def update_user_profile(profile_data: dict, current_user: UserInDB = Depends(get_current_user)):
+    try:
+        await db.update_user(current_user.email, profile_data)
+        return {"status": "success", "message": "Profile updated successfully"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 # OAuth Routes
 @router.get("/auth/google")

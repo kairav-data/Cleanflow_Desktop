@@ -12,11 +12,11 @@ import { API_BASE } from '../lib/runtimeConfig';
 // ─── Constants ───────────────────────────────────────────────────────────────
 
 const CATEGORY_META = {
-  structural: { label: 'Structural',     color: '#6366f1', bg: 'bg-indigo-50',  border: 'border-indigo-200',  text: 'text-indigo-700',  dot: 'bg-indigo-500',  Icon: Columns },
-  values:     { label: 'Value Updates',  color: '#059669', bg: 'bg-emerald-50', border: 'border-emerald-200', text: 'text-emerald-700', dot: 'bg-emerald-500', Icon: Edit3 },
+  structural: { label: 'Structural',     color: '#6366f1', bg: 'bg-blue-50',  border: 'border-blue-200',  text: 'text-blue-700',  dot: 'bg-blue-500',  Icon: Columns },
+  values:     { label: 'Value Updates',  color: '#059669', bg: 'bg-sky-50', border: 'border-sky-200', text: 'text-sky-700', dot: 'bg-sky-500', Icon: Edit3 },
   rows:       { label: 'Row Operations', color: '#dc2626', bg: 'bg-red-50',     border: 'border-red-200',     text: 'text-red-700',     dot: 'bg-red-500',     Icon: Rows },
-  types:      { label: 'Type & Format',  color: '#d97706', bg: 'bg-amber-50',   border: 'border-amber-200',   text: 'text-amber-700',   dot: 'bg-amber-500',   Icon: Type },
-  lookup:     { label: 'Lookup / Join',  color: '#7c3aed', bg: 'bg-violet-50',  border: 'border-violet-200',  text: 'text-violet-700',  dot: 'bg-violet-500',  Icon: Link },
+  types:      { label: 'Type & Format',  color: '#d97706', bg: 'bg-blue-50',   border: 'border-blue-200',   text: 'text-blue-700',   dot: 'bg-blue-500',   Icon: Type },
+  lookup:     { label: 'Lookup / Join',  color: '#7c3aed', bg: 'bg-blue-50',  border: 'border-blue-200',  text: 'text-blue-700',  dot: 'bg-blue-500',  Icon: Link },
   string:     { label: 'String',         color: '#0891b2', bg: 'bg-cyan-50',    border: 'border-cyan-200',    text: 'text-cyan-700',    dot: 'bg-cyan-500',    Icon: AlignLeft },
   math:       { label: 'Math & Formula', color: '#db2777', bg: 'bg-pink-50',    border: 'border-pink-200',    text: 'text-pink-700',    dot: 'bg-pink-500',    Icon: Calculator },
 };
@@ -57,7 +57,7 @@ function CategoryBadge({ category, small }) {
 
 function StatusBadge({ status, error }) {
   if (status === 'ok') return (
-    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-sky-50 text-sky-700 border border-sky-200">
       <CheckCircle2 size={10} /> Applied
     </span>
   );
@@ -78,7 +78,7 @@ function StatusBadge({ status, error }) {
 function DataPreviewTable({ data, columns, loading, label = 'Dataset Preview', rowCount }) {
   if (loading) return (
     <div className="flex flex-col items-center justify-center py-16 text-slate-400">
-      <Loader2 size={28} className="animate-spin mb-3 text-violet-500" />
+      <Loader2 size={28} className="animate-spin mb-3 text-blue-500" />
       <p className="text-sm font-medium">Running transformations…</p>
     </div>
   );
@@ -114,7 +114,7 @@ function DataPreviewTable({ data, columns, loading, label = 'Dataset Preview', r
           </thead>
           <tbody>
             {data.map((row, ri) => (
-              <tr key={ri} className={`border-b border-slate-100 ${ri % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'} hover:bg-violet-50/40 transition-colors`}>
+              <tr key={ri} className={`border-b border-slate-100 ${ri % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'} hover:bg-blue-50/40 transition-colors`}>
                 {cols.map(c => (
                   <td key={c} className="px-3 py-1.5 text-slate-700 border-r border-slate-100/80 last:border-0 max-w-[160px] whitespace-nowrap">
                     <span className="block truncate" title={String(row[c] ?? '')}>
@@ -146,7 +146,7 @@ function StepConfigForm({ step, operations, onParamChange, columns, lookupDatase
     if (param.type === 'column_select') {
       return (
         <select value={val} onChange={e => onChange(e.target.value)}
-          className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 shadow-sm focus:border-violet-400 focus:ring-2 focus:ring-violet-200 focus:outline-none">
+          className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 shadow-sm focus:border-blue-400 focus:ring-2 focus:ring-blue-200 focus:outline-none">
           <option value="">— select column —</option>
           {columns.map(c => <option key={c} value={c}>{c}</option>)}
         </select>
@@ -164,8 +164,8 @@ function StepConfigForm({ step, operations, onParamChange, columns, lookupDatase
           {columns.map(c => (
             <button key={c} type="button" onClick={() => toggle(c)}
               className={`px-2 py-0.5 rounded-md text-xs font-semibold border transition-all ${selected.includes(c)
-                ? 'bg-violet-600 text-white border-violet-700 shadow-sm'
-                : 'bg-white text-slate-600 border-slate-200 hover:border-violet-300 hover:text-violet-700'}`}>
+                ? 'bg-blue-600 text-white border-blue-700 shadow-sm'
+                : 'bg-white text-slate-600 border-slate-200 hover:border-blue-300 hover:text-blue-700'}`}>
               {c}
             </button>
           ))}
@@ -189,11 +189,11 @@ function StepConfigForm({ step, operations, onParamChange, columns, lookupDatase
               <span className="flex-1 text-xs font-medium text-slate-700 truncate">{col}</span>
               <div className="flex gap-1">
                 <button type="button" disabled={i === 0} onClick={() => move(i, i - 1)}
-                  className="p-0.5 rounded text-slate-400 hover:text-violet-600 disabled:opacity-30">
+                  className="p-0.5 rounded text-slate-400 hover:text-blue-600 disabled:opacity-30">
                   <ChevronDown size={12} className="rotate-180" />
                 </button>
                 <button type="button" disabled={i === arr.length - 1} onClick={() => move(i, i + 1)}
-                  className="p-0.5 rounded text-slate-400 hover:text-violet-600 disabled:opacity-30">
+                  className="p-0.5 rounded text-slate-400 hover:text-blue-600 disabled:opacity-30">
                   <ChevronDown size={12} />
                 </button>
               </div>
@@ -206,7 +206,7 @@ function StepConfigForm({ step, operations, onParamChange, columns, lookupDatase
     if (param.type === 'lookup_select') {
       return (
         <select value={val} onChange={e => onChange(e.target.value)}
-          className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 shadow-sm focus:border-violet-400 focus:ring-2 focus:ring-violet-200 focus:outline-none">
+          className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 shadow-sm focus:border-blue-400 focus:ring-2 focus:ring-blue-200 focus:outline-none">
           <option value="">— select lookup dataset —</option>
           {lookupDatasets.map(d => (
             <option key={d.lookup_id} value={d.lookup_id}>{d.name} ({formatNumber(d.rows)} rows)</option>
@@ -220,7 +220,7 @@ function StepConfigForm({ step, operations, onParamChange, columns, lookupDatase
       const lkpCols = lookupDatasets.find(d => d.lookup_id === lookupId)?.columns || [];
       return (
         <select value={val} onChange={e => onChange(e.target.value)}
-          className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 shadow-sm focus:border-violet-400 focus:ring-2 focus:ring-violet-200 focus:outline-none">
+          className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 shadow-sm focus:border-blue-400 focus:ring-2 focus:ring-blue-200 focus:outline-none">
           <option value="">— select lookup column —</option>
           {lkpCols.map(c => <option key={c} value={c}>{c}</option>)}
         </select>
@@ -242,8 +242,8 @@ function StepConfigForm({ step, operations, onParamChange, columns, lookupDatase
             : lkpCols.map(c => (
               <button key={c} type="button" onClick={() => toggle(c)}
                 className={`px-2 py-0.5 rounded-md text-xs font-semibold border transition-all ${selected.includes(c)
-                  ? 'bg-violet-600 text-white border-violet-700'
-                  : 'bg-white text-slate-600 border-slate-200 hover:border-violet-300'}`}>
+                  ? 'bg-blue-600 text-white border-blue-700'
+                  : 'bg-white text-slate-600 border-slate-200 hover:border-blue-300'}`}>
                 {c}
               </button>
             ))}
@@ -254,7 +254,7 @@ function StepConfigForm({ step, operations, onParamChange, columns, lookupDatase
     if (param.type === 'dropdown') {
       return (
         <select value={val} onChange={e => onChange(e.target.value)}
-          className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 shadow-sm focus:border-violet-400 focus:ring-2 focus:ring-violet-200 focus:outline-none">
+          className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 shadow-sm focus:border-blue-400 focus:ring-2 focus:ring-blue-200 focus:outline-none">
           {(param.options || []).map(o => <option key={o} value={o}>{o}</option>)}
         </select>
       );
@@ -264,7 +264,7 @@ function StepConfigForm({ step, operations, onParamChange, columns, lookupDatase
       return (
         <input type="number" value={val} placeholder={param.placeholder || ''}
           onChange={e => onChange(e.target.value)}
-          className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 shadow-sm focus:border-violet-400 focus:ring-2 focus:ring-violet-200 focus:outline-none" />
+          className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 shadow-sm focus:border-blue-400 focus:ring-2 focus:ring-blue-200 focus:outline-none" />
       );
     }
 
@@ -273,7 +273,7 @@ function StepConfigForm({ step, operations, onParamChange, columns, lookupDatase
         <div>
           <input type="text" value={val} placeholder={param.placeholder || 'e.g. col_a * 1.18 - col_b'}
             onChange={e => onChange(e.target.value)}
-            className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-mono text-slate-800 shadow-sm focus:border-violet-400 focus:ring-2 focus:ring-violet-200 focus:outline-none" />
+            className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-mono text-slate-800 shadow-sm focus:border-blue-400 focus:ring-2 focus:ring-blue-200 focus:outline-none" />
           <p className="mt-1.5 text-[11px] text-slate-400 flex items-center gap-1">
             <Info size={10} /> Use column names directly: <code className="text-[10px] bg-slate-100 px-1 rounded">price * qty</code>. Supports +, −, ×, ÷ and parentheses.
           </p>
@@ -285,7 +285,7 @@ function StepConfigForm({ step, operations, onParamChange, columns, lookupDatase
     return (
       <input type="text" value={val} placeholder={param.placeholder || ''}
         onChange={e => onChange(e.target.value)}
-        className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 shadow-sm focus:border-violet-400 focus:ring-2 focus:ring-violet-200 focus:outline-none" />
+        className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 shadow-sm focus:border-blue-400 focus:ring-2 focus:ring-blue-200 focus:outline-none" />
     );
   };
 
@@ -352,7 +352,7 @@ function StepCard({ step, index, operations, columns, lookupDatasets, expanded, 
   };
 
   return (
-    <div className={`rounded-xl border-2 transition-all ${expanded ? 'border-violet-300 shadow-lg shadow-violet-100' : 'border-slate-200 hover:border-slate-300'} bg-white overflow-hidden`}>
+    <div className={`rounded-xl border-2 transition-all ${expanded ? 'border-blue-300 shadow-lg shadow-blue-100' : 'border-slate-200 hover:border-slate-300'} bg-white overflow-hidden`}>
       {/* Card Header */}
       <div
         className="flex items-center gap-3 px-4 py-3 cursor-pointer select-none"
@@ -396,7 +396,7 @@ function StepCard({ step, index, operations, columns, lookupDatasets, expanded, 
         <div className="border-t border-slate-100 px-4 pb-4 pt-3 bg-slate-50/50">
           {opMeta?.description && (
             <p className="text-[11px] text-slate-500 mb-3 flex items-start gap-1.5">
-              <Info size={11} className="mt-0.5 flex-shrink-0 text-violet-400" />
+              <Info size={11} className="mt-0.5 flex-shrink-0 text-blue-400" />
               {opMeta.description}
             </p>
           )}
@@ -422,10 +422,10 @@ function StepCard({ step, index, operations, columns, lookupDatasets, expanded, 
               disabled={confirming}
               className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-black transition-all shadow-md
                 ${confirming
-                  ? 'bg-violet-400 text-white cursor-wait'
+                  ? 'bg-blue-400 text-white cursor-wait'
                   : isConfirmed
-                  ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
-                  : 'bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white hover:shadow-lg'}`}
+                  ? 'bg-sky-600 hover:bg-sky-700 text-white'
+                  : 'bg-gradient-to-r from-blue-600 to-blue-600 hover:from-blue-700 hover:to-blue-700 text-white hover:shadow-lg'}`}
             >
               {confirming ? (
                 <><Loader2 size={15} className="animate-spin" /> Running step…</>
@@ -436,7 +436,7 @@ function StepCard({ step, index, operations, columns, lookupDatasets, expanded, 
               )}
             </button>
             {isConfirmed && stepLog?.status === 'ok' && (
-              <p className="mt-2 text-[11px] text-center text-emerald-600 font-semibold flex items-center justify-center gap-1">
+              <p className="mt-2 text-[11px] text-center text-sky-600 font-semibold flex items-center justify-center gap-1">
                 <CheckCircle2 size={11} />
                 {stepLog.rows_before !== stepLog.rows_after
                   ? `${formatNumber(stepLog.rows_before)} → ${formatNumber(stepLog.rows_after)} rows · ${stepLog.cols_before !== stepLog.cols_after ? `${stepLog.cols_before} → ${stepLog.cols_after} cols` : ''}`
@@ -476,10 +476,10 @@ function OperationPickerModal({ operations, categories, onSelect, onClose }) {
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 bg-gradient-to-r from-violet-600 to-indigo-600">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 bg-gradient-to-r from-blue-600 to-blue-600">
           <div>
             <h3 className="text-base font-black text-white">Add Transformation Step</h3>
-            <p className="text-xs text-violet-200 mt-0.5">Choose an operation to apply to your dataset</p>
+            <p className="text-xs text-blue-200 mt-0.5">Choose an operation to apply to your dataset</p>
           </div>
           <button onClick={onClose} className="p-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white transition-all">
             <X size={18} />
@@ -496,7 +496,7 @@ function OperationPickerModal({ operations, categories, onSelect, onClose }) {
               placeholder="Search operations…"
               value={search}
               onChange={e => setSearch(e.target.value)}
-              className="w-full pl-9 pr-4 py-2 text-sm rounded-lg border border-slate-200 bg-white focus:border-violet-400 focus:ring-2 focus:ring-violet-100 outline-none"
+              className="w-full pl-9 pr-4 py-2 text-sm rounded-lg border border-slate-200 bg-white focus:border-blue-400 focus:ring-2 focus:ring-blue-100 outline-none"
             />
           </div>
           <div className="flex gap-1.5 flex-wrap">
@@ -507,8 +507,8 @@ function OperationPickerModal({ operations, categories, onSelect, onClose }) {
                   key={cat.id}
                   onClick={() => setActiveCategory(cat.id)}
                   className={`px-3 py-1 rounded-full text-[11px] font-bold transition-all border ${activeCategory === cat.id
-                    ? 'bg-violet-600 text-white border-violet-700 shadow-sm'
-                    : `bg-white text-slate-600 border-slate-200 hover:border-violet-300 ${m ? m.text : ''}`}`}
+                    ? 'bg-blue-600 text-white border-blue-700 shadow-sm'
+                    : `bg-white text-slate-600 border-slate-200 hover:border-blue-300 ${m ? m.text : ''}`}`}
                 >
                   {cat.label || cat.name}
                 </button>
@@ -536,13 +536,13 @@ function OperationPickerModal({ operations, categories, onSelect, onClose }) {
                     <button
                       key={op.id}
                       onClick={() => onSelect(op)}
-                      className={`w-full text-left px-3 py-2.5 rounded-xl border-2 border-transparent hover:border-violet-300 bg-white shadow-sm hover:shadow-md transition-all group flex items-start gap-2.5`}
+                      className={`w-full text-left px-3 py-2.5 rounded-xl border-2 border-transparent hover:border-blue-300 bg-white shadow-sm hover:shadow-md transition-all group flex items-start gap-2.5`}
                     >
                       <div className={`mt-0.5 flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg ${catMeta.bg || 'bg-slate-50'} border ${catMeta.border || 'border-slate-200'}`}>
                         <CatIcon size={13} className={catMeta.text || 'text-slate-500'} />
                       </div>
                       <div className="min-w-0">
-                        <p className="text-sm font-bold text-slate-800 group-hover:text-violet-700 transition-colors">{op.name}</p>
+                        <p className="text-sm font-bold text-slate-800 group-hover:text-blue-700 transition-colors">{op.name}</p>
                         <p className="text-[11px] text-slate-400 leading-relaxed truncate">{op.description}</p>
                       </div>
                     </button>
@@ -596,8 +596,8 @@ function LookupManager({ sessionId, lookupDatasets, onLookupAdded, onLookupDelet
   };
 
   return (
-    <div className="rounded-xl border-2 border-violet-200 bg-violet-50/30 overflow-hidden">
-      <div className="flex items-center gap-2 px-4 py-3 bg-violet-600">
+    <div className="rounded-xl border-2 border-blue-200 bg-blue-50/30 overflow-hidden">
+      <div className="flex items-center gap-2 px-4 py-3 bg-blue-600">
         <Link size={15} className="text-white" />
         <span className="text-sm font-black text-white">Lookup Datasets</span>
         <span className="ml-auto text-xs bg-white/20 text-white px-2 py-0.5 rounded-full font-bold">
@@ -607,24 +607,24 @@ function LookupManager({ sessionId, lookupDatasets, onLookupAdded, onLookupDelet
 
       {/* Upload form */}
       {!readOnly ? (
-        <div className="p-4 border-b border-violet-100 bg-white">
+        <div className="p-4 border-b border-blue-100 bg-white">
         <p className="text-xs text-slate-500 mb-3 flex items-start gap-1.5">
-          <Info size={11} className="mt-0.5 flex-shrink-0 text-violet-400" />
+          <Info size={11} className="mt-0.5 flex-shrink-0 text-blue-400" />
           Upload reference datasets to use in <strong>Lookup Join</strong> steps. You can upload <strong>any number</strong> of them.
         </p>
         <div className="flex gap-2 mb-2">
           <input type="text" value={lookupName} onChange={e => setLookupName(e.target.value)}
             placeholder="Dataset label (optional)"
-            className="flex-1 rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-violet-400 focus:ring-2 focus:ring-violet-100 outline-none" />
+            className="flex-1 rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-blue-400 focus:ring-2 focus:ring-blue-100 outline-none" />
           <select value={delimiter} onChange={e => setDelimiter(e.target.value)}
-            className="rounded-lg border border-slate-200 px-2 py-2 text-sm focus:border-violet-400 outline-none bg-white">
+            className="rounded-lg border border-slate-200 px-2 py-2 text-sm focus:border-blue-400 outline-none bg-white">
             <option value=",">, CSV</option>
             <option value="&#9;">↹ TSV</option>
             <option value="|">| Pipe</option>
           </select>
         </div>
         <label className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border-2 border-dashed cursor-pointer transition-all text-sm font-semibold
-          ${disabled ? 'opacity-40 cursor-not-allowed border-slate-200 text-slate-400' : 'border-violet-300 text-violet-700 bg-violet-50 hover:bg-violet-100 hover:border-violet-400'}`}>
+          ${disabled ? 'opacity-40 cursor-not-allowed border-slate-200 text-slate-400' : 'border-blue-300 text-blue-700 bg-blue-50 hover:bg-blue-100 hover:border-blue-400'}`}>
           {uploading ? <Loader2 size={16} className="animate-spin" /> : <FolderPlus size={16} />}
           {uploading ? 'Uploading…' : 'Upload CSV / Excel'}
           <input ref={fileInputRef} type="file" accept=".csv,.tsv,.xlsx,.xls" className="hidden"
@@ -634,9 +634,9 @@ function LookupManager({ sessionId, lookupDatasets, onLookupAdded, onLookupDelet
         {error && <p className="mt-2 text-xs text-red-600 flex items-center gap-1"><XCircle size={11} />{error}</p>}
         </div>
       ) : (
-        <div className="border-b border-violet-100 bg-white px-4 py-3">
+        <div className="border-b border-blue-100 bg-white px-4 py-3">
           <p className="text-xs text-slate-500 flex items-start gap-1.5">
-            <Info size={11} className="mt-0.5 flex-shrink-0 text-violet-400" />
+            <Info size={11} className="mt-0.5 flex-shrink-0 text-blue-400" />
             Additional Data Flow inputs become lookup datasets here. Connect one main dataset plus any lookup sources in the pipeline builder.
           </p>
         </div>
@@ -646,8 +646,8 @@ function LookupManager({ sessionId, lookupDatasets, onLookupAdded, onLookupDelet
       {lookupDatasets.length > 0 && (
         <div className="p-3 space-y-2">
           {lookupDatasets.map(d => (
-            <div key={d.lookup_id} className="flex items-center gap-2 bg-white rounded-lg border border-violet-100 px-3 py-2 shadow-sm">
-              <Database size={13} className="text-violet-500 flex-shrink-0" />
+            <div key={d.lookup_id} className="flex items-center gap-2 bg-white rounded-lg border border-blue-100 px-3 py-2 shadow-sm">
+              <Database size={13} className="text-blue-500 flex-shrink-0" />
               <div className="flex-1 min-w-0">
                 <p className="text-xs font-bold text-slate-800 truncate">{d.name}</p>
                 <p className="text-[10px] text-slate-400">{formatNumber(d.rows)} rows · {d.columns?.length} cols</p>
@@ -968,7 +968,7 @@ export default function DataTransformer({
       {/* ── Header Bar ── */}
       <div className="flex items-center justify-between gap-3 px-5 py-3.5 bg-white border-b border-slate-200 shadow-sm flex-shrink-0">
         <div className="flex items-center gap-3">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-violet-600 to-indigo-600 shadow-md">
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-blue-600 to-blue-600 shadow-md">
             <ArrowLeftRight size={18} className="text-white" />
           </div>
           <div>
@@ -981,22 +981,22 @@ export default function DataTransformer({
           {sessionId && (
             <>
               <span className="hidden sm:flex items-center gap-1.5 text-xs font-semibold text-slate-500 bg-slate-100 rounded-full px-3 py-1.5">
-                <FileText size={12} className="text-violet-500" />
+                <FileText size={12} className="text-blue-500" />
                 {filename}
                 <span className="text-slate-400">·</span>
-                <span className="text-violet-600 font-bold">{formatNumber(rowCount)} rows</span>
+                <span className="text-blue-600 font-bold">{formatNumber(rowCount)} rows</span>
                 <span className="text-slate-400">·</span>
                 {columns.length} cols
               </span>
 
               <button onClick={handlePreview} disabled={!canRun || previewLoading}
-                className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-sm font-bold bg-slate-100 text-slate-700 hover:bg-violet-50 hover:text-violet-700 border border-slate-200 hover:border-violet-300 transition-all disabled:opacity-40">
+                className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-sm font-bold bg-slate-100 text-slate-700 hover:bg-blue-50 hover:text-blue-700 border border-slate-200 hover:border-blue-300 transition-all disabled:opacity-40">
                 {previewLoading ? <Loader2 size={15} className="animate-spin" /> : <Eye size={15} />}
                 Preview
               </button>
 
               <button onClick={handleApply} disabled={!canRun || applyLoading}
-                className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-bold bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-md hover:shadow-lg hover:from-violet-700 hover:to-indigo-700 transition-all disabled:opacity-40">
+                className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-bold bg-gradient-to-r from-blue-600 to-blue-600 text-white shadow-md hover:shadow-lg hover:from-blue-700 hover:to-blue-700 transition-all disabled:opacity-40">
                 {applyLoading ? <Loader2 size={15} className="animate-spin" /> : <Zap size={15} />}
                 Apply All
               </button>
@@ -1005,7 +1005,7 @@ export default function DataTransformer({
                 <button
                   onClick={() => onSaveConfig({ columns: previewCols.length > 0 ? previewCols : columns, steps })}
                   disabled={steps.length === 0}
-                  className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-bold bg-emerald-600 text-white shadow-md hover:bg-emerald-700 transition-all disabled:opacity-40"
+                  className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-bold bg-sky-600 text-white shadow-md hover:bg-sky-700 transition-all disabled:opacity-40"
                 >
                   <Check size={15} /> Save to Pipeline
                 </button>
@@ -1013,14 +1013,14 @@ export default function DataTransformer({
 
               {!embedded && (
               <div className="relative group">
-                <button className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-sm font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 transition-all">
+                <button className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-sm font-bold bg-sky-50 text-sky-700 border border-sky-200 hover:bg-sky-100 transition-all">
                   <Download size={15} /> Export
                   <ChevronDown size={13} />
                 </button>
                 <div className="absolute right-0 top-full mt-1 rounded-xl border border-slate-200 bg-white shadow-xl p-1 z-20 hidden group-hover:block min-w-[130px]">
                   {[['csv', 'CSV'], ['xlsx', 'Excel'], ['json', 'JSON']].map(([fmt, label]) => (
                     <button key={fmt} onClick={() => handleExport(fmt)}
-                      className="w-full text-left px-3 py-2 text-sm text-slate-700 hover:bg-violet-50 hover:text-violet-700 rounded-lg transition-all font-medium">
+                      className="w-full text-left px-3 py-2 text-sm text-slate-700 hover:bg-blue-50 hover:text-blue-700 rounded-lg transition-all font-medium">
                       {label}
                     </button>
                   ))}
@@ -1034,7 +1034,7 @@ export default function DataTransformer({
 
       {/* ── Global messages ── */}
       {(globalError || successMsg) && (
-        <div className={`flex-shrink-0 mx-5 mt-3 rounded-xl px-4 py-2.5 text-sm font-medium flex items-center gap-2 border ${globalError ? 'bg-red-50 text-red-700 border-red-200' : 'bg-emerald-50 text-emerald-700 border-emerald-200'}`}>
+        <div className={`flex-shrink-0 mx-5 mt-3 rounded-xl px-4 py-2.5 text-sm font-medium flex items-center gap-2 border ${globalError ? 'bg-red-50 text-red-700 border-red-200' : 'bg-sky-50 text-sky-700 border-sky-200'}`}>
           {globalError ? <XCircle size={15} /> : <CheckCircle2 size={15} />}
           {globalError || successMsg}
           <button onClick={() => { setGlobalError(''); setSuccessMsg(''); }} className="ml-auto opacity-60 hover:opacity-100">
@@ -1052,7 +1052,7 @@ export default function DataTransformer({
           {/* Upload area (if no session) */}
           {workspaceLoading && (
             <div className="flex flex-1 flex-col items-center justify-center p-8 text-slate-400">
-              <Loader2 size={32} className="mb-4 animate-spin text-violet-500" />
+              <Loader2 size={32} className="mb-4 animate-spin text-blue-500" />
               <p className="text-sm font-bold text-slate-800 mb-1">Preparing pipeline inputs</p>
               <p className="text-xs text-center max-w-[260px]">Loading the main dataset and any connected lookup datasets from the current pipeline graph.</p>
             </div>
@@ -1060,14 +1060,14 @@ export default function DataTransformer({
 
           {!sessionId && !workspaceLoading && !isPipelineEmbedded && (
             <div
-              className={`flex flex-col items-center justify-center flex-1 p-8 transition-all cursor-pointer ${isDragging ? 'bg-violet-50 border-violet-400' : 'bg-white'}`}
+              className={`flex flex-col items-center justify-center flex-1 p-8 transition-all cursor-pointer ${isDragging ? 'bg-blue-50 border-blue-400' : 'bg-white'}`}
               onDragOver={e => { e.preventDefault(); setIsDragging(true); }}
               onDragLeave={() => setIsDragging(false)}
               onDrop={handleDrop}
               onClick={() => fileInputRef.current?.click()}
             >
-              <div className="mb-5 flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-100 to-indigo-100 border-2 border-dashed border-violet-300">
-                <Upload size={32} className="text-violet-500" />
+              <div className="mb-5 flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-100 to-blue-100 border-2 border-dashed border-blue-300">
+                <Upload size={32} className="text-blue-500" />
               </div>
               <h3 className="text-xl font-black text-slate-900 mb-2">Import Your Dataset</h3>
               <p className="text-sm text-slate-500 text-center max-w-[260px] mb-4">
@@ -1101,7 +1101,7 @@ export default function DataTransformer({
                   <p className="text-[11px] text-slate-400">{steps.length} step{steps.length !== 1 ? 's' : ''} — executed top to bottom</p>
                 </div>
                 <button onClick={() => setShowOpPicker(true)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-violet-600 text-white text-xs font-bold hover:bg-violet-700 shadow-sm transition-all">
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600 text-white text-xs font-bold hover:bg-blue-700 shadow-sm transition-all">
                   <Plus size={13} /> Add Step
                 </button>
               </div>
@@ -1164,11 +1164,11 @@ export default function DataTransformer({
                 return (
                   <button key={v.id} onClick={() => setActiveView(v.id)}
                     className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold transition-all ${active
-                      ? 'bg-white text-violet-700 shadow-sm border border-slate-200'
+                      ? 'bg-white text-blue-700 shadow-sm border border-slate-200'
                       : 'text-slate-500 hover:text-slate-800'}`}>
                     <Icon size={12} /> {v.label}
                     {v.id === 'preview' && previewData.length > 0 && (
-                      <span className="ml-0.5 px-1.5 py-0.5 bg-violet-100 text-violet-700 rounded-full text-[9px] font-black">
+                      <span className="ml-0.5 px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded-full text-[9px] font-black">
                         {formatNumber(previewRowCount)}
                       </span>
                     )}
@@ -1187,7 +1187,7 @@ export default function DataTransformer({
                     <span key={s.id}
                       title={log.status === 'error' ? log.error : `${formatNumber(log.rows_before)} → ${formatNumber(log.rows_after)} rows`}
                       className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black cursor-default
-                        ${log.status === 'ok' ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>
+                        ${log.status === 'ok' ? 'bg-sky-100 text-sky-700' : 'bg-red-100 text-red-700'}`}>
                       {log.status === 'ok' ? '✓' : '!'}
                     </span>
                   ) : null;
@@ -1232,7 +1232,7 @@ export default function DataTransformer({
                 <p className="text-sm font-bold text-slate-800 mb-1">No preview yet</p>
                 <p className="text-xs text-center">Add at least one transformation step, then click <strong>Preview</strong> to see results here.</p>
                 <button onClick={() => setShowOpPicker(true)} disabled={!sessionId}
-                  className="mt-4 flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-bold bg-violet-600 text-white hover:bg-violet-700 shadow-sm transition-all disabled:opacity-40">
+                  className="mt-4 flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-bold bg-blue-600 text-white hover:bg-blue-700 shadow-sm transition-all disabled:opacity-40">
                   <Plus size={15} /> Add First Step
                 </button>
               </div>

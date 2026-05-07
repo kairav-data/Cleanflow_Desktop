@@ -47,7 +47,7 @@ export default function Validation() {
                                     step === s
                                         ? 'bg-gray-900 text-white shadow-lg scale-110'
                                         : step > s
-                                        ? 'bg-emerald-500 text-white'
+                                        ? 'bg-sky-500 text-white'
                                         : 'bg-gray-200 text-gray-500'
                                 }`}
                             >
@@ -56,7 +56,7 @@ export default function Validation() {
                             {s < 3 && (
                                 <div
                                     className={`w-8 h-1 rounded-full ${
-                                        step > s ? 'bg-emerald-500' : 'bg-gray-200'
+                                        step > s ? 'bg-sky-500' : 'bg-gray-200'
                                     }`}
                                 />
                             )}

@@ -478,37 +478,37 @@ function App() {
                     exit={{ opacity: 0, y: -10 }}
                     className="mx-auto w-full max-w-[1560px] pb-16"
                 >
-                    {/* Hero Section */}
-                    <div className="mb-6 relative overflow-hidden rounded-[24px] border border-[#1b2230] shadow-[0_28px_80px_rgba(10,18,34,0.28)] bg-[#05070b]">
+                    <div className="mb-6 relative overflow-hidden rounded-[24px] border border-blue-100 bg-white shadow-sm">
                         {/* Ambient glow blobs for an impressive color gradient */}
-                        <div className="absolute inset-0" style={{ background: 'linear-gradient(120deg, #05070b 0%, #0a1220 52%, #05110f 100%)' }} />
-                        <motion.div animate={{ scale: [1, 1.1, 1], opacity: [0.3, 0.5, 0.3] }} transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }} className="absolute -top-20 left-1/4 h-[500px] w-[500px] rounded-full bg-[#6f47ff]/30 blur-[120px] pointer-events-none mix-blend-screen" />
-                        <motion.div animate={{ scale: [1, 1.2, 1], opacity: [0.2, 0.4, 0.2] }} transition={{ duration: 10, repeat: Infinity, ease: "easeInOut", delay: 1 }} className="absolute -bottom-20 right-1/4 h-[500px] w-[500px] rounded-full bg-[#18c58f]/30 blur-[120px] pointer-events-none mix-blend-screen" />
-                        <motion.div animate={{ scale: [1, 1.05, 1], opacity: [0.1, 0.2, 0.1] }} transition={{ duration: 12, repeat: Infinity, ease: "easeInOut", delay: 2 }} className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-[600px] w-[600px] bg-[#3cb4ff]/20 blur-[140px] pointer-events-none mix-blend-screen" />
-                        <div className="absolute -top-10 -right-10 opacity-[0.04]"><Sparkles size={270} className="text-white" /></div>
+                        <div className="absolute inset-0 bg-white" />
+                        <motion.div animate={{ scale: [1, 1.1, 1], opacity: [0.1, 0.2, 0.1] }} transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }} className="absolute -top-20 left-1/4 h-[500px] w-[500px] rounded-full bg-blue-300/40 blur-[120px] pointer-events-none mix-blend-multiply" />
+                        <motion.div animate={{ scale: [1, 1.2, 1], opacity: [0.05, 0.15, 0.05] }} transition={{ duration: 10, repeat: Infinity, ease: "easeInOut", delay: 1 }} className="absolute -bottom-20 right-1/4 h-[500px] w-[500px] rounded-full bg-[#00A3AD]/20 blur-[120px] pointer-events-none mix-blend-multiply" />
+                        <motion.div animate={{ scale: [1, 1.05, 1], opacity: [0.05, 0.1, 0.05] }} transition={{ duration: 12, repeat: Infinity, ease: "easeInOut", delay: 2 }} className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-[600px] w-[600px] bg-sky-300/20 blur-[140px] pointer-events-none mix-blend-multiply" />
+                        <div className="absolute -top-10 -right-10 opacity-[0.02]"><Sparkles size={270} className="text-blue-900" /></div>
 
                         <div className="relative z-10 px-5 py-4 md:px-6 md:py-5">
                             <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
                                 <div className="flex-1 min-w-0">
                                     {/* Badge */}
-                                    <div className="mb-3 inline-flex items-center gap-1.5 rounded-full border border-[#1ab67d]/25 bg-[#04281c] px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.24em] text-[#26d59a]">
+                                    <div className="mb-3 inline-flex items-center gap-1.5 rounded-full border border-blue-200 bg-blue-50 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.24em] text-blue-600">
                                         <span className="relative flex h-2 w-2">
-                                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#26d59a] opacity-75"></span>
-                                            <span className="relative inline-flex rounded-full h-2 w-2 bg-[#26d59a]"></span>
+                                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-500 opacity-75"></span>
+                                            <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
                                         </span>
                                         Active Workspace
+
                                     </div>
 
                                     {/* Heading */}
-                                    <h1 className="mb-0.5 text-2xl font-black leading-[0.95] tracking-[-0.04em] text-white md:text-3xl">
+                                    <h1 className="mb-0.5 text-2xl font-black leading-[0.95] tracking-[-0.04em] text-[#0f2040] md:text-3xl">
                                         Welcome back,
                                     </h1>
-                                    <p className="mb-3 bg-gradient-to-r from-[#2ce5a6] via-[#22d1a0] to-[#87f5d0] bg-clip-text text-2xl font-black leading-[0.95] tracking-[-0.04em] text-transparent md:text-3xl">
+                                    <p className="mb-3 bg-gradient-to-r from-[#0072C6] via-[#005999] to-sky-600 bg-clip-text text-2xl font-black leading-[0.95] tracking-[-0.04em] text-transparent md:text-3xl">
                                         {user.full_name || 'User'}
                                     </p>
 
                                     {/* Subtitle */}
-                                    <p className="mb-4 max-w-xl text-xs font-medium leading-5 text-[#9aa7bd]">
+                                    <p className="mb-4 max-w-xl text-xs font-medium leading-5 text-slate-500">
                                         Execute intelligent data workflows, manage your recent jobs, and move through the platform with the guided toolset below.
                                     </p>
 
@@ -516,13 +516,13 @@ function App() {
                                     <div className="flex flex-wrap items-center gap-3">
                                         <button
                                             onClick={() => setActiveTab('pipeline')}
-                                            className="inline-flex items-center gap-1.5 rounded-xl bg-white px-4 py-2 text-[12px] font-bold text-[#141923] shadow-[0_8px_20px_rgba(255,255,255,0.08)] transition-all hover:-translate-y-0.5 hover:bg-[#f7f9fc]"
+                                            className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-[#0072C6] to-[#005999] px-4 py-2 text-[12px] font-bold text-white shadow-md transition-all hover:-translate-y-0.5 hover:shadow-lg"
                                         >
-                                            <Zap size={14} className="text-[#10b981]" /> New Workflow
+                                            <Zap size={14} className="text-white" /> New Workflow
                                         </button>
                                         <button
                                             onClick={() => document.getElementById('job-history-section')?.scrollIntoView({ behavior: 'smooth' })}
-                                            className="inline-flex items-center gap-1.5 rounded-xl border border-white/12 bg-white/[0.06] px-4 py-2 text-[12px] font-semibold text-white transition-all hover:bg-white/[0.11]"
+                                            className="inline-flex items-center gap-1.5 rounded-xl border border-blue-200 bg-white px-4 py-2 text-[12px] font-semibold text-blue-700 transition-all hover:bg-blue-50"
                                         >
                                             <BarChart3 size={14} /> View Recent Jobs
                                         </button>
@@ -532,13 +532,13 @@ function App() {
                                 {/* Right: Stats */}
                                 <div className="grid min-w-[180px] gap-4 self-stretch xl:pt-4">
                                     {[
-                                        { value: recentJobs.length, label: 'active jobs', color: 'text-white' },
-                                        { value: recentJobs.length > 0 ? '98%' : '—', label: 'success rate', color: 'text-emerald-400' },
-                                        { value: recentJobs.reduce((acc, j) => acc + (j.total_rows || 0), 0).toLocaleString() || '0', label: 'rows processed', color: 'text-[#3cb4ff]' },
+                                        { value: recentJobs.length, label: 'active jobs', color: 'text-slate-900' },
+                                        { value: recentJobs.length > 0 ? '98%' : '—', label: 'success rate', color: 'text-blue-600' },
+                                        { value: recentJobs.reduce((acc, j) => acc + (j.total_rows || 0), 0).toLocaleString() || '0', label: 'rows processed', color: 'text-sky-600' },
                                     ].map(({ value, label, color }) => (
                                         <div key={label} className="text-left xl:text-right">
                                             <span className={`text-2xl font-black tracking-[-0.04em] ${color}`}>{value}</span>
-                                            <span className="mt-0.5 block text-[9px] font-semibold uppercase tracking-[0.2em] text-[#72809a]">{label}</span>
+                                            <span className="mt-0.5 block text-[9px] font-bold uppercase tracking-[0.2em] text-slate-500">{label}</span>
                                         </div>
                                     ))}
                                 </div>
@@ -550,7 +550,7 @@ function App() {
                     {/* Section: Tutorials & Tools */}
                     <div className="mb-6">
                         <h2 className="mb-4 flex items-center gap-2 text-[18px] font-black tracking-[-0.02em] text-[#10203a]">
-                            <span className="flex h-8 w-8 items-center justify-center rounded-[12px] bg-[#e7fbf3] text-[#14b87f]">
+                            <span className="flex h-8 w-8 items-center justify-center rounded-[12px] bg-blue-50 text-blue-600">
                                 <Database size={16} />
                             </span>
                             Data Services & Tutorials
@@ -580,8 +580,8 @@ function App() {
                                     description: 'Clean data and enhance records with verified attributes.',
                                     tutorial: '1. Select an entity type.\n2. Upload source rows with target attributes.\n3. The engine automatically finds missing data via web integration.',
                                     icon: Sparkles,
-                                    color: 'text-emerald-500',
-                                    bg: 'bg-emerald-50',
+                                    color: 'text-sky-600',
+                                    bg: 'bg-sky-50',
                                     action: () => setActiveTab('enrichment'),
                                 },
                                 {
@@ -589,8 +589,8 @@ function App() {
                                     description: 'Map and transform columns between datasets.',
                                     tutorial: '1. Define your target schema (e.g., standard standard_name).\n2. Drag & Drop columns from source to target.\n3. Validate the structural transformation.',
                                     icon: GitMerge,
-                                    color: 'text-indigo-500',
-                                    bg: 'bg-indigo-50',
+                                    color: 'text-blue-700',
+                                    bg: 'bg-blue-50',
                                     action: () => setActiveTab('mapper'),
                                 },
                                 {
@@ -598,8 +598,8 @@ function App() {
                                     description: 'Extract structured data from URLs at scale.',
                                     tutorial: '1. Choose an extraction template.\n2. Paste target URLs or CSS selectors.\n3. The system parallelizes the scrape and chunks the HTML to JSON.',
                                     icon: Globe,
-                                    color: 'text-orange-500',
-                                    bg: 'bg-orange-50',
+                                    color: 'text-teal-600',
+                                    bg: 'bg-teal-50',
                                     action: () => setActiveTab('scraper'),
                                 },
                                 {
@@ -607,8 +607,8 @@ function App() {
                                     description: 'Identify duplicate or related entities across datasets.',
                                     tutorial: '1. Select two datasets for comparison.\n2. Choose algorithms (Fuzzy, Cosine, Exact) and set thresholds.\n3. Review similarity scores and merge rows.',
                                     icon: Shuffle,
-                                    color: 'text-purple-500',
-                                    bg: 'bg-purple-50',
+                                    color: 'text-cyan-600',
+                                    bg: 'bg-cyan-50',
                                     action: () => setActiveTab('matching'),
                                 },
                                 {
@@ -616,8 +616,8 @@ function App() {
                                     description: 'Recommend margin-safe prices after benchmarking against competitor products.',
                                     tutorial: '1. Load your catalog and competitor price feed.\n2. Choose Below / Match / Above market and your margin floor.\n3. Review dynamic repricing signals and export recommended prices.',
                                     icon: TrendingUp,
-                                    color: 'text-amber-500',
-                                    bg: 'bg-amber-50',
+                                    color: 'text-sky-700',
+                                    bg: 'bg-sky-50',
                                     action: () => setActiveTab('pricing-intelligence'),
                                 },
                                 {
@@ -625,8 +625,8 @@ function App() {
                                     description: 'Upload a dataset and get an instant AI-generated chart dashboard.',
                                     tutorial: '1. Upload your CSV or TSV file.\n2. AI analyzes column types & distributions.\n3. A beautiful dashboard of charts is auto-generated.',
                                     icon: BarChart3,
-                                    color: 'text-violet-600',
-                                    bg: 'bg-violet-50',
+                                    color: 'text-blue-500',
+                                    bg: 'bg-blue-50',
                                     action: () => setActiveTab('visualizer'),
                                 },
                                 {
@@ -634,7 +634,7 @@ function App() {
                                     description: 'Design orchestrated flows across multiple data operations.',
                                     tutorial: '1. Drag Data Sources to the canvas.\n2. Connect them to Cleaning/Validation nodes.\n3. Route the output to an Export node, then click Run.',
                                     icon: GitMerge,
-                                    color: 'text-slate-700',
+                                    color: 'text-slate-600',
                                     bg: 'bg-slate-100',
                                     action: () => setActiveTab('pipeline'),
                                 }
@@ -652,7 +652,7 @@ function App() {
                                         <div className={`mb-4 flex h-12 w-12 items-center justify-center rounded-[16px] shadow-sm transition-transform duration-500 group-hover:scale-110 group-hover:rotate-3 ${item.bg}`}>
                                             <item.icon size={20} className={item.color} />
                                         </div>
-                                        <h3 className="text-[18px] font-black tracking-[-0.03em] text-[#0d1b31] group-hover:text-[#6f47ff] transition-colors duration-300">{item.title}</h3>
+                                        <h3 className="text-[18px] font-black tracking-[-0.03em] text-[#0f2040] group-hover:text-blue-600 transition-colors duration-300">{item.title}</h3>
                                         <p className="mt-2 text-[13px] leading-snug text-[#5d6b83] font-medium">{item.description}</p>
 
                                         <div className="mt-5 rounded-[16px] border border-white/80 bg-white/50 p-4 shadow-[inset_0_2px_10px_rgba(255,255,255,0.7)]">
@@ -673,7 +673,7 @@ function App() {
                                         <button
                                             onClick={item.action}
                                             className={`group/btn relative overflow-hidden flex w-full items-center justify-center gap-2 rounded-xl py-2.5 text-[13px] font-bold text-white shadow-md transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5`}
-                                            style={{ background: 'linear-gradient(to right, #10203a, #1a365d)' }}
+                                            style={{ background: 'linear-gradient(135deg, #0072C6, #005999)' }}
                                         >
                                             <div className="absolute inset-0 bg-white/20 translate-y-full group-hover/btn:translate-y-0 transition-transform duration-300" />
                                             <span className="relative z-10 flex items-center gap-1.5">Launch Workspace <ArrowRight size={14} className="group-hover/btn:translate-x-1 transition-transform" /></span>
@@ -732,7 +732,7 @@ function App() {
                                 <div className="rounded-b-[26px] bg-white">
                                     {jobsLoading ? (
                                         <div className="flex flex-col items-center py-16 text-center text-slate-400">
-                                            <RefreshCw size={32} className="mb-4 animate-spin text-emerald-500" />
+                                            <RefreshCw size={32} className="mb-4 animate-spin text-blue-500" />
                                             <p className="font-medium">Loading historical records...</p>
                                         </div>
                                     ) : recentJobs.filter(j => (j.module || 'validation') === historyModuleTab).length === 0 ? (
@@ -761,14 +761,14 @@ function App() {
                                                             <tr key={job.id} className="group border-b border-[#f1f5fb] transition-colors hover:bg-[#fbfdff]">
                                                                 <td className="p-4 pl-6 align-middle">
                                                                     <div className="flex items-center gap-3">
-                                                                        <div className="h-2.5 w-2.5 flex-shrink-0 rounded-full bg-[#19c88f]" />
+                                                                        <div className="h-2.5 w-2.5 flex-shrink-0 rounded-full bg-[#0072C6]" />
                                                                         <span className="block max-w-[200px] truncate font-bold text-[#10203a] md:max-w-md xl:max-w-lg" title={job.file_name || job.filename || 'Automated Job'}>
                                                                             {job.file_name || job.filename || 'Automated Job'}
                                                                         </span>
                                                                     </div>
                                                                 </td>
                                                                 <td className="p-4 align-middle">
-                                                                    <span className="inline-flex items-center gap-1.5 rounded-xl border border-[#d6f6e9] bg-[#effcf5] px-2.5 py-1 text-xs font-bold text-[#159b6d]">
+                                                                    <span className="inline-flex items-center gap-1.5 rounded-xl border border-[#c9e1f9] bg-[#eef6ff] px-2.5 py-1 text-xs font-bold text-[#0072C6]">
                                                                         <Check size={12} /> Completed
                                                                     </span>
                                                                 </td>
@@ -824,17 +824,17 @@ function App() {
                                 const s = i + 1;
                                 return (
                                     <div key={s} className="flex items-center">
-                                        <div className={`flex items-center gap-2 rounded-full px-3 py-1 text-[11px] font-bold uppercase tracking-[0.14em] transition-all ${step === s ? 'bg-slate-900 text-white' :
-                                            step > s ? 'bg-emerald-100 text-emerald-700' :
+                                        <div className={`flex items-center gap-2 rounded-full px-3 py-1 text-[11px] font-bold uppercase tracking-[0.14em] transition-all ${step === s ? 'bg-[#0072C6] text-white' :
+                                            step > s ? 'bg-blue-100 text-blue-700' :
                                                 'bg-slate-100 text-slate-400'
                                             }`}>
-                                            <span className={`flex h-4 w-4 items-center justify-center rounded-full text-[10px] font-black ${step === s ? 'bg-white text-slate-900' :
-                                                step > s ? 'bg-emerald-500 text-white' :
+                                            <span className={`flex h-4 w-4 items-center justify-center rounded-full text-[10px] font-black ${step === s ? 'bg-white text-[#0072C6]' :
+                                                step > s ? 'bg-blue-500 text-white' :
                                                     'bg-slate-300 text-slate-500'
                                                 }`}>{step > s ? '✓' : s}</span>
                                             {label}
                                         </div>
-                                        {s < 3 && <div className={`w-6 h-px mx-1 ${step > s ? 'bg-emerald-300' : 'bg-slate-200'}`} />}
+                                        {s < 3 && <div className={`w-6 h-px mx-1 ${step > s ? 'bg-blue-300' : 'bg-slate-200'}`} />}
                                     </div>
                                 );
                             })}
@@ -1047,11 +1047,11 @@ function App() {
     const FULL_TAB_IDS = ['pipeline', 'validate', 'repository', 'enrichment', 'scraper', 'mapper', 'matching', 'pricing-intelligence', 'visualizer', 'transformer'];
 
     return (
-        <div className="flex h-screen w-full flex-col overflow-hidden bg-[#121723] font-sans text-[#e8edf6]">
+        <div className="flex h-screen w-full flex-col overflow-hidden bg-[#091527] font-sans text-[#e8edf6]">
 
             {/* ── TOP TITLE BAR (VSCode-style) ── */}
             <div
-                className="vscode-titlebar relative flex h-[32px] shrink-0 items-center justify-between border-b border-white/6 bg-[#262229] px-3 select-none"
+                className="vscode-titlebar relative flex h-[32px] shrink-0 items-center justify-between border-b border-white/8 bg-[#0b1a2e] px-3 select-none"
                 style={{ WebkitAppRegion: 'drag' }}
             >
                 {/* Left: Logo + Menu items */}
@@ -1059,10 +1059,9 @@ function App() {
                     <button
                         onClick={() => { handleFeatureAccess('dashboard'); setActiveMenu(null); }}
                         className="mr-2 flex items-center gap-2 rounded-md px-2 py-0.5 transition-colors hover:bg-white/10"
-                        title="Cleanflow Home"
+                        title="CleanFlow Home"
                     >
-                        <img src={cleanflowLogo} alt="Cleanflow" className="h-4 w-4 shrink-0 object-contain" />
-                        <span className="text-[12px] font-semibold leading-none text-[#f3f6fb]">Cleanflow</span>
+                        <span className="text-[12px] font-semibold leading-none text-[#f3f6fb]">CleanFlow</span>
                     </button>
 
                     {/* ── FUNCTIONAL MENU BUTTONS ── */}
@@ -1120,14 +1119,14 @@ function App() {
                             <button
                                 onClick={() => setActiveMenu(prev => prev === label ? null : label)}
                                 className={`rounded px-[8px] py-[3px] text-[12px] leading-5 transition-colors ${
-                                    activeMenu === label ? 'bg-[#18c58f] text-[#07130f]' : 'text-[#d4dae5] hover:bg-white/12'
+                                    activeMenu === label ? 'bg-[#0072C6] text-white' : 'text-[#d4dae5] hover:bg-white/12'
                                 }`}
                             >
                                 {label}
                             </button>
 
                             {activeMenu === label && (
-                                <div className="absolute top-full left-0 z-[200] mt-[4px] min-w-[220px] rounded-xl border border-white/10 bg-[#151b27] py-1 shadow-2xl">
+                                <div className="absolute top-full left-0 z-[200] mt-[4px] min-w-[220px] rounded-xl border border-white/10 bg-[#0f2040] py-1 shadow-2xl">
                                     {items.map((item, idx) =>
                                         item === null ? (
                                             <div key={idx} className="mx-2 my-1 h-px bg-white/8" />
@@ -1135,7 +1134,7 @@ function App() {
                                             <button
                                                 key={item.label}
                                                 onClick={() => { item.action(); setActiveMenu(null); }}
-                                                className="flex w-full items-center px-4 py-[6px] text-left text-[12px] text-[#d8dfeb] transition-colors hover:bg-[#1f2a3d] hover:text-white"
+                                                className="flex w-full items-center px-4 py-[6px] text-left text-[12px] text-[#d8dfeb] transition-colors hover:bg-[#0072C6]/20 hover:text-white"
                                             >
                                                 {item.label}
                                             </button>
@@ -1220,7 +1219,7 @@ function App() {
                         )}
 
                 {/* ── LEFT ACTIVITY BAR (always 48px, VSCode style) ── */}
-                <nav className={`fixed left-0 top-[32px] z-50 flex w-[48px] shrink-0 flex-col items-center border-r border-[#252526] bg-[#333333] transition-transform duration-300 lg:static ${
+                <nav className={`fixed left-0 top-[32px] z-50 flex w-[48px] shrink-0 flex-col items-center border-r border-[#0d2544] bg-[#0f2040] transition-transform duration-300 lg:static ${
                     isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
                 }`} style={{ height: 'calc(100vh - 32px)' }}>
 
@@ -1231,7 +1230,7 @@ function App() {
                         {renderActivityItem({ id: 'dashboard', label: 'Home', icon: Home })}
 
                         {/* Divider */}
-                        <div className="my-1 mx-auto h-px w-7 bg-[#454545]" />
+                        <div className="my-1 mx-auto h-px w-7 bg-[#1a3050]" />
 
                         {/* Data Services */}
                         {[
@@ -1246,7 +1245,7 @@ function App() {
                         ].map(renderActivityItem)}
 
                         {/* Divider */}
-                        <div className="my-1 mx-auto h-px w-7 bg-[#454545]" />
+                        <div className="my-1 mx-auto h-px w-7 bg-[#1a3050]" />
 
                         {/* Orchestration */}
                         {[
@@ -1256,7 +1255,7 @@ function App() {
                         ].map(renderActivityItem)}
 
                         {/* Divider */}
-                        <div className="my-1 mx-auto h-px w-7 bg-[#454545]" />
+                        <div className="my-1 mx-auto h-px w-7 bg-[#1a3050]" />
 
                         {/* Resources */}
                         {[
@@ -1266,7 +1265,7 @@ function App() {
                     </div>
 
                     {/* ── Bottom: Profile + Logout ── */}
-                    <div className="flex w-full shrink-0 flex-col items-center gap-0 border-t border-[#252526] pb-1">
+                    <div className="flex w-full shrink-0 flex-col items-center gap-0 border-t border-[#0d2544] pb-1">
                         <button
                             onClick={() => handleFeatureAccess('profile')}
                             title={user.full_name || 'My Account'}
@@ -1277,7 +1276,7 @@ function App() {
                             {activeTab === 'profile' && (
                                 <span className="absolute left-0 top-0 h-full w-[2px] rounded-r bg-[#007acc]" />
                             )}
-                            <div className="relative z-10 flex h-7 w-7 items-center justify-center rounded-full bg-emerald-600 text-[10px] font-bold text-white">
+                            <div className="relative z-10 flex h-7 w-7 items-center justify-center rounded-full bg-blue-600 text-[10px] font-bold text-white">
                                 {user.full_name?.[0] || user.email?.[0]?.toUpperCase() || 'U'}
                             </div>
                         </button>
@@ -1292,7 +1291,7 @@ function App() {
                 </nav>
 
                 {/* ── MAIN CONTENT ── */}
-                <main className="relative flex h-full flex-1 flex-col overflow-hidden bg-[linear-gradient(180deg,#f4f7fb_0%,#eef3f9_100%)]">
+                <main className="relative flex h-full flex-1 flex-col overflow-hidden bg-[linear-gradient(180deg,#f0f7ff_0%,#eef4fb_100%)]">
                     <div className={`h-full w-full max-w-full flex-1 overflow-y-auto ${
                         FULL_TAB_IDS.includes(activeTab) ? 'p-0' : 'p-5 md:p-7'
                     }`}>

@@ -729,9 +729,9 @@ export default function PricingIntelligenceBuilder() {
 
     const summaryCards = [
         { label: 'Products Analyzed', value: summary?.analyzed_products || 0, tone: 'text-slate-900' },
-        { label: 'Competitor Coverage', value: `${summary?.coverage_pct || 0}%`, tone: 'text-violet-700' },
-        { label: 'Competitor Sources', value: summary?.competitor_source_count || 0, tone: 'text-amber-600' },
-        { label: 'Review Pairs', value: summary?.review_pair_count || 0, tone: 'text-emerald-600' },
+        { label: 'Competitor Coverage', value: `${summary?.coverage_pct || 0}%`, tone: 'text-blue-700' },
+        { label: 'Competitor Sources', value: summary?.competitor_source_count || 0, tone: 'text-blue-600' },
+        { label: 'Review Pairs', value: summary?.review_pair_count || 0, tone: 'text-sky-600' },
     ];
 
     const currentStrategy = strategies.find((item) => item.id === strategy.position);
@@ -852,7 +852,7 @@ export default function PricingIntelligenceBuilder() {
                             <button
                                 onClick={() => setStep(2)}
                                 disabled={!ourDataset.loaded || loadedCompetitors.length === 0}
-                                className="px-6 py-3 rounded-xl bg-amber-600 hover:bg-amber-700 disabled:bg-slate-200 disabled:text-slate-400 text-white font-bold text-sm transition-all shadow-md shadow-amber-600/20"
+                                className="px-6 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 disabled:bg-slate-200 disabled:text-slate-400 text-white font-bold text-sm transition-all shadow-md shadow-blue-600/20"
                             >
                                 Continue to Match Setup
                             </button>
@@ -864,8 +864,8 @@ export default function PricingIntelligenceBuilder() {
                         <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
                             <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
                                 <div className="flex items-center justify-between gap-4 mb-4">
-                                    <SectionTitle icon={Target} iconClass="text-violet-600" iconBg="bg-violet-50 border-violet-100" title="Matching Strategy" description="Add multiple match criteria just like Data Matching. Each rule compares one client column against one mapped competitor column per source." />
-                                    <button onClick={addMatchRule} className="inline-flex items-center gap-2 px-4 py-2.5 bg-violet-600 hover:bg-violet-700 text-white rounded-xl font-bold text-sm transition-colors shadow-sm shadow-violet-600/20">
+                                    <SectionTitle icon={Target} iconClass="text-blue-600" iconBg="bg-blue-50 border-blue-100" title="Matching Strategy" description="Add multiple match criteria just like Data Matching. Each rule compares one client column against one mapped competitor column per source." />
+                                    <button onClick={addMatchRule} className="inline-flex items-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-sm transition-colors shadow-sm shadow-blue-600/20">
                                         <Plus size={15} /> Add Rule
                                     </button>
                                 </div>
@@ -888,14 +888,14 @@ export default function PricingIntelligenceBuilder() {
                                                 />
                                                 <div>
                                                     <label className="block text-xs font-bold text-slate-500 mb-1.5">Matching algorithm</label>
-                                                    <select value={rule.algorithm} onChange={(event) => updateMatchRule(rule.id, 'algorithm', event.target.value)} className="w-full px-3 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-medium focus:border-violet-400 outline-none">
+                                                    <select value={rule.algorithm} onChange={(event) => updateMatchRule(rule.id, 'algorithm', event.target.value)} className="w-full px-3 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-medium focus:border-blue-400 outline-none">
                                                         {algorithms.map((algorithm) => <option key={algorithm.id} value={algorithm.id}>{algorithm.name}</option>)}
                                                     </select>
                                                 </div>
                                             </div>
                                             <div>
                                                 <label className="block text-xs font-bold text-slate-500 mb-1.5">Threshold <span className="text-slate-700">{Math.round(Number(rule.threshold) * 100)}%</span></label>
-                                                <input type="range" min="0.5" max="1" step="0.01" value={rule.threshold} onChange={(event) => updateMatchRule(rule.id, 'threshold', Number(event.target.value))} className="w-full mt-2 accent-violet-600" />
+                                                <input type="range" min="0.5" max="1" step="0.01" value={rule.threshold} onChange={(event) => updateMatchRule(rule.id, 'threshold', Number(event.target.value))} className="w-full mt-2 accent-blue-600" />
                                             </div>
                                         </div>
                                     ))}
@@ -922,7 +922,7 @@ export default function PricingIntelligenceBuilder() {
 
                         <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
                             <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
-                                <SectionTitle icon={Eye} iconClass="text-amber-600" iconBg="bg-amber-50 border-amber-100" title="Review Workflow" description="Pricing setup comes later. This page only prepares the matching report." />
+                                <SectionTitle icon={Eye} iconClass="text-blue-600" iconBg="bg-blue-50 border-blue-100" title="Review Workflow" description="Pricing setup comes later. This page only prepares the matching report." />
                                 <div className="space-y-3 text-sm text-slate-600">
                                     <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">1. Choose client attributes and match types.</div>
                                     <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">2. Map the competitor attribute name for each rule in every competitor source.</div>
@@ -932,7 +932,7 @@ export default function PricingIntelligenceBuilder() {
                             </div>
 
                             <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
-                                <SectionTitle icon={Database} iconClass="text-emerald-600" iconBg="bg-emerald-50 border-emerald-100" title="Competitor Source Mapping" description="Map the competitor fields to display in the report and the competitor attribute name for every client rule." />
+                                <SectionTitle icon={Database} iconClass="text-sky-600" iconBg="bg-sky-50 border-sky-100" title="Competitor Source Mapping" description="Map the competitor fields to display in the report and the competitor attribute name for every client rule." />
                                 <div className="space-y-4 max-h-[420px] overflow-y-auto pr-1">
                                     {loadedCompetitors.map((source) => (
                                         <div key={source.id} className="rounded-2xl border border-slate-200 p-4 bg-slate-50">
@@ -985,7 +985,7 @@ export default function PricingIntelligenceBuilder() {
 
                         <div className="flex items-center justify-between">
                             <button onClick={() => setStep(1)} className="px-4 py-2 border border-slate-200 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-colors">Back to Upload</button>
-                            <button onClick={handleGenerateReview} disabled={!canGenerateReview} className="flex items-center gap-2 px-6 py-3 bg-amber-600 hover:bg-amber-700 disabled:bg-slate-200 disabled:text-slate-400 text-white rounded-xl font-bold text-sm transition-all shadow-md shadow-amber-600/20">
+                            <button onClick={handleGenerateReview} disabled={!canGenerateReview} className="flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-200 disabled:text-slate-400 text-white rounded-xl font-bold text-sm transition-all shadow-md shadow-blue-600/20">
                                 <Eye size={16} /> Generate Matching Report
                             </button>
                         </div>
@@ -1023,7 +1023,7 @@ export default function PricingIntelligenceBuilder() {
                                 <span className="inline-flex items-center rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-600">
                                     {reviewRows.length} total matched row{reviewRows.length === 1 ? '' : 's'}
                                 </span>
-                                <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-bold ${excludedMatchIds.length ? 'bg-rose-100 text-rose-700' : 'bg-emerald-100 text-emerald-700'}`}>
+                                <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-bold ${excludedMatchIds.length ? 'bg-rose-100 text-rose-700' : 'bg-sky-100 text-sky-700'}`}>
                                     {excludedMatchIds.length} excluded from pricing
                                 </span>
                             </div>
@@ -1066,10 +1066,10 @@ export default function PricingIntelligenceBuilder() {
 
                         <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
                             <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
-                                <SectionTitle icon={TrendingUp} iconClass="text-amber-600" iconBg="bg-amber-50 border-amber-100" title="Market Position Strategy" description="Choose how your final price should sit relative to the reviewed competitor market." />
+                                <SectionTitle icon={TrendingUp} iconClass="text-blue-600" iconBg="bg-blue-50 border-blue-100" title="Market Position Strategy" description="Choose how your final price should sit relative to the reviewed competitor market." />
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
                                     {(strategies.length ? strategies : []).map((item) => (
-                                        <button key={item.id} onClick={() => setStrategy((prev) => ({ ...prev, position: item.id }))} className={`text-left rounded-2xl border p-4 transition-all ${strategy.position === item.id ? 'border-amber-500 bg-amber-50 shadow-sm' : 'border-slate-200 bg-white hover:border-amber-300'}`}>
+                                        <button key={item.id} onClick={() => setStrategy((prev) => ({ ...prev, position: item.id }))} className={`text-left rounded-2xl border p-4 transition-all ${strategy.position === item.id ? 'border-blue-500 bg-blue-50 shadow-sm' : 'border-slate-200 bg-white hover:border-blue-300'}`}>
                                             <p className="font-bold text-sm text-slate-900">{item.name}</p>
                                             <p className="text-xs text-slate-500 mt-2 leading-relaxed">{item.description}</p>
                                         </button>
@@ -1116,10 +1116,10 @@ export default function PricingIntelligenceBuilder() {
                             </div>
 
                             <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
-                                <SectionTitle icon={Sparkles} iconClass="text-indigo-600" iconBg="bg-indigo-50 border-indigo-100" title="Elasticity and Guardrails" description="Test price sensitivity and enforce allowed price limits." />
+                                <SectionTitle icon={Sparkles} iconClass="text-blue-600" iconBg="bg-blue-50 border-blue-100" title="Elasticity and Guardrails" description="Test price sensitivity and enforce allowed price limits." />
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                                     <label className="flex items-center gap-3 px-4 py-3 rounded-xl border border-slate-200 bg-slate-50">
-                                        <input type="checkbox" checked={elasticity.enabled} onChange={(event) => setElasticity((prev) => ({ ...prev, enabled: event.target.checked }))} className="w-4 h-4 accent-indigo-600" />
+                                        <input type="checkbox" checked={elasticity.enabled} onChange={(event) => setElasticity((prev) => ({ ...prev, enabled: event.target.checked }))} className="w-4 h-4 accent-blue-600" />
                                         <div>
                                             <p className="text-sm font-bold text-slate-900">Enable elasticity testing</p>
                                             <p className="text-xs text-slate-500">Compare multiple price points before the final recommendation.</p>
@@ -1137,7 +1137,7 @@ export default function PricingIntelligenceBuilder() {
 
                         <div className="flex items-center justify-between">
                             <button onClick={() => setStep(3)} className="px-4 py-2 border border-slate-200 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-colors">Back to Review</button>
-                            <button onClick={handleExecute} disabled={!canRunPricing} className="flex items-center gap-2 px-6 py-3 bg-amber-600 hover:bg-amber-700 disabled:bg-slate-200 disabled:text-slate-400 text-white rounded-xl font-bold text-sm transition-all shadow-md shadow-amber-600/20">
+                            <button onClick={handleExecute} disabled={!canRunPricing} className="flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-200 disabled:text-slate-400 text-white rounded-xl font-bold text-sm transition-all shadow-md shadow-blue-600/20">
                                 <Play size={16} fill="currentColor" /> Run Pricing Engine
                             </button>
                         </div>
@@ -1178,8 +1178,8 @@ function Header({ step }) {
     return (
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 bg-white shrink-0">
             <div className="flex items-center gap-4">
-                <div className="w-9 h-9 rounded-xl bg-amber-50 border border-amber-100 flex items-center justify-center">
-                    <TrendingUp size={18} className="text-amber-600" />
+                <div className="w-9 h-9 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center">
+                    <TrendingUp size={18} className="text-blue-600" />
                 </div>
                 <div>
                     <h2 className="text-xl font-black text-slate-900 tracking-tight">Pricing Intelligence</h2>
@@ -1191,11 +1191,11 @@ function Header({ step }) {
                     const current = index + 1;
                     return (
                         <div key={label} className="flex items-center">
-                            <div className={`flex items-center gap-2 px-2.5 py-1 rounded-full text-[11px] font-bold transition-all ${step === current ? 'bg-amber-600 text-white' : step > current ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-400'}`}>
-                                <span className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-black ${step === current ? 'bg-white text-amber-600' : step > current ? 'bg-amber-500 text-white' : 'bg-slate-300 text-slate-500'}`}>{step > current ? 'v' : current}</span>
+                            <div className={`flex items-center gap-2 px-2.5 py-1 rounded-full text-[11px] font-bold transition-all ${step === current ? 'bg-blue-600 text-white' : step > current ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-400'}`}>
+                                <span className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-black ${step === current ? 'bg-white text-blue-600' : step > current ? 'bg-blue-500 text-white' : 'bg-slate-300 text-slate-500'}`}>{step > current ? 'v' : current}</span>
                                 {label}
                             </div>
-                            {current < STEPS.length ? <div className={`w-6 h-px mx-1 ${step > current ? 'bg-amber-300' : 'bg-slate-200'}`} /> : null}
+                            {current < STEPS.length ? <div className={`w-6 h-px mx-1 ${step > current ? 'bg-blue-300' : 'bg-slate-200'}`} /> : null}
                         </div>
                     );
                 })}
@@ -1213,7 +1213,7 @@ function LoadingState({ progress, elapsedTime }) {
                     <span>{progress.percent}%</span>
                 </div>
                 <div className="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden">
-                    <Motion.div className="bg-amber-500 h-full rounded-full" initial={{ width: 0 }} animate={{ width: `${progress.percent}%` }} transition={{ duration: 0.4 }} />
+                    <Motion.div className="bg-blue-500 h-full rounded-full" initial={{ width: 0 }} animate={{ width: `${progress.percent}%` }} transition={{ duration: 0.4 }} />
                 </div>
             </div>
             <p className="text-slate-400 text-sm">Elapsed: <span className="font-mono font-bold">{Math.floor(elapsedTime / 60)}:{String(elapsedTime % 60).padStart(2, '0')}</span></p>
@@ -1231,8 +1231,8 @@ function IntroCards() {
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-5">
             {cards.map((item) => (
                 <div key={item.title} className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
-                    <div className="w-10 h-10 rounded-xl bg-amber-50 border border-amber-100 flex items-center justify-center mb-3">
-                        <item.icon size={18} className="text-amber-600" />
+                    <div className="w-10 h-10 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center mb-3">
+                        <item.icon size={18} className="text-blue-600" />
                     </div>
                     <h3 className="text-sm font-bold text-slate-900 mb-1.5">{item.title}</h3>
                     <p className="text-xs text-slate-500 leading-relaxed">{item.text}</p>
@@ -1291,23 +1291,23 @@ function DatasetCard({
                         {onLabelChange ? (
                             <div className="w-full max-w-[220px]">
                                 <label className="block text-[11px] font-bold text-slate-500 mb-1.5">Client label</label>
-                                <input value={label || ''} onChange={(event) => onLabelChange(event.target.value)} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-sm font-medium focus:border-amber-400 outline-none" />
+                                <input value={label || ''} onChange={(event) => onLabelChange(event.target.value)} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-sm font-medium focus:border-blue-400 outline-none" />
                             </div>
                         ) : null}
                     </div>
                 </div>
-                <div className={`px-3 py-1 rounded-full text-xs font-bold ${loaded ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'}`}>{loaded ? 'Loaded' : 'Pending'}</div>
+                <div className={`px-3 py-1 rounded-full text-xs font-bold ${loaded ? 'bg-sky-100 text-sky-700' : 'bg-slate-100 text-slate-500'}`}>{loaded ? 'Loaded' : 'Pending'}</div>
             </div>
             <div className="flex bg-slate-100 rounded-lg p-0.5 mb-4 w-fit">
                 {['file', 'database'].map((item) => (
-                    <button key={item} onClick={() => onModeChange(item)} className={`px-3 py-1 text-xs font-bold rounded-md transition-all ${mode === item ? 'bg-white text-amber-600 shadow-sm' : 'text-slate-800 hover:text-slate-900'}`}>{item === 'file' ? 'File Upload' : 'Local Database'}</button>
+                    <button key={item} onClick={() => onModeChange(item)} className={`px-3 py-1 text-xs font-bold rounded-md transition-all ${mode === item ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-800 hover:text-slate-900'}`}>{item === 'file' ? 'File Upload' : 'Local Database'}</button>
                 ))}
             </div>
             {mode === 'file' ? (
                 <div className="space-y-4">
                     <SeparatorInput value={separator} onChange={onSeparatorChange} />
                     <input type="file" accept=".csv,.txt,.xlsx,.xls" className="hidden" id={`upload-${title.replace(/\s+/g, '-').toLowerCase()}`} onChange={(event) => event.target.files?.[0] && onUpload(event.target.files[0])} />
-                    <label htmlFor={`upload-${title.replace(/\s+/g, '-').toLowerCase()}`} className={`w-full flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-sm cursor-pointer transition-all ${loaded ? 'bg-emerald-50 border-2 border-emerald-200 text-emerald-700' : 'bg-amber-600 hover:bg-amber-700 text-white shadow-sm shadow-amber-600/20'}`}>
+                    <label htmlFor={`upload-${title.replace(/\s+/g, '-').toLowerCase()}`} className={`w-full flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-sm cursor-pointer transition-all ${loaded ? 'bg-sky-50 border-2 border-sky-200 text-sky-700' : 'bg-blue-600 hover:bg-blue-700 text-white shadow-sm shadow-blue-600/20'}`}>
                         {loaded ? <><CheckCircle size={15} /> Replace Dataset</> : <><Upload size={15} /> Upload CSV or Excel</>}
                     </label>
                 </div>
@@ -1328,14 +1328,14 @@ function DatasetCard({
                         <>
                             <div>
                                 <label className="block text-xs font-bold text-slate-500 mb-1.5">Connection</label>
-                                <select value={connectionId} onChange={(event) => onConnectionChange(event.target.value)} className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:border-amber-400 outline-none">
+                                <select value={connectionId} onChange={(event) => onConnectionChange(event.target.value)} className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:border-blue-400 outline-none">
                                     {connections.map((connection) => <option key={connection.id} value={connection.id}>{connection.name}</option>)}
                                 </select>
                             </div>
                             <DatabaseConnectionManager title="New Connection" compact onConnectionSaved={onConnectionSaved} />
                             <div>
                                 <label className="block text-xs font-bold text-slate-500 mb-1.5">SQL Query</label>
-                                <textarea rows={4} value={query} onChange={(event) => onQueryChange(event.target.value)} className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:border-amber-400 outline-none resize-none" />
+                                <textarea rows={4} value={query} onChange={(event) => onQueryChange(event.target.value)} className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:border-blue-400 outline-none resize-none" />
                             </div>
                             <button onClick={onDatabaseLoad} className="w-full py-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-sm transition-colors">Load Dataset from Database</button>
                         </>
@@ -1356,10 +1356,10 @@ function CompetitorSourceCard({ source, index, connections, onChange, onUpload, 
             <div className="flex items-start justify-between gap-4 mb-4">
                 <div className="flex-1">
                     <label className="block text-[11px] font-bold text-slate-500 mb-1.5">Competitor label</label>
-                    <input value={source.label} onChange={(event) => onChange({ label: event.target.value })} className="w-full px-3 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-medium focus:border-amber-400 outline-none" />
+                    <input value={source.label} onChange={(event) => onChange({ label: event.target.value })} className="w-full px-3 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-medium focus:border-blue-400 outline-none" />
                 </div>
                 <div className="flex items-center gap-2">
-                    <div className={`px-3 py-1 rounded-full text-xs font-bold ${source.loaded ? 'bg-emerald-100 text-emerald-700' : 'bg-white text-slate-500 border border-slate-200'}`}>{source.loaded ? 'Loaded' : `Competitor ${index + 1}`}</div>
+                    <div className={`px-3 py-1 rounded-full text-xs font-bold ${source.loaded ? 'bg-sky-100 text-sky-700' : 'bg-white text-slate-500 border border-slate-200'}`}>{source.loaded ? 'Loaded' : `Competitor ${index + 1}`}</div>
                     {canRemove ? <button onClick={onRemove} className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"><Trash2 size={16} /></button> : null}
                 </div>
             </div>
@@ -1372,7 +1372,7 @@ function CompetitorSourceCard({ source, index, connections, onChange, onUpload, 
                 <div className="space-y-4">
                     <SeparatorInput value={source.separator} onChange={(separator) => onChange({ separator })} />
                     <input type="file" accept=".csv,.txt,.xlsx,.xls" className="hidden" id={`upload-${source.id}`} onChange={(event) => event.target.files?.[0] && onUpload(event.target.files[0])} />
-                    <label htmlFor={`upload-${source.id}`} className={`w-full flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-sm cursor-pointer transition-all ${source.loaded ? 'bg-emerald-50 border-2 border-emerald-200 text-emerald-700' : 'bg-slate-900 hover:bg-slate-800 text-white'}`}>
+                    <label htmlFor={`upload-${source.id}`} className={`w-full flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-sm cursor-pointer transition-all ${source.loaded ? 'bg-sky-50 border-2 border-sky-200 text-sky-700' : 'bg-slate-900 hover:bg-slate-800 text-white'}`}>
                         {source.loaded ? <><CheckCircle size={15} /> Replace Dataset</> : <><Upload size={15} /> Upload Competitor Feed</>}
                     </label>
                 </div>
@@ -1391,11 +1391,11 @@ function CompetitorSourceCard({ source, index, connections, onChange, onUpload, 
                         </div>
                     ) : (
                         <>
-                            <select value={source.connectionId} onChange={(event) => onChange({ connectionId: event.target.value })} className="w-full px-3 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-medium focus:border-amber-400 outline-none">
+                            <select value={source.connectionId} onChange={(event) => onChange({ connectionId: event.target.value })} className="w-full px-3 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-medium focus:border-blue-400 outline-none">
                                 {connections.map((connection) => <option key={connection.id} value={connection.id}>{connection.name}</option>)}
                             </select>
                             <DatabaseConnectionManager title="New Connection" compact onConnectionSaved={onConnectionSaved} />
-                            <textarea rows={4} value={source.query} onChange={(event) => onChange({ query: event.target.value })} className="w-full px-3 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-medium focus:border-amber-400 outline-none resize-none" />
+                            <textarea rows={4} value={source.query} onChange={(event) => onChange({ query: event.target.value })} className="w-full px-3 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-medium focus:border-blue-400 outline-none resize-none" />
                             <button onClick={onDatabaseLoad} className="w-full py-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-sm transition-colors">Load Competitor Dataset</button>
                         </>
                     )}
@@ -1415,9 +1415,9 @@ function SeparatorInput({ value, onChange }) {
             <span className="text-xs font-semibold text-slate-500">Separator</span>
             <div className="flex flex-wrap items-center gap-1.5">
                 {PRESET_SEPARATORS.map((delimiter) => (
-                    <button key={delimiter} onClick={() => onChange(delimiter)} className={`w-8 h-8 rounded-lg border font-mono text-xs transition-all ${value === delimiter ? 'bg-amber-600 text-white border-amber-600' : 'bg-white text-slate-500 border-slate-200 hover:border-amber-400'}`}>{delimiter}</button>
+                    <button key={delimiter} onClick={() => onChange(delimiter)} className={`w-8 h-8 rounded-lg border font-mono text-xs transition-all ${value === delimiter ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-slate-500 border-slate-200 hover:border-blue-400'}`}>{delimiter}</button>
                 ))}
-                <input type="text" maxLength={4} placeholder="Custom" value={!PRESET_SEPARATORS.includes(value) ? value : ''} onChange={(event) => onChange(event.target.value)} className={`w-20 h-8 px-2 py-1 border rounded-lg text-xs font-mono focus:outline-none transition-all ${!PRESET_SEPARATORS.includes(value) && value ? 'border-amber-600 bg-amber-50 text-amber-700' : 'border-slate-200 text-slate-600 focus:border-amber-400'}`} />
+                <input type="text" maxLength={4} placeholder="Custom" value={!PRESET_SEPARATORS.includes(value) ? value : ''} onChange={(event) => onChange(event.target.value)} className={`w-20 h-8 px-2 py-1 border rounded-lg text-xs font-mono focus:outline-none transition-all ${!PRESET_SEPARATORS.includes(value) && value ? 'border-blue-600 bg-blue-50 text-blue-700' : 'border-slate-200 text-slate-600 focus:border-blue-400'}`} />
             </div>
             <p className="text-[11px] text-slate-400">Use one character like `^`, `:`, `|`, or type `\t` for tab-separated files.</p>
         </div>
@@ -1484,13 +1484,13 @@ function CompetitorReviewPanel({ row, excluded, onOpen, onToggleExclude }) {
                     onOpen();
                 }
             }}
-            className={`min-w-[320px] max-w-[360px] rounded-2xl border p-4 transition-all cursor-pointer ${excluded ? 'border-rose-200 bg-rose-50/70 opacity-80' : 'border-slate-200 bg-amber-50/40 hover:border-amber-300 hover:shadow-sm'}`}
+            className={`min-w-[320px] max-w-[360px] rounded-2xl border p-4 transition-all cursor-pointer ${excluded ? 'border-rose-200 bg-rose-50/70 opacity-80' : 'border-slate-200 bg-blue-50/40 hover:border-blue-300 hover:shadow-sm'}`}
         >
             <div className="flex items-center justify-between gap-3 mb-3">
-                <span className={`px-2 py-1 rounded-full bg-white border text-[11px] font-bold ${excluded ? 'border-rose-200 text-rose-700' : 'border-amber-200 text-amber-700'}`}>{row.competitor_source}</span>
+                <span className={`px-2 py-1 rounded-full bg-white border text-[11px] font-bold ${excluded ? 'border-rose-200 text-rose-700' : 'border-blue-200 text-blue-700'}`}>{row.competitor_source}</span>
                 <div className="flex items-center gap-2">
                     {excluded ? <span className="inline-flex px-2 py-1 rounded-full text-[11px] font-bold bg-rose-100 text-rose-700">Excluded</span> : null}
-                    <span className={`inline-flex px-2 py-1 rounded-full text-[11px] font-bold ${row.match_quality === 'High' ? 'bg-emerald-100 text-emerald-700' : row.match_quality === 'Medium' ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-600'}`}>{row.match_quality}</span>
+                    <span className={`inline-flex px-2 py-1 rounded-full text-[11px] font-bold ${row.match_quality === 'High' ? 'bg-sky-100 text-sky-700' : row.match_quality === 'Medium' ? 'bg-blue-100 text-blue-700' : 'bg-red-100 text-red-600'}`}>{row.match_quality}</span>
                 </div>
             </div>
             <div className="flex gap-3">
@@ -1499,7 +1499,7 @@ function CompetitorReviewPanel({ row, excluded, onOpen, onToggleExclude }) {
                     <p className="text-sm font-bold text-slate-900 break-words">{row.competitor_product_name}</p>
                     <p className="text-xs text-slate-500 mt-1">{row.competitor_seller || 'Seller not provided'}</p>
                     <p className="text-xs text-slate-600 mt-2">Price: <span className="font-semibold text-slate-900">{row.competitor_price ? formatCurrency(row.competitor_price) : 'Not mapped'}</span></p>
-                    <p className="text-xs text-slate-600 mt-1.5">Similarity: <span className="font-semibold text-violet-700">{(Number(row.similarity_score || 0) * 100).toFixed(1)}%</span></p>
+                    <p className="text-xs text-slate-600 mt-1.5">Similarity: <span className="font-semibold text-blue-700">{(Number(row.similarity_score || 0) * 100).toFixed(1)}%</span></p>
                     <p className="text-xs text-slate-600 mt-1.5">Rules matched: <span className="font-semibold text-slate-900">{row.matched_rule_count || 0}/{row.total_rule_count || 0}</span></p>
                     <div className="mt-2">
                         <ExternalProductLink href={row.competitor_product_url} emptyLabel="No competitor product URL" />
@@ -1525,7 +1525,7 @@ function CompetitorReviewPanel({ row, excluded, onOpen, onToggleExclude }) {
                         event.stopPropagation();
                         onToggleExclude();
                     }}
-                    className={`rounded-xl px-3 py-2 text-xs font-bold transition-colors ${excluded ? 'bg-emerald-600 text-white hover:bg-emerald-700' : 'bg-rose-600 text-white hover:bg-rose-700'}`}
+                    className={`rounded-xl px-3 py-2 text-xs font-bold transition-colors ${excluded ? 'bg-sky-600 text-white hover:bg-sky-700' : 'bg-rose-600 text-white hover:bg-rose-700'}`}
                 >
                     {excluded ? 'Restore match' : 'Exclude from pricing'}
                 </button>
@@ -1540,7 +1540,7 @@ function CompactFieldList({ title, fields, tone = 'slate' }) {
     }
 
     const toneClasses = tone === 'amber'
-        ? 'bg-white/80 border-amber-200'
+        ? 'bg-white/80 border-blue-200'
         : 'bg-white border-slate-200';
 
     return (
@@ -1571,7 +1571,7 @@ function CompactMatchAttributeList({ attributes }) {
                     <div key={`${attribute.client_column}-${attribute.competitor_column}-${index}`} className="rounded-xl border border-slate-100 bg-slate-50 px-3 py-2">
                         <div className="flex items-center justify-between gap-3 text-xs">
                             <span className="font-semibold text-slate-900">{attribute.label || humanizeColumn(attribute.client_column)}</span>
-                            <span className="font-bold text-violet-700">{(Number(attribute.score || 0) * 100).toFixed(1)}%</span>
+                            <span className="font-bold text-blue-700">{(Number(attribute.score || 0) * 100).toFixed(1)}%</span>
                         </div>
                         <div className="mt-1.5 grid grid-cols-2 gap-2 text-[11px] text-slate-600">
                             <div className="break-words"><span className="font-semibold text-slate-500">Client:</span> {attribute.client_value || '—'}</div>
@@ -1603,13 +1603,13 @@ function MatchDetailDialog({ selection, excluded, excludedMatchIds, onClose, onT
                     </div>
                     <div className="flex flex-wrap items-center gap-2">
                         <span className="inline-flex rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-600">{match.competitor_source}</span>
-                        <span className={`inline-flex rounded-full px-3 py-1 text-xs font-bold ${excluded ? 'bg-rose-100 text-rose-700' : 'bg-emerald-100 text-emerald-700'}`}>
+                        <span className={`inline-flex rounded-full px-3 py-1 text-xs font-bold ${excluded ? 'bg-rose-100 text-rose-700' : 'bg-sky-100 text-sky-700'}`}>
                             {excluded ? 'Excluded from pricing' : 'Included in pricing'}
                         </span>
                         <button
                             type="button"
                             onClick={() => onToggleExclude(match.match_id)}
-                            className={`rounded-xl px-3 py-2 text-xs font-bold transition-colors ${excluded ? 'bg-emerald-600 text-white hover:bg-emerald-700' : 'bg-rose-600 text-white hover:bg-rose-700'}`}
+                            className={`rounded-xl px-3 py-2 text-xs font-bold transition-colors ${excluded ? 'bg-sky-600 text-white hover:bg-sky-700' : 'bg-rose-600 text-white hover:bg-rose-700'}`}
                         >
                             {excluded ? 'Restore match' : 'Exclude match'}
                         </button>
@@ -1644,19 +1644,19 @@ function MatchDetailDialog({ selection, excluded, excludedMatchIds, onClose, onT
                             <RecordFieldGrid title="Complete Client Row" fields={match.client_record || []} tone="slate" />
                         </div>
 
-                        <div className="rounded-3xl border border-amber-200 bg-amber-50/40 p-5">
+                        <div className="rounded-3xl border border-blue-200 bg-blue-50/40 p-5">
                             <div className="flex items-start justify-between gap-3 mb-4">
                                 <div>
-                                    <p className="text-[11px] font-black uppercase tracking-wider text-amber-700/80">Competitor</p>
+                                    <p className="text-[11px] font-black uppercase tracking-wider text-blue-700/80">Competitor</p>
                                     <p className="mt-1 text-lg font-bold text-slate-900 break-words">{match.competitor_product_name}</p>
                                     <p className="mt-1 text-xs text-slate-500">{match.competitor_seller || 'Seller not provided'}</p>
                                 </div>
-                                <span className="inline-flex rounded-full bg-white px-3 py-1 text-xs font-bold text-slate-600 border border-amber-200">Competitor row #{Number(match.competitor_index ?? 0) + 1}</span>
+                                <span className="inline-flex rounded-full bg-white px-3 py-1 text-xs font-bold text-slate-600 border border-blue-200">Competitor row #{Number(match.competitor_index ?? 0) + 1}</span>
                             </div>
                             <div className="flex gap-4">
                                 <ProductThumbnail src={match.competitor_image_url} alt={match.competitor_product_name} baseHref={match.competitor_product_url} />
                                 <div className="min-w-0 flex-1">
-                                    <p className="text-sm text-slate-600">Similarity: <span className="font-semibold text-violet-700">{(Number(match.similarity_score || 0) * 100).toFixed(1)}%</span></p>
+                                    <p className="text-sm text-slate-600">Similarity: <span className="font-semibold text-blue-700">{(Number(match.similarity_score || 0) * 100).toFixed(1)}%</span></p>
                                     <p className="mt-2 text-sm text-slate-600">Competitor price: <span className="font-semibold text-slate-900">{match.competitor_price ? formatCurrency(match.competitor_price) : 'Not mapped'}</span></p>
                                     <div className="mt-3">
                                         <ExternalProductLink href={match.competitor_product_url} emptyLabel="No competitor product URL" />
@@ -1698,11 +1698,11 @@ function MatchDetailDialog({ selection, excluded, excludedMatchIds, onClose, onT
                                     return (
                                         <div
                                             key={candidate.match_id || `${candidate.competitor_source}-${index}`}
-                                            className={`min-w-[240px] rounded-2xl border p-3 ${candidate.match_id === match.match_id ? 'border-violet-300 bg-violet-50' : candidateExcluded ? 'border-rose-200 bg-rose-50/70' : 'border-slate-200 bg-slate-50'}`}
+                                            className={`min-w-[240px] rounded-2xl border p-3 ${candidate.match_id === match.match_id ? 'border-blue-300 bg-blue-50' : candidateExcluded ? 'border-rose-200 bg-rose-50/70' : 'border-slate-200 bg-slate-50'}`}
                                         >
                                             <div className="flex items-center justify-between gap-2">
                                                 <span className="text-xs font-bold text-slate-700">{candidate.competitor_source}</span>
-                                                <span className="text-xs font-bold text-violet-700">{(Number(candidate.similarity_score || 0) * 100).toFixed(1)}%</span>
+                                                <span className="text-xs font-bold text-blue-700">{(Number(candidate.similarity_score || 0) * 100).toFixed(1)}%</span>
                                             </div>
                                             <p className="mt-2 text-sm font-bold text-slate-900 break-words">{candidate.competitor_product_name}</p>
                                             <p className="mt-1 text-xs text-slate-500">{candidateExcluded ? 'Excluded from pricing' : 'Included in pricing'}</p>
@@ -1729,7 +1729,7 @@ function RecordFieldGrid({ title, fields, tone = 'slate' }) {
     }
 
     const toneClasses = tone === 'amber'
-        ? 'border-amber-200 bg-white/85'
+        ? 'border-blue-200 bg-white/85'
         : 'border-slate-200 bg-white';
 
     return (
@@ -1770,15 +1770,15 @@ function ReviewCard({ row }) {
                         </div>
                     </div>
                 </div>
-                <div className="flex items-center justify-center text-amber-500 font-black text-xl">vs</div>
-                <div className="rounded-2xl border border-slate-200 bg-amber-50/50 p-4">
+                <div className="flex items-center justify-center text-blue-500 font-black text-xl">vs</div>
+                <div className="rounded-2xl border border-slate-200 bg-blue-50/50 p-4">
                     <p className="text-xs font-black uppercase tracking-wider text-slate-400 mb-3">Competitor Product</p>
                     <div className="flex gap-4">
                         <ProductThumbnail key={`${row.competitor_product_url || ''}-${row.competitor_image_url || ''}`} src={row.competitor_image_url} alt={row.competitor_product_name} baseHref={row.competitor_product_url} />
                         <div className="min-w-0 flex-1">
                             <div className="flex items-center justify-between gap-3">
                                 <p className="font-bold text-slate-900 break-words">{row.competitor_product_name}</p>
-                                <span className="px-2.5 py-1 rounded-full bg-white border border-amber-200 text-amber-700 text-xs font-bold shrink-0">{row.competitor_source}</span>
+                                <span className="px-2.5 py-1 rounded-full bg-white border border-blue-200 text-blue-700 text-xs font-bold shrink-0">{row.competitor_source}</span>
                             </div>
                             <p className="text-sm text-slate-500 mt-1">{row.competitor_seller || 'Seller not provided'}</p>
                             <p className="text-sm text-slate-600 mt-3">Competitor price: <span className="font-semibold text-slate-900">{row.competitor_price ? formatCurrency(row.competitor_price) : 'Not mapped'}</span></p>
@@ -1792,10 +1792,10 @@ function ReviewCard({ row }) {
                 <div className="flex flex-col justify-between rounded-2xl border border-slate-200 bg-white p-4 min-w-[150px]">
                     <div>
                         <p className="text-xs font-black uppercase tracking-wider text-slate-400">Similarity</p>
-                        <p className="text-2xl font-black text-violet-700 mt-2">{(Number(row.similarity_score) * 100).toFixed(1)}%</p>
+                        <p className="text-2xl font-black text-blue-700 mt-2">{(Number(row.similarity_score) * 100).toFixed(1)}%</p>
                     </div>
                     <div className="space-y-2">
-                        <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-bold ${row.match_quality === 'High' ? 'bg-emerald-100 text-emerald-700' : row.match_quality === 'Medium' ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-600'}`}>{row.match_quality}</span>
+                        <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-bold ${row.match_quality === 'High' ? 'bg-sky-100 text-sky-700' : row.match_quality === 'Medium' ? 'bg-blue-100 text-blue-700' : 'bg-red-100 text-red-600'}`}>{row.match_quality}</span>
                         <p className="text-xs text-slate-500">Rules matched: <span className="font-semibold text-slate-900">{row.matched_rule_count || 0}/{row.total_rule_count || 0}</span></p>
                         <p className="text-xs text-slate-500">Price gap: <span className="font-semibold text-slate-900">{row.price_gap_pct > 0 ? '+' : ''}{row.price_gap_pct}%</span></p>
                     </div>
@@ -1836,7 +1836,7 @@ function ExternalProductLink({ href, emptyLabel }) {
     }
 
     return (
-        <a href={normalizedHref} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 text-xs font-bold text-amber-700 hover:text-amber-800 hover:underline break-all">
+        <a href={normalizedHref} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 text-xs font-bold text-blue-700 hover:text-blue-800 hover:underline break-all">
             Open product page
         </a>
     );
@@ -1870,7 +1870,7 @@ function MatchAttributeTable({ attributes }) {
                                 </div>
                                 <div className="px-4 py-3 bg-white text-slate-700 break-words">{attribute.client_value || '—'}</div>
                                 <div className="px-4 py-3 bg-white text-slate-700 break-words">{attribute.competitor_value || '—'}</div>
-                                <div className="px-4 py-3 bg-white text-right font-bold text-violet-700">{(Number(attribute.score || 0) * 100).toFixed(1)}%</div>
+                                <div className="px-4 py-3 bg-white text-right font-bold text-blue-700">{(Number(attribute.score || 0) * 100).toFixed(1)}%</div>
                             </div>
                         ))}
                     </div>
@@ -1935,12 +1935,12 @@ function ResultsTable({ rows }) {
                             <tr key={`${row.product_name}-${index}`} className={index % 2 === 0 ? 'bg-white' : 'bg-slate-50/40'}>
                                 <td className="px-5 py-4 min-w-[280px]"><p className="font-bold text-slate-900">{row.product_name}</p><p className="text-xs text-slate-500 mt-1">{row.sku || 'No SKU provided'}</p><p className="text-xs text-slate-400 mt-1">Sources: {row.matched_competitors || 'None'}</p></td>
                                 <td className="px-5 py-4 whitespace-nowrap text-slate-700 font-semibold">{formatCurrency(row.current_price)}</td>
-                                <td className="px-5 py-4 whitespace-nowrap"><div className="inline-flex flex-col"><span className="font-black text-emerald-700">{formatCurrency(row.recommended_price)}</span><span className={`text-xs font-semibold ${Number(row.recommended_vs_current_pct) >= 0 ? 'text-amber-600' : 'text-emerald-600'}`}>{Number(row.recommended_vs_current_pct) > 0 ? '+' : ''}{row.recommended_vs_current_pct}%</span></div></td>
+                                <td className="px-5 py-4 whitespace-nowrap"><div className="inline-flex flex-col"><span className="font-black text-sky-700">{formatCurrency(row.recommended_price)}</span><span className={`text-xs font-semibold ${Number(row.recommended_vs_current_pct) >= 0 ? 'text-blue-600' : 'text-sky-600'}`}>{Number(row.recommended_vs_current_pct) > 0 ? '+' : ''}{row.recommended_vs_current_pct}%</span></div></td>
                                 <td className="px-5 py-4 whitespace-nowrap text-slate-700">{formatCurrency(row.competitor_min_price)}</td>
                                 <td className="px-5 py-4 whitespace-nowrap text-slate-700">{formatCurrency(row.competitor_avg_price)}</td>
                                 <td className="px-5 py-4 whitespace-nowrap text-slate-700">{formatCurrency(row.competitor_max_price)}</td>
                                 <td className="px-5 py-4 whitespace-nowrap"><div className="inline-flex flex-col"><span className="font-bold text-slate-900">{row.margin_pct}%</span><span className="text-xs text-slate-400">Floor {formatCurrency(row.floor_price)}</span></div></td>
-                                <td className="px-5 py-4 min-w-[170px]"><span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-bold ${String(row.pricing_action || '').startsWith('Increase') ? 'bg-amber-100 text-amber-700' : String(row.pricing_action || '').startsWith('Decrease') ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-700'}`}>{row.pricing_action}</span></td>
+                                <td className="px-5 py-4 min-w-[170px]"><span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-bold ${String(row.pricing_action || '').startsWith('Increase') ? 'bg-blue-100 text-blue-700' : String(row.pricing_action || '').startsWith('Decrease') ? 'bg-sky-100 text-sky-700' : 'bg-slate-100 text-slate-700'}`}>{row.pricing_action}</span></td>
                                 <td className="px-5 py-4 min-w-[220px] text-slate-600"><div className="space-y-1 text-xs"><p>Demand: <span className="font-bold capitalize text-slate-900">{row.demand_signal}</span></p><p>Stock: <span className="font-bold capitalize text-slate-900">{row.stock_signal}</span></p><p>Review: <span className="font-bold capitalize text-slate-900">{row.review_signal}</span></p><p>Dynamic adj: <span className="font-bold text-slate-900">{row.dynamic_adjustment_pct}%</span></p></div></td>
                                 <td className="px-5 py-4 min-w-[280px] text-slate-600 leading-relaxed">{row.note}</td>
                             </tr>

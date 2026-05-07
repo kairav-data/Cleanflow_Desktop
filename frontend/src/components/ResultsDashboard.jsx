@@ -80,7 +80,7 @@ const ResultsDashboard = ({ results, onReset, onEditRules }) => {
                                     onClick={() => handleDownload(results.valid_file)}
                                     className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50"
                                 >
-                                    <FileText size={18} className="text-emerald-600" /> Download Valid CSV
+                                    <FileText size={18} className="text-sky-600" /> Download Valid CSV
                                 </button>
                             )}
                             {results.error_file && (
@@ -106,7 +106,7 @@ const ResultsDashboard = ({ results, onReset, onEditRules }) => {
             >
                 <div className="mb-6 flex items-center justify-between">
                     <h3 className="text-lg font-bold text-slate-900">Validation Report Preview</h3>
-                    <span className={`flex items-center gap-1 rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] ${validPercent > 80 ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
+                    <span className={`flex items-center gap-1 rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] ${validPercent > 80 ? 'bg-sky-100 text-sky-700' : 'bg-blue-100 text-blue-700'}`}>
                         {validPercent}% Healthy
                     </span>
                 </div>

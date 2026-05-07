@@ -586,16 +586,23 @@ async def get_dataset_preview(session_id: str, limit: int = 50, dataset_id: str 
 # Scraping Feature
 @app.get("/features/scraper/templates")
 async def get_scraper_templates():
-    """Get available scraping templates"""
+    """Get available scraping formats"""
     from features.scraper import WebScraper
-    return {"templates": WebScraper.get_available_templates()}
+    return {"templates": WebScraper.get_available_formats()}
+
+@app.get("/features/scraper/credits")
+async def get_scraper_credits(current_user: UserInDB = Depends(get_current_user)):
+    """Get Firecrawl API credit usage"""
+    from features.scraper import WebScraper
+    scraper = WebScraper("credits", api_key=current_user.firecrawl_api_key)
+    return await scraper.get_credit_usage()
 
 @app.post("/features/scraper/preview")
-async def preview_scraping(config: dict):
+async def preview_scraping(config: dict, current_user: UserInDB = Depends(get_current_user)):
     """Preview scraping on a single URL"""
     from features.scraper import WebScraper
     
-    scraper = WebScraper("preview")
+    scraper = WebScraper("preview", api_key=current_user.firecrawl_api_key)
     result = await scraper.preview(config, limit=1)
     
     if not result.success:
@@ -604,11 +611,11 @@ async def preview_scraping(config: dict):
     return result.dict()
 
 @app.post("/features/scraper/execute")
-async def execute_scraping(config: dict):
+async def execute_scraping(config: dict, current_user: UserInDB = Depends(get_current_user)):
     """Execute scraping on multiple URLs"""
     from features.scraper import WebScraper
     
-    scraper = WebScraper("scraping")
+    scraper = WebScraper("scraping", api_key=current_user.firecrawl_api_key)
     result = await scraper.execute(config)
     
     if not result.success:

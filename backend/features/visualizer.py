@@ -28,18 +28,17 @@ logger = logging.getLogger(__name__)
 # ── Palette ────────────────────────────────────────────────────────────────
 
 CHART_COLORS = [
-    "#6366f1", "#10b981", "#f59e0b", "#ef4444",
-    "#8b5cf6", "#06b6d4", "#f97316", "#84cc16",
-    "#ec4899", "#14b8a6",
+    "#005999", "#0072C6", "#4DA1FF", "#99C9FF", # Deep Tableau Blues
+    "#00A3AD", "#00BFB3", "#707070", "#9E9E9E", # Teal/Greys
+    "#4E79A7", "#A0CBE8", # Classic Tableau
 ]
 
 GRADIENT_PAIRS = [
-    ["#6366f1", "#818cf8"],
-    ["#10b981", "#34d399"],
-    ["#f59e0b", "#fbbf24"],
-    ["#ef4444", "#f87171"],
-    ["#8b5cf6", "#a78bfa"],
-    ["#06b6d4", "#22d3ee"],
+    ["#005999", "#0072C6"],
+    ["#0072C6", "#4DA1FF"],
+    ["#00A3AD", "#00BFB3"],
+    ["#4E79A7", "#A0CBE8"],
+    ["#707070", "#9E9E9E"],
 ]
 
 
@@ -196,6 +195,65 @@ def _build_line_chart(df: pl.DataFrame, date_col: str, num_col: str, color_idx: 
             "color": CHART_COLORS[color_idx % len(CHART_COLORS)],
             "gradient": GRADIENT_PAIRS[color_idx % len(GRADIENT_PAIRS)],
             "data": data,
+        }
+    except Exception:
+        return None
+
+
+def _build_funnel_chart(df: pl.DataFrame, cat_col: str, num_col: str, color_idx: int) -> dict[str, Any] | None:
+    try:
+        grouped = (
+            df.select([cat_col, num_col])
+            .drop_nulls()
+            .group_by(cat_col)
+            .agg(pl.col(num_col).sum().alias("value"))
+            .sort("value", descending=True)
+            .head(6)
+        )
+        data = [
+            {"name": _truncate_label(row[cat_col]), "value": round(_safe_float(row["value"]), 2)}
+            for row in grouped.to_dicts()
+        ]
+        if len(data) < 3:
+            return None
+        return {
+            "type": "funnel",
+            "title": f"{num_col} Conversion Funnel",
+            "description": f"Funnel visualization of {num_col} across {cat_col} stages",
+            "data": data,
+            "color": CHART_COLORS[color_idx % len(CHART_COLORS)],
+            "gradient": GRADIENT_PAIRS[color_idx % len(GRADIENT_PAIRS)],
+        }
+    except Exception:
+        return None
+
+
+def _build_map_chart(df: pl.DataFrame, loc_col: str, val_col: str, color_idx: int) -> dict[str, Any] | None:
+    try:
+        # Aggregating by location
+        grouped = (
+            df.select([loc_col, val_col])
+            .drop_nulls()
+            .group_by(loc_col)
+            .agg(pl.col(val_col).sum().alias("value"))
+            .sort("value", descending=True)
+            .head(15)
+        )
+        data = [
+            {"location": str(row[loc_col]), "value": round(_safe_float(row["value"]), 2)}
+            for row in grouped.to_dicts()
+        ]
+        if not data:
+            return None
+        return {
+            "type": "map",
+            "title": f"Geographic Distribution of {val_col}",
+            "description": f"{val_col} mapped by {loc_col}",
+            "data": data,
+            "locKey": "location",
+            "valKey": "value",
+            "color": CHART_COLORS[color_idx % len(CHART_COLORS)],
+            "gradient": GRADIENT_PAIRS[color_idx % len(GRADIENT_PAIRS)],
         }
     except Exception:
         return None
@@ -560,7 +618,7 @@ Given a dataset schema and a user request, return a JSON array of chart specific
 
 Each specification must be a JSON object with these fields:
 {
-  "chart_type": "bar" | "line" | "area" | "pie" | "scatter",
+  "chart_type": "bar" | "line" | "area" | "pie" | "scatter" | "funnel" | "map",
   "title": "Human-readable chart title",
   "description": "One-line description",
   "params": {
@@ -569,15 +627,19 @@ Each specification must be a JSON object with these fields:
     // For area:    {"num_col": "<column>"}
     // For pie:     {"cat_col": "<column>"}
     // For scatter: {"x_col": "<column>", "y_col": "<column>"}
+    // For funnel:  {"cat_col": "<column>", "num_col": "<column>"} (where cat_col represents stages/steps)
+    // For map:     {"loc_col": "<column>", "val_col": "<column>"} (where loc_col is country/city/state/region)
   }
 }
 
 Rules:
 - Use ONLY column names that exist in the schema.
-- For bar/pie: cat_col must be categorical; for bar/line/area/scatter: num_col/x_col/y_col must be numeric.
+- For bar/pie/funnel: cat_col must be categorical.
+- For bar/line/area/scatter/funnel/map: num_col/x_col/y_col/val_col must be numeric.
+- For map: loc_col should be a column with geographic names (country, city, state, etc).
 - For line: date_col must be datetime.
 - Choose chart types that best answer the user's request.
-- Return 4–8 charts that give a comprehensive dashboard.
+- Return 6–10 charts for a comprehensive premium dashboard.
 - Return ONLY a valid JSON array. No markdown, no explanation, no backticks.
 """
 
@@ -667,6 +729,18 @@ def _resolve_specs(
                 y_col = params.get("y_col", "")
                 if x_col in df.columns and y_col in df.columns:
                     chart = _build_scatter_chart(df, x_col, y_col, color_idx)
+
+            elif chart_type == "funnel":
+                cat_col = params.get("cat_col", "")
+                num_col = params.get("num_col", "")
+                if cat_col in df.columns and num_col in df.columns:
+                    chart = _build_funnel_chart(df, cat_col, num_col, color_idx)
+
+            elif chart_type == "map":
+                loc_col = params.get("loc_col", "")
+                val_col = params.get("val_col", "")
+                if loc_col in df.columns and val_col in df.columns:
+                    chart = _build_map_chart(df, loc_col, val_col, color_idx)
 
         except Exception as e:
             logger.warning(f"[Visualizer] Failed to build spec {spec}: {e}")

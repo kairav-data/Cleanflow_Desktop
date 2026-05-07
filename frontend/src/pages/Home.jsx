@@ -61,7 +61,7 @@ export default function Home() {
                         title: "Schema Mapping",
                         desc: "Automatically map and transform messy source files into your target database schema with zero manual effort.",
                         icon: <Shuffle />,
-                        color: "text-purple-600 bg-purple-50",
+                        color: "text-sky-600 bg-sky-50",
                         badge: "Smart",
                         path: '/mapper'
                     },
@@ -69,7 +69,7 @@ export default function Home() {
                         title: "Data Enrichment",
                         desc: "Enhance your datasets with verified emails, addresses, and AI-driven attributes.",
                         icon: <Sparkles />,
-                        color: "text-amber-500 bg-amber-50",
+                        color: "text-blue-500 bg-blue-50",
                         badge: "AI",
                         path: '/enrichment'
                     },

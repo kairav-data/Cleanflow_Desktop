@@ -80,6 +80,8 @@ const RuleBuilder = ({
     const [savedRuleSets, setSavedRuleSets] = useState([]);
     const [showSavedRulesModal, setShowSavedRulesModal] = useState(false);
     const [showRepoSidebar, setShowRepoSidebar] = useState(false);
+    const [promptModal, setPromptModal] = useState({ isOpen: false, resolve: null });
+    const [promptInput, setPromptInput] = useState('');
 
     const mapRawRulesToUiRules = (rawRules = []) =>
         rawRules.map(r => {
@@ -150,22 +152,24 @@ const RuleBuilder = ({
             return;
         }
 
-        const name = window.prompt('Enter a name for this rule set:');
-        if (!name || !name.trim()) return;
+        setPromptInput('');
+        setPromptModal({ isOpen: true, resolve: (name) => {
+            if (!name || !name.trim()) return;
 
-        const payloadRules = rules.map(({ column, rule_type, params }) => ({ column, rule_type, params }));
-        const next = [
-            {
-                id: `ruleset_${Date.now()}`,
-                name: name.trim(),
-                rules: payloadRules,
-                created_at: new Date().toISOString()
-            },
-            ...savedRuleSets
-        ];
+            const payloadRules = rules.map(({ column, rule_type, params }) => ({ column, rule_type, params }));
+            const next = [
+                {
+                    id: `ruleset_${Date.now()}`,
+                    name: name.trim(),
+                    rules: payloadRules,
+                    created_at: new Date().toISOString()
+                },
+                ...savedRuleSets
+            ];
 
-        setSavedRuleSets(next);
-        localStorage.setItem(SAVED_RULESETS_KEY, JSON.stringify(next));
+            setSavedRuleSets(next);
+            localStorage.setItem(SAVED_RULESETS_KEY, JSON.stringify(next));
+        }});
     };
 
     const applySavedRuleSet = (ruleSet) => {
@@ -248,8 +252,8 @@ const RuleBuilder = ({
         ? 'flex items-center gap-2 px-3 py-2 bg-slate-50 border border-slate-200 hover:bg-slate-100 text-slate-700 rounded-lg font-semibold text-sm transition-colors'
         : 'flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3.5 py-2 text-sm font-semibold text-slate-700 transition-all hover:bg-slate-100';
     const accentButtonClass = compact
-        ? 'flex items-center gap-2 px-3 py-2 bg-emerald-50 border border-emerald-200 hover:bg-emerald-100 text-emerald-700 rounded-lg font-semibold text-sm transition-colors'
-        : 'flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3.5 py-2 text-sm font-semibold text-emerald-700 transition-all hover:bg-emerald-100';
+        ? 'flex items-center gap-2 px-3 py-2 bg-sky-50 border border-sky-200 hover:bg-sky-100 text-sky-700 rounded-lg font-semibold text-sm transition-colors'
+        : 'flex items-center gap-2 rounded-lg border border-sky-200 bg-sky-50 px-3.5 py-2 text-sm font-semibold text-sky-700 transition-all hover:bg-sky-100';
     const repoButtonClass = compact
         ? 'flex items-center gap-2 px-3 py-2 bg-blue-50 border border-blue-200 hover:bg-blue-100 text-blue-700 rounded-lg font-semibold text-sm transition-colors'
         : 'flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-3.5 py-2 text-sm font-semibold text-blue-700 transition-all hover:bg-blue-100';
@@ -260,10 +264,10 @@ const RuleBuilder = ({
     const getCategoryColor = (category) => {
         const colors = {
             "Data Type & Format": "border-l-blue-500",
-            "Length & Size": "border-l-purple-500",
-            "Value Range": "border-l-amber-500",
-            "Patterns": "border-l-emerald-500",
-            "Custom Rules": "border-l-indigo-500"
+            "Length & Size": "border-l-sky-500",
+            "Value Range": "border-l-blue-500",
+            "Patterns": "border-l-sky-500",
+            "Custom Rules": "border-l-blue-500"
         };
         return colors[category] || "border-l-slate-400";
     };
@@ -314,7 +318,7 @@ const RuleBuilder = ({
                     {savedRuleSets.length > 0 && (
                         <button
                             onClick={() => setShowSavedRulesModal(true)}
-                            className={compact ? 'flex items-center gap-2 px-3 py-2 bg-indigo-50 border border-indigo-200 hover:bg-indigo-100 text-indigo-700 rounded-lg font-semibold text-sm transition-colors' : 'flex items-center gap-2 px-4 py-2.5 bg-indigo-50 border border-indigo-200 hover:bg-indigo-100 text-indigo-700 rounded-xl font-bold text-sm transition-all shadow-sm hover:shadow-md'}
+                            className={compact ? 'flex items-center gap-2 px-3 py-2 bg-blue-50 border border-blue-200 hover:bg-blue-100 text-blue-700 rounded-lg font-semibold text-sm transition-colors' : 'flex items-center gap-2 px-4 py-2.5 bg-blue-50 border border-blue-200 hover:bg-blue-100 text-blue-700 rounded-xl font-bold text-sm transition-all shadow-sm hover:shadow-md'}
                         >
                             <FolderOpen size={compact ? 16 : 18} /> Use Template
                         </button>
@@ -379,12 +383,80 @@ const RuleBuilder = ({
                                         </div>
                                         <button
                                             onClick={() => applySavedRuleSet(set)}
-                                            className="w-full mt-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium text-sm transition-colors"
+                                            className="w-full mt-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium text-sm transition-colors"
                                         >
                                             Use This Rule Set
                                         </button>
                                     </div>
                                 ))}
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+                {promptModal.isOpen && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
+                            onClick={() => {
+                                promptModal.resolve(null);
+                                setPromptModal({ isOpen: false, resolve: null });
+                            }}
+                        />
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                            className={modalCardClass}
+                        >
+                            <div className="flex justify-between items-center mb-6">
+                                <h3 className="text-xl font-bold text-slate-900">Save Configuration</h3>
+                                <button onClick={() => {
+                                    promptModal.resolve(null);
+                                    setPromptModal({ isOpen: false, resolve: null });
+                                }} className="text-slate-400 hover:text-slate-600">
+                                    <X size={20} />
+                                </button>
+                            </div>
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="block text-sm font-bold text-slate-700 mb-2">Enter a name for this rule set:</label>
+                                    <input
+                                        type="text"
+                                        autoFocus
+                                        className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-medium text-slate-700 outline-none transition-all focus:border-blue-500"
+                                        value={promptInput}
+                                        onChange={(e) => setPromptInput(e.target.value)}
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Enter') {
+                                                promptModal.resolve(promptInput);
+                                                setPromptModal({ isOpen: false, resolve: null });
+                                            }
+                                        }}
+                                    />
+                                </div>
+                                <div className="flex justify-end gap-2 pt-4">
+                                    <button
+                                        onClick={() => {
+                                            promptModal.resolve(null);
+                                            setPromptModal({ isOpen: false, resolve: null });
+                                        }}
+                                        className="px-4 py-2 text-sm font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors"
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button
+                                        onClick={() => {
+                                            promptModal.resolve(promptInput);
+                                            setPromptModal({ isOpen: false, resolve: null });
+                                        }}
+                                        className="px-4 py-2 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors"
+                                    >
+                                        Save
+                                    </button>
+                                </div>
                             </div>
                         </motion.div>
                     </div>
@@ -746,7 +818,7 @@ const RuleBuilder = ({
                             ${compact ? 'px-5 py-3 rounded-xl text-sm' : 'px-6 py-3 rounded-xl'} flex items-center gap-3 text-sm font-semibold transition-all tracking-wide
                             ${rules.length === 0
                                 ? 'bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200'
-                                : 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-600/25 hover:from-blue-700 hover:to-indigo-700'
+                                : 'bg-gradient-to-r from-blue-600 to-blue-600 text-white shadow-lg shadow-blue-600/25 hover:from-blue-700 hover:to-blue-700'
                             }
                         `}
                     >
@@ -757,7 +829,7 @@ const RuleBuilder = ({
             </div>
 
             {columns.length === 0 && (
-                <div className="mt-4 p-4 bg-amber-50 text-amber-600 rounded-xl flex items-center gap-2 text-sm border border-amber-200">
+                <div className="mt-4 p-4 bg-blue-50 text-blue-600 rounded-xl flex items-center gap-2 text-sm border border-blue-200">
                     <AlertCircle size={16} />
                     <span>Warning: No columns detected. Please check your file upload.</span>
                 </div>

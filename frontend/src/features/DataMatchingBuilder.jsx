@@ -209,8 +209,8 @@ export default function DataMatchingBuilder({
             {/* ── Page Header ── */}
             <div className="flex items-center justify-between px-8 py-5 border-b border-slate-200 bg-white shrink-0">
                 <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 rounded-xl bg-violet-50 border border-violet-100 flex items-center justify-center">
-                        <GitMerge size={20} className="text-violet-600" />
+                    <div className="w-10 h-10 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center">
+                        <GitMerge size={20} className="text-blue-600" />
                     </div>
                     <div>
                         <h2 className="text-2xl font-black text-slate-900 tracking-tight">Data Matching</h2>
@@ -224,18 +224,18 @@ export default function DataMatchingBuilder({
                         return (
                             <div key={s} className="flex items-center">
                                 <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold transition-all ${
-                                    step === s ? 'bg-violet-600 text-white' :
-                                    step > s ? 'bg-violet-100 text-violet-700' :
+                                    step === s ? 'bg-blue-600 text-white' :
+                                    step > s ? 'bg-blue-100 text-blue-700' :
                                     'bg-slate-100 text-slate-400'
                                 }`}>
                                     <span className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-black ${
-                                        step === s ? 'bg-white text-violet-600' :
-                                        step > s ? 'bg-violet-500 text-white' :
+                                        step === s ? 'bg-white text-blue-600' :
+                                        step > s ? 'bg-blue-500 text-white' :
                                         'bg-slate-300 text-slate-500'
                                     }`}>{step > s ? '✓' : s}</span>
                                     {label}
                                 </div>
-                                {s < STEPS.length && <div className={`w-6 h-px mx-1 ${step > s ? 'bg-violet-300' : 'bg-slate-200'}`} />}
+                                {s < STEPS.length && <div className={`w-6 h-px mx-1 ${step > s ? 'bg-blue-300' : 'bg-slate-200'}`} />}
                             </div>
                         );
                     })}
@@ -255,7 +255,7 @@ export default function DataMatchingBuilder({
                             </div>
                             <div className="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden">
                                 <motion.div
-                                    className="bg-violet-600 h-full rounded-full"
+                                    className="bg-blue-600 h-full rounded-full"
                                     initial={{ width: 0 }}
                                     animate={{ width: `${progress.percent}%` }}
                                     transition={{ duration: 0.5 }}
@@ -280,8 +280,8 @@ export default function DataMatchingBuilder({
                                     {/* Header */}
                                     <div className="flex items-center justify-between mb-4">
                                         <div className="flex items-center gap-2">
-                                            <div className="w-7 h-7 rounded-lg bg-violet-100 flex items-center justify-center">
-                                                <span className="text-xs font-black text-violet-600">{idx + 1}</span>
+                                            <div className="w-7 h-7 rounded-lg bg-blue-100 flex items-center justify-center">
+                                                <span className="text-xs font-black text-blue-600">{idx + 1}</span>
                                             </div>
                                             <h3 className="font-bold text-sm text-slate-800">Dataset {idx + 1}</h3>
                                         </div>
@@ -289,7 +289,7 @@ export default function DataMatchingBuilder({
                                         <div className="flex bg-slate-100 rounded-lg p-0.5">
                                             {['file', 'database'].map(mode => (
                                                 <button key={mode} onClick={() => setDatasetMode(prev => ({ ...prev, [dsId]: mode }))}
-                                                    className={`px-3 py-1 text-xs font-bold rounded-md transition-all ${datasetMode[dsId] === mode ? 'bg-white text-violet-600 shadow-sm' : 'text-slate-800 hover:text-slate-900'}`}>
+                                                    className={`px-3 py-1 text-xs font-bold rounded-md transition-all ${datasetMode[dsId] === mode ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-800 hover:text-slate-900'}`}>
                                                     {mode === 'file' ? 'File' : 'Local Database'}
                                                 </button>
                                             ))}
@@ -303,7 +303,7 @@ export default function DataMatchingBuilder({
                                                 <div className="flex flex-wrap items-center justify-center gap-1.5">
                                                     {[',', ';', '|'].map(d => (
                                                         <button key={d} onClick={() => setSeparators(prev => ({ ...prev, [dsId]: d }))}
-                                                            className={`w-7 h-7 rounded-lg flex items-center justify-center font-mono border text-xs transition-all ${separators[dsId] === d ? 'bg-violet-600 text-white border-violet-600' : 'bg-white text-slate-400 border-slate-200 hover:border-violet-400'}`}>
+                                                            className={`w-7 h-7 rounded-lg flex items-center justify-center font-mono border text-xs transition-all ${separators[dsId] === d ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-slate-400 border-slate-200 hover:border-blue-400'}`}>
                                                             {d}
                                                         </button>
                                                     ))}
@@ -313,8 +313,8 @@ export default function DataMatchingBuilder({
                                                         onChange={(e) => setSeparators(prev => ({ ...prev, [dsId]: e.target.value }))}
                                                         className={`w-16 h-7 px-2 py-1 border rounded-lg text-xs font-mono focus:outline-none transition-all ${
                                                             ![',', ';', '|'].includes(separators[dsId]) && separators[dsId]
-                                                                ? 'border-violet-600 bg-violet-50 text-violet-700'
-                                                                : 'border-slate-200 text-slate-600 focus:border-violet-400'
+                                                                ? 'border-blue-600 bg-blue-50 text-blue-700'
+                                                                : 'border-slate-200 text-slate-600 focus:border-blue-400'
                                                         }`}
                                                     />
                                                 </div>
@@ -325,8 +325,8 @@ export default function DataMatchingBuilder({
                                             <label htmlFor={`upload-${dsId}`}
                                                 className={`w-full flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-sm cursor-pointer transition-all ${
                                                     datasets[dsId]
-                                                        ? 'bg-emerald-50 border-2 border-emerald-200 text-emerald-700'
-                                                        : 'bg-violet-600 hover:bg-violet-700 text-white shadow-sm shadow-violet-600/20'
+                                                        ? 'bg-sky-50 border-2 border-sky-200 text-sky-700'
+                                                        : 'bg-blue-600 hover:bg-blue-700 text-white shadow-sm shadow-blue-600/20'
                                                 }`}>
                                                 {datasets[dsId] ? <><CheckCircle size={15} /> Uploaded — Click to Replace</> : <><Upload size={15} /> Upload File</>}
                                             </label>
@@ -359,7 +359,7 @@ export default function DataMatchingBuilder({
                                                         <label className="block text-xs font-bold text-slate-500 mb-1">Connection</label>
                                                         <select value={datasetConnections[dsId]}
                                                             onChange={e => setDatasetConnections(prev => ({ ...prev, [dsId]: e.target.value }))}
-                                                            className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-medium text-slate-800 focus:border-violet-400 outline-none">
+                                                            className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-medium text-slate-800 focus:border-blue-400 outline-none">
                                                             <option value="">Select…</option>
                                                             {connections.map(c => <option key={c.id} value={c.id}>{c.name} ({c.db_type})</option>)}
                                                         </select>
@@ -378,11 +378,11 @@ export default function DataMatchingBuilder({
                                                         <label className="block text-xs font-bold text-slate-500 mb-1">SQL Query</label>
                                                         <textarea value={datasetQueries[dsId]}
                                                             onChange={e => setDatasetQueries(prev => ({ ...prev, [dsId]: e.target.value }))}
-                                                            className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-mono text-slate-800 min-h-[80px] resize-none focus:border-violet-400 outline-none"
+                                                            className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-mono text-slate-800 min-h-[80px] resize-none focus:border-blue-400 outline-none"
                                                             placeholder="SELECT * FROM table" />
                                                     </div>
                                                     <button onClick={() => handleDatabaseIngest(dsId)} disabled={!datasetConnections[dsId] || !datasetQueries[dsId]}
-                                                        className="w-full py-2.5 bg-violet-600 hover:bg-violet-700 disabled:bg-slate-200 disabled:text-slate-400 text-white rounded-xl font-bold text-sm transition-colors">
+                                                        className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-200 disabled:text-slate-400 text-white rounded-xl font-bold text-sm transition-colors">
                                                         {datasets[dsId] ? '✓ Re-import Database' : 'Import from Database'}
                                                     </button>
                                                 </>
@@ -392,7 +392,7 @@ export default function DataMatchingBuilder({
 
                                     {datasets[dsId] && (
                                         <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs font-medium">
-                                            <span className="flex items-center gap-1.5 text-emerald-600"><CheckCircle size={13} /> Ready</span>
+                                            <span className="flex items-center gap-1.5 text-sky-600"><CheckCircle size={13} /> Ready</span>
                                             <span className="text-slate-500">{datasetColumns[dsId].length} columns</span>
                                         </div>
                                     )}
@@ -402,7 +402,7 @@ export default function DataMatchingBuilder({
 
                         <div className="flex justify-end pt-4 border-t border-slate-100">
                             <button onClick={() => { setWorkspaceTab('dataset1'); setStep(2); }} disabled={!datasets.dataset1 || !datasets.dataset2}
-                                className="flex items-center gap-2 px-6 py-3 bg-violet-600 hover:bg-violet-700 disabled:bg-slate-200 disabled:text-slate-400 text-white rounded-xl font-bold text-sm transition-all shadow-md shadow-violet-600/20 hover:-translate-y-0.5">
+                                className="flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-200 disabled:text-slate-400 text-white rounded-xl font-bold text-sm transition-all shadow-md shadow-blue-600/20 hover:-translate-y-0.5">
                                 Configure Matching Rules →
                             </button>
                         </div>
@@ -421,7 +421,7 @@ export default function DataMatchingBuilder({
                                 <span className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 shadow-sm">
                                     {datasetColumns.dataset1.length} + {datasetColumns.dataset2.length} columns
                                 </span>
-                                <span className="rounded-full border border-violet-200 bg-violet-50 px-3 py-1.5 text-xs font-semibold text-violet-700 shadow-sm">
+                                <span className="rounded-full border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700 shadow-sm">
                                     {matchRules.length} rule{matchRules.length !== 1 ? 's' : ''}
                                 </span>
                             </div>
@@ -445,7 +445,7 @@ export default function DataMatchingBuilder({
                                 <h3 className="text-base font-bold text-slate-800">Matching Rules</h3>
                                 <p className="text-sm text-slate-500 mt-1">Define which columns to compare and how to compare them.</p>
                             </div>
-                            <button onClick={addRule} className="flex items-center gap-2 px-4 py-2 bg-violet-600 hover:bg-violet-700 text-white rounded-xl font-semibold text-sm transition-colors shadow-sm shadow-violet-600/20">
+                            <button onClick={addRule} className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold text-sm transition-colors shadow-sm shadow-blue-600/20">
                                 <Plus size={15} /> Add Rule
                             </button>
                         </div>
@@ -466,7 +466,7 @@ export default function DataMatchingBuilder({
                                             <div>
                                                 <label className="block text-xs font-bold text-slate-500 mb-1.5">Column (Dataset 1)</label>
                                                 <select value={rule.column1} onChange={e => updateRule(rule.id, 'column1', e.target.value)}
-                                                    className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-800 focus:border-violet-400 focus:ring-2 focus:ring-violet-400/10 outline-none">
+                                                    className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-800 focus:border-blue-400 focus:ring-2 focus:ring-blue-400/10 outline-none">
                                                     <option value="">Select column…</option>
                                                     {datasetColumns.dataset1.map(c => <option key={c} value={c}>{c}</option>)}
                                                 </select>
@@ -474,7 +474,7 @@ export default function DataMatchingBuilder({
                                             <div>
                                                 <label className="block text-xs font-bold text-slate-500 mb-1.5">Column (Dataset 2)</label>
                                                 <select value={rule.column2} onChange={e => updateRule(rule.id, 'column2', e.target.value)}
-                                                    className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-800 focus:border-violet-400 focus:ring-2 focus:ring-violet-400/10 outline-none">
+                                                    className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-800 focus:border-blue-400 focus:ring-2 focus:ring-blue-400/10 outline-none">
                                                     <option value="">Select column…</option>
                                                     {datasetColumns.dataset2.map(c => <option key={c} value={c}>{c}</option>)}
                                                 </select>
@@ -485,7 +485,7 @@ export default function DataMatchingBuilder({
                                             <div>
                                                 <label className="block text-xs font-bold text-slate-500 mb-1.5">Algorithm</label>
                                                 <select value={rule.algorithm} onChange={e => updateRule(rule.id, 'algorithm', e.target.value)}
-                                                    className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-800 focus:border-violet-400 outline-none">
+                                                    className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-800 focus:border-blue-400 outline-none">
                                                     {algorithms.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
                                                 </select>
                                             </div>
@@ -495,7 +495,7 @@ export default function DataMatchingBuilder({
                                                 </label>
                                                 <input type="range" min="0" max="1" step="0.05"
                                                     value={rule.threshold} onChange={e => updateRule(rule.id, 'threshold', parseFloat(e.target.value))}
-                                                    className="w-full mt-2.5 accent-violet-600" />
+                                                    className="w-full mt-2.5 accent-blue-600" />
                                             </div>
                                         </div>
                                     </motion.div>
@@ -513,7 +513,7 @@ export default function DataMatchingBuilder({
                                             <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Dataset {idx + 1}</p>
                                             <button 
                                                 onClick={() => setOutputColumns(prev => ({ ...prev, [dsId]: prev[dsId].length === datasetColumns[dsId].length ? [] : [...datasetColumns[dsId]] }))}
-                                                className="text-[10px] uppercase font-black tracking-widest text-violet-600 hover:text-violet-700 bg-violet-50 hover:bg-violet-100 px-2 py-0.5 rounded-full transition-colors"
+                                                className="text-[10px] uppercase font-black tracking-widest text-blue-600 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 px-2 py-0.5 rounded-full transition-colors"
                                             >
                                                 {outputColumns[dsId].length === datasetColumns[dsId].length ? 'Clear All' : 'Select All'}
                                             </button>
@@ -522,7 +522,7 @@ export default function DataMatchingBuilder({
                                             {datasetColumns[dsId].map(col => (
                                                 <label key={col} className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 px-2 py-1 rounded-lg">
                                                     <input type="checkbox" checked={outputColumns[dsId].includes(col)} onChange={() => toggleOutputColumn(dsId, col)}
-                                                        className="w-3.5 h-3.5 accent-violet-600 rounded" />
+                                                        className="w-3.5 h-3.5 accent-blue-600 rounded" />
                                                     <span className="text-sm text-slate-700">{col}</span>
                                                 </label>
                                             ))}
@@ -543,7 +543,7 @@ export default function DataMatchingBuilder({
                                     </button>
                                 )}
                                 <button onClick={handleExecute} disabled={matchRules.some(r => !r.column1 || !r.column2) || loading}
-                                    className="flex items-center gap-2 px-6 py-3 bg-violet-600 hover:bg-violet-700 disabled:bg-slate-200 disabled:text-slate-400 text-white rounded-xl font-bold text-sm transition-all shadow-md shadow-violet-600/20 hover:-translate-y-0.5">
+                                    className="flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-200 disabled:text-slate-400 text-white rounded-xl font-bold text-sm transition-all shadow-md shadow-blue-600/20 hover:-translate-y-0.5">
                                     <Play size={16} fill="currentColor" /> Run Matching Algorithms
                                 </button>
                             </div>
@@ -565,7 +565,7 @@ export default function DataMatchingBuilder({
                                 <button onClick={() => setStep(1)} className="flex items-center gap-2 px-4 py-2 border border-slate-200 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-colors">
                                     Back
                                 </button>
-                                <button onClick={() => setWorkspaceTab('rules')} className="flex items-center gap-2 px-5 py-2.5 bg-violet-600 hover:bg-violet-700 text-white rounded-xl font-semibold text-sm transition-colors shadow-sm shadow-violet-600/20">
+                                <button onClick={() => setWorkspaceTab('rules')} className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold text-sm transition-colors shadow-sm shadow-blue-600/20">
                                     Continue to Rules
                                 </button>
                             </div>
@@ -583,7 +583,7 @@ export default function DataMatchingBuilder({
                             <div>
                                 <h3 className="text-xl font-black text-slate-900 tracking-tight">Matching Complete</h3>
                                 <p className="text-sm text-slate-500 mt-1">
-                                    Found <span className="font-bold text-violet-600">{totalMatches}</span> matching record{totalMatches !== 1 ? 's' : ''} across both datasets.
+                                    Found <span className="font-bold text-blue-600">{totalMatches}</span> matching record{totalMatches !== 1 ? 's' : ''} across both datasets.
                                 </p>
                             </div>
                             <div className="flex items-center gap-2">
@@ -634,7 +634,7 @@ export default function DataMatchingBuilder({
                                             alert('Excel download failed: ' + (e.response?.data?.detail || e.message));
                                         }
                                     }}
-                                    className="flex items-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-sm transition-all shadow-md shadow-emerald-600/20"
+                                    className="flex items-center gap-2 px-4 py-2.5 bg-sky-600 hover:bg-sky-700 text-white rounded-xl font-bold text-sm transition-all shadow-md shadow-sky-600/20"
                                 >
                                     <FileSpreadsheet size={15} /> Download Excel
                                 </button>
@@ -688,14 +688,14 @@ export default function DataMatchingBuilder({
                                                             <td key={i} className="px-5 py-3 text-slate-700 font-medium whitespace-nowrap">
                                                                 {key === 'similarity_score'
                                                                     ? <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
-                                                                        Number(value) >= 0.9 ? 'bg-emerald-100 text-emerald-700' :
-                                                                        Number(value) >= 0.7 ? 'bg-amber-100 text-amber-700' :
+                                                                        Number(value) >= 0.9 ? 'bg-sky-100 text-sky-700' :
+                                                                        Number(value) >= 0.7 ? 'bg-blue-100 text-blue-700' :
                                                                         'bg-red-100 text-red-600'
                                                                     }`}>{(Number(value) * 100).toFixed(1)}%</span>
                                                                     : key === 'match_confidence'
                                                                     ? <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
-                                                                        value === 'High' ? 'bg-emerald-100 text-emerald-700' :
-                                                                        value === 'Medium' ? 'bg-amber-100 text-amber-700' :
+                                                                        value === 'High' ? 'bg-sky-100 text-sky-700' :
+                                                                        value === 'Medium' ? 'bg-blue-100 text-blue-700' :
                                                                         'bg-red-100 text-red-600'
                                                                     }`}>{String(value)}</span>
                                                                     : typeof value === 'object' ? JSON.stringify(value) : String(value ?? '—')

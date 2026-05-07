@@ -236,7 +236,7 @@ export default function SchedulerBuilder() {
     );
 
     const inputClass = (hasError) =>
-        `w-full rounded-xl border px-3 py-3 text-sm outline-none transition-all focus:border-indigo-400 focus:ring-2 focus:ring-indigo-200 ${
+        `w-full rounded-xl border px-3 py-3 text-sm outline-none transition-all focus:border-blue-400 focus:ring-2 focus:ring-blue-200 ${
             hasError ? 'border-red-300 bg-red-50' : 'border-slate-200 bg-white hover:border-slate-300'
         }`;
 
@@ -245,7 +245,7 @@ export default function SchedulerBuilder() {
             <div className="shrink-0 border-b border-slate-100 bg-white px-8 py-5">
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div className="flex items-center gap-3">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 shadow-lg shadow-indigo-200">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 shadow-lg shadow-blue-200">
                             <Clock3 size={20} className="text-white" />
                         </div>
                         <div>
@@ -255,8 +255,8 @@ export default function SchedulerBuilder() {
                     </div>
 
                     <div className="flex items-center gap-2">
-                        <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-100 bg-emerald-50 px-3 py-1.5 text-xs font-bold text-emerald-700">
-                            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" /> {stats.active} Active
+                        <span className="inline-flex items-center gap-1.5 rounded-full border border-sky-100 bg-sky-50 px-3 py-1.5 text-xs font-bold text-sky-700">
+                            <span className="h-1.5 w-1.5 rounded-full bg-sky-500" /> {stats.active} Active
                         </span>
                         <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-100 px-3 py-1.5 text-xs font-bold text-slate-600">
                             {stats.paused} Paused
@@ -274,11 +274,11 @@ export default function SchedulerBuilder() {
             <div className="flex-1 overflow-y-auto p-6 md:p-8">
                 <div className="mx-auto grid max-w-7xl grid-cols-1 gap-6 xl:grid-cols-[420px_1fr]">
                     <div className="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm">
-                        <div className="h-1 bg-gradient-to-r from-indigo-500 to-violet-500" />
+                        <div className="h-1 bg-gradient-to-r from-blue-500 to-blue-500" />
                         <div className="p-6">
                             <div className="mb-6 flex items-center gap-3">
-                                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-indigo-50">
-                                    <Settings size={18} className="text-indigo-600" />
+                                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50">
+                                    <Settings size={18} className="text-blue-600" />
                                 </div>
                                 <div>
                                     <h2 className="text-base font-black text-slate-900">{isEditing ? 'Edit Schedule' : 'New Schedule'}</h2>
@@ -427,7 +427,7 @@ export default function SchedulerBuilder() {
                                             type="button"
                                             onClick={handleSave}
                                             disabled={saving || !pipelines.length}
-                                            className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 py-3.5 text-sm font-black text-white shadow-lg shadow-indigo-200 transition-all hover:from-indigo-500 hover:to-violet-500 disabled:cursor-not-allowed disabled:opacity-60"
+                                            className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-blue-600 py-3.5 text-sm font-black text-white shadow-lg shadow-blue-200 transition-all hover:from-blue-500 hover:to-blue-500 disabled:cursor-not-allowed disabled:opacity-60"
                                         >
                                             {saving ? <RefreshCw size={16} className="animate-spin" /> : <Clock3 size={16} />}
                                             {saving ? 'Saving...' : isEditing ? 'Update Schedule' : 'Save Schedule'}
@@ -480,12 +480,12 @@ export default function SchedulerBuilder() {
                                             transition={{ delay: index * 0.03 }}
                                             className="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm"
                                         >
-                                            <div className={`h-0.5 w-full ${schedule.is_active ? 'bg-emerald-400' : 'bg-slate-200'}`} />
+                                            <div className={`h-0.5 w-full ${schedule.is_active ? 'bg-sky-400' : 'bg-slate-200'}`} />
                                             <div className="p-5">
                                                 <div className="flex items-start justify-between gap-4">
                                                     <div className="flex min-w-0 items-start gap-4">
-                                                        <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${schedule.is_active ? 'bg-emerald-50' : 'bg-slate-100'}`}>
-                                                            <GitMerge size={18} className={schedule.is_active ? 'text-emerald-600' : 'text-slate-400'} />
+                                                        <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${schedule.is_active ? 'bg-sky-50' : 'bg-slate-100'}`}>
+                                                            <GitMerge size={18} className={schedule.is_active ? 'text-sky-600' : 'text-slate-400'} />
                                                         </div>
                                                         <div className="min-w-0">
                                                             <div className="mb-1 flex flex-wrap items-center gap-2">
@@ -509,7 +509,7 @@ export default function SchedulerBuilder() {
                                                             type="button"
                                                             onClick={() => startEditing(schedule)}
                                                             disabled={busyScheduleId === schedule.id}
-                                                            className="rounded-xl border border-slate-200 bg-white p-2 text-slate-400 transition-all hover:border-indigo-100 hover:bg-indigo-50 hover:text-indigo-600 disabled:cursor-not-allowed disabled:opacity-50"
+                                                            className="rounded-xl border border-slate-200 bg-white p-2 text-slate-400 transition-all hover:border-blue-100 hover:bg-blue-50 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
                                                             title="Edit schedule"
                                                         >
                                                             <Pencil size={15} />
@@ -520,8 +520,8 @@ export default function SchedulerBuilder() {
                                                             disabled={busyScheduleId === schedule.id}
                                                             className={`flex items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-bold transition-all ${
                                                                 schedule.is_active
-                                                                    ? 'border-emerald-100 bg-emerald-50 text-emerald-700 hover:border-amber-100 hover:bg-amber-50 hover:text-amber-700'
-                                                                    : 'border-slate-200 bg-slate-100 text-slate-600 hover:border-emerald-100 hover:bg-emerald-50 hover:text-emerald-700'
+                                                                    ? 'border-sky-100 bg-sky-50 text-sky-700 hover:border-blue-100 hover:bg-blue-50 hover:text-blue-700'
+                                                                    : 'border-slate-200 bg-slate-100 text-slate-600 hover:border-sky-100 hover:bg-sky-50 hover:text-sky-700'
                                                             }`}
                                                         >
                                                             {busyScheduleId === schedule.id ? (

@@ -7,38 +7,104 @@ Requires a valid Firecrawl API key linked to the user.
 
 from typing import Dict, List, Any, Optional
 import httpx
-import json
 from .base import BaseFeature, FeatureResult
 
 class WebScraper(BaseFeature):
     """Main web scraping feature using Firecrawl API"""
     
-    FIRECRAWL_BASE_URL = "https://api.firecrawl.dev/v1"
+    FIRECRAWL_BASE_URL = "https://api.firecrawl.dev"
     
     def __init__(self, session_id: str, api_key: str = None):
         super().__init__(session_id)
         self.api_key = api_key
 
-    async def _call_firecrawl_scrape(self, url: str, formats: List[str], extract_prompt: str = None) -> Dict[str, Any]:
+    def _build_firecrawl_formats(
+        self,
+        formats: List[str],
+        extract_prompt: str = None,
+        screenshot_options: Optional[Dict[str, Any]] = None
+    ) -> List[Any]:
+        firecrawl_formats: List[Any] = []
+
+        for format_id in formats:
+            if format_id == "extract":
+                json_format: Dict[str, Any] = {"type": "json"}
+                if extract_prompt:
+                    json_format["prompt"] = extract_prompt
+                firecrawl_formats.append(json_format)
+                continue
+
+            if format_id == "screenshot":
+                screenshot_format: Dict[str, Any] = {"type": "screenshot"}
+                if screenshot_options:
+                    if screenshot_options.get("full_page") is not None:
+                        screenshot_format["fullPage"] = bool(screenshot_options.get("full_page"))
+
+                    quality = screenshot_options.get("quality")
+                    if isinstance(quality, (int, float)):
+                        screenshot_format["quality"] = max(1, min(int(quality), 100))
+
+                    width = screenshot_options.get("viewport_width")
+                    height = screenshot_options.get("viewport_height")
+                    if isinstance(width, (int, float)) and isinstance(height, (int, float)):
+                        screenshot_format["viewport"] = {
+                            "width": max(320, min(int(width), 7680)),
+                            "height": max(240, min(int(height), 4320))
+                        }
+
+                firecrawl_formats.append(screenshot_format)
+                continue
+
+            firecrawl_formats.append(format_id)
+
+        return firecrawl_formats
+
+    @staticmethod
+    def _is_proxy_tunnel_error(message: str) -> bool:
+        if not message:
+            return False
+
+        normalized = message.upper()
+        return (
+            "ERR_TUNNEL_CONNECTION_FAILED" in normalized
+            or "INTERNAL FIRECRAWL PROXY ERROR" in normalized
+            or "FAILED TO LOAD IN THE BROWSER" in normalized
+        )
+
+    async def _call_firecrawl_scrape(
+        self,
+        url: str,
+        formats: List[str],
+        extract_prompt: str = None,
+        location: Optional[Dict[str, Any]] = None,
+        screenshot_options: Optional[Dict[str, Any]] = None
+    ) -> Dict[str, Any]:
         if not self.api_key:
             raise Exception("Firecrawl API key is missing. Please set it in your account resources.")
-            
+
         payload = {
             "url": url,
-            "formats": formats
+            "formats": self._build_firecrawl_formats(formats, extract_prompt, screenshot_options)
         }
-        
-        if "extract" in formats and extract_prompt:
-            payload["extract"] = {"prompt": extract_prompt}
-            
+
+        if location:
+            country = location.get("country")
+            languages = location.get("languages") or []
+            if country or languages:
+                payload["location"] = {}
+                if country:
+                    payload["location"]["country"] = country
+                if languages:
+                    payload["location"]["languages"] = languages
+
         headers = {
             "Authorization": f"Bearer {self.api_key}",
             "Content-Type": "application/json"
         }
-        
+
         async with httpx.AsyncClient(timeout=60.0) as client:
-            response = await client.post(f"{self.FIRECRAWL_BASE_URL}/scrape", json=payload, headers=headers)
-            
+            response = await client.post(f"{self.FIRECRAWL_BASE_URL}/v2/scrape", json=payload, headers=headers)
+
             if response.status_code != 200:
                 error_msg = response.text
                 try:
@@ -46,8 +112,39 @@ class WebScraper(BaseFeature):
                 except:
                     pass
                 raise Exception(f"Firecrawl API Error: {error_msg}")
-                
-            return response.json()
+
+            response_json = response.json()
+            if isinstance(response_json, dict) and response_json.get("success") is False:
+                raise Exception(response_json.get("error") or "Firecrawl scrape failed")
+
+            return response_json
+
+    async def _scrape_with_fallback(
+        self,
+        url: str,
+        formats: List[str],
+        extract_prompt: str = None,
+        location: Optional[Dict[str, Any]] = None,
+        screenshot_options: Optional[Dict[str, Any]] = None
+    ) -> Dict[str, Any]:
+        try:
+            return await self._call_firecrawl_scrape(
+                url,
+                formats,
+                extract_prompt,
+                location,
+                screenshot_options
+            )
+        except Exception as exc:
+            if location and self._is_proxy_tunnel_error(str(exc)):
+                return await self._call_firecrawl_scrape(
+                    url,
+                    formats,
+                    extract_prompt,
+                    None,
+                    screenshot_options
+                )
+            raise
             
     async def get_credit_usage(self) -> Dict[str, Any]:
         """Fetch and normalize Firecrawl credit usage for the UI."""
@@ -66,7 +163,7 @@ class WebScraper(BaseFeature):
         }
 
         async with httpx.AsyncClient() as client:
-            response = await client.get(f"{self.FIRECRAWL_BASE_URL}/team/credit-usage", headers=headers)
+            response = await client.get(f"{self.FIRECRAWL_BASE_URL}/v1/team/credit-usage", headers=headers)
 
             if response.status_code != 200:
                 return {
@@ -142,8 +239,10 @@ class WebScraper(BaseFeature):
             url = config.get('url')
             formats = config.get('formats', ['markdown'])
             extract_prompt = config.get('extract_prompt')
-            
-            result = await self._call_firecrawl_scrape(url, formats, extract_prompt)
+            location = config.get('location')
+            screenshot_options = config.get('screenshot_options')
+
+            result = await self._scrape_with_fallback(url, formats, extract_prompt, location, screenshot_options)
             data = result.get('data', {})
             
             formatted_item = {"url": url}
@@ -154,8 +253,8 @@ class WebScraper(BaseFeature):
                 formatted_item["html"] = "HTML content retrieved (truncated for preview)"
             if "screenshot" in formats and "screenshot" in data:
                 formatted_item["screenshot_url"] = data["screenshot"]
-            if "extract" in formats and "extract" in data:
-                extracted = data["extract"]
+            if "extract" in formats and ("json" in data or "extract" in data):
+                extracted = data.get("json", data.get("extract"))
                 if isinstance(extracted, dict):
                     formatted_item.update(extracted)
                 else:
@@ -182,21 +281,23 @@ class WebScraper(BaseFeature):
             urls = config.get('urls', [])
             formats = config.get('formats', ['markdown'])
             extract_prompt = config.get('extract_prompt')
+            location = config.get('location')
+            screenshot_options = config.get('screenshot_options')
             
             results = []
             failed = 0
             
             for url in urls:
                 try:
-                    result = await self._call_firecrawl_scrape(url, formats, extract_prompt)
+                    result = await self._scrape_with_fallback(url, formats, extract_prompt, location, screenshot_options)
                     data = result.get('data', {})
                     
                     item = {"url": url, "status": "success"}
                     if "markdown" in formats: item["markdown"] = data.get("markdown")
                     if "html" in formats: item["html"] = data.get("html")
                     if "screenshot" in formats: item["screenshot_url"] = data.get("screenshot")
-                    if "extract" in formats and "extract" in data:
-                        extracted = data["extract"]
+                    if "extract" in formats and ("json" in data or "extract" in data):
+                        extracted = data.get("json", data.get("extract"))
                         if isinstance(extracted, dict):
                             item.update(extracted)
                         else:
